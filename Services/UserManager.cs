@@ -25,7 +25,7 @@ namespace Farmacontrol.Services
         
         public void AddUser(User user)  => _users.Add(user);
         
-        public void RemoveUser(User user) => _users.Remove(user);
+        public void RemoveUser(string username) => _users.RemoveAll(user => user.Username == username);
         
         public IReadOnlyList<User> GetAllUsers() => _users.AsReadOnly();
     }
