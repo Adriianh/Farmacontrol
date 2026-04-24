@@ -6,6 +6,8 @@ namespace Farmacontrol.Services
     public class Inventory
     {
         private readonly List<Product> _products = new();
+        
+        public IReadOnlyList<Product> Products => _products.AsReadOnly();
 
         public void AddProduct(Product product)
         {
