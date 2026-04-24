@@ -44,21 +44,21 @@ namespace Farmacontrol.Services
                 .ToList()
                 .ForEach(alert => alert.ShowAlert());
         }
-
-        public void ShowRecentHistory()
+        
+        public void ShowTodayAlerts()
         {
             List<Alert> recentAlerts = _history
-                .Where(alert => alert.Date > DateTime.Now)
+                .Where(alert => alert.Date.Date == DateTime.Today)
                 .OrderByDescending(alert => alert.Date)
                 .Take(5)
                 .ToList();
 
             if (recentAlerts.Count == 0)
             {
-                Console.WriteLine("No hay alertas recientes.");
+                Console.WriteLine("No hay alertas registradas hoy.");
                 return;
             }
-            
+        
             recentAlerts.ForEach(alert => alert.ShowAlert());
         }
         
