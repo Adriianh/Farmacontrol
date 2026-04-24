@@ -13,6 +13,8 @@ namespace Farmacontrol.Model.UserEntity
             "5. Ver reporte de ventas",
             "6. Ver medicamentos vencidos",
             "7. Gestionar usuarios",
+            "8. Gestionar proveedores",
+            "9. Generar pedidos pendientes",
             "0. Salir"
         };
     }
