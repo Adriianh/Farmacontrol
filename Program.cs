@@ -7,7 +7,7 @@ namespace Farmacontrol
         private static void Main(string[] args)
         {
             Menu menu = new Menu();
-            menu.Iniciar();
+            menu.Start();
         }
     }
 }
