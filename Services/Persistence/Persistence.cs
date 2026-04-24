@@ -9,7 +9,8 @@ namespace Farmacontrol.Services.Persistence
         private const string SalesFile = "sales.json";
         private const string UsersFile = "users.json";
         private const string SuppliersFile = "suppliers.json";
-        
+        private const string HistoryFile = "history.json";
+
         private JsonSerializerOptions Options => new()
         {
             WriteIndented = true,
@@ -46,6 +47,12 @@ namespace Farmacontrol.Services.Persistence
             File.WriteAllText(SuppliersFile, json);
         }
 
+        public void SaveHistory(List<Alert> alerts)
+        {
+            string json = JsonSerializer.Serialize(alerts, Options);
+            File.WriteAllText(HistoryFile, json);
+        }
+
         public List<Product> LoadProducts()
         {
             if (!File.Exists(ProductsFile))
@@ -68,7 +75,7 @@ namespace Farmacontrol.Services.Persistence
         {
             if (!File.Exists(UsersFile))
                 return new List<User>();
-            
+
             string json = File.ReadAllText(UsersFile);
             return JsonSerializer.Deserialize<List<User>>(json, UserOptions) ?? new List<User>();
         }
@@ -80,6 +87,15 @@ namespace Farmacontrol.Services.Persistence
 
             string json = File.ReadAllText(SuppliersFile);
             return JsonSerializer.Deserialize<List<Supplier>>(json, Options) ?? new List<Supplier>();
+        }
+
+        public List<Alert> LoadHistory()
+        {
+            if (!File.Exists(HistoryFile))
+                return new List<Alert>();
+
+            string json = File.ReadAllText(HistoryFile);
+            return JsonSerializer.Deserialize<List<Alert>>(json, Options) ?? new List<Alert>();
         }
     }
 }
