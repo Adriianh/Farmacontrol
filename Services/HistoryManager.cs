@@ -45,7 +45,7 @@ namespace Farmacontrol.Services
                 .ForEach(alert => alert.ShowAlert());
         }
 
-        public void ShowRecentAlerts()
+        public void ShowRecentHistory()
         {
             List<Alert> recentAlerts = _history
                 .Where(alert => alert.Date > DateTime.Now)
