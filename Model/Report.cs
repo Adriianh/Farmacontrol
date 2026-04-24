@@ -1,9 +1,13 @@
 namespace Farmacontrol.Model
 {
-    public class Report(List<Sale> sales)
+    public class Report(List<Sale>? sales)
     {
+        public bool HasSales => sales is { Count: > 0 };
+
         public void GenerateDailySales()
         {
+            if (sales == null) return;
+            
             DateTime actualDate = DateTime.Today;
             List<Sale> todaySales = sales
                 .Where(sale => sale.Date.Date == actualDate)
@@ -13,12 +17,14 @@ namespace Farmacontrol.Model
             foreach (var sale in todaySales)
                 sale.ShowResume();
 
-            decimal total = sales.Sum(sale => sale.Total);
+            decimal total = todaySales.Sum(sale => sale.Total);
             Console.WriteLine($"Total de ventas del día: Q{total:F2}");
         }
 
         public void GenerateMonthSales()
         {
+            if (sales == null) return;
+            
             DateTime actualDate = DateTime.Today;
             List<Sale> monthSales = sales
                 .Where(sale => sale.Date.Month == actualDate.Month && sale.Date.Year == actualDate.Year)
@@ -28,12 +34,13 @@ namespace Farmacontrol.Model
             foreach (var sale in monthSales)
                 sale.ShowResume();
 
-            decimal total = sales.Sum(sale => sale.Total);
+            decimal total = monthSales.Sum(sale => sale.Total);
             Console.WriteLine($"Total de ventas del mes: Q{total:F2}");
         }
 
         public void BestSellingProducts()
         {
+            if (sales == null) return;
             Console.WriteLine("=== Productos más vendidos ===");
 
             sales
@@ -49,7 +56,7 @@ namespace Farmacontrol.Model
                 .ToList()
                 .ForEach(product =>
                     Console.WriteLine($"{product.ProductName}: {product.TotalQuantity} unidades vendidas")
-                    );
+                );
         }
     }
 }
