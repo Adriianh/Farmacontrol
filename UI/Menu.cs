@@ -9,46 +9,20 @@ namespace Farmacontrol.UI
 {
     public class Menu
     {
-        private readonly Inventory _inventory = new();
-        private readonly List<Sale> _sales;
-        private readonly Report _report;
-        private readonly Persistence _persistence = new();
-        private readonly UserManager _userManager = new();
-        private readonly SupplierManager _supplierManager = new();
-        private readonly HistoryManager _historyManager = new();
+        private readonly AppDataService _appDataService;
+        private readonly AppState _state;
 
         private User? _actualUser;
-        private int _salesCount;
 
         public Menu()
         {
-            List<User> savedUsers = _persistence.LoadUsers();
-            if (savedUsers.Count > 0)
-                savedUsers.ForEach(user => _userManager.AddUser(user));
-
-            List<Product> savedProducts = _persistence.LoadProducts();
-            if (savedProducts.Count > 0)
-                savedProducts.ForEach(product => _inventory.AddProduct(product));
-
-            List<Supplier> savedSuppliers = _persistence.LoadSuppliers();
-            if (savedSuppliers.Count > 0)
-                savedSuppliers.ForEach(supplier => _supplierManager.AddSupplier(supplier));
-
-            List<Alert> savedHistory = _persistence.LoadHistory();
-            if (savedHistory.Count > 0)
-                _historyManager.LoadHistory(savedHistory);
-
-            _sales = _persistence.LoadSales();
-            _report = new Report(_sales);
-
-            _salesCount = _sales.Count > 0
-                ? _sales.Max(sale => sale.Code)
-                : 0;
+            _appDataService = new AppDataService(new Persistence());
+            _state = _appDataService.Load();
         }
 
         public void Start()
         {
-            _actualUser = new LoginComponent(_userManager).Login();
+            _actualUser = new LoginComponent(_state.UserManager).Login();
 
             if (_actualUser == null)
             {
@@ -66,86 +40,47 @@ namespace Farmacontrol.UI
 
             var mainMenuComponent = new MainMenuComponent();
 
-            var inventoryView = new InventoryView(_inventory, _supplierManager);
-            var alertsView = new AlertsView(_historyManager, _inventory);
-            var reportsView = new ReportsView(_report);
-            var productsView = new ProductsView(_inventory);
-            var suppliersView = new SuppliersView(_supplierManager, _inventory);
-            var usersView = new UsersView(_userManager, user);
+            var inventoryView = new InventoryView(_state.Inventory, _state.SupplierManager);
+            var salesView = new SalesView(_state.Inventory, _state.Sales, _state.SalesCount);
+            var alertsView = new AlertsView(_state.HistoryManager, _state.Inventory);
+            var reportsView = new ReportsView(_state.Report);
+            var productsView = new ProductsView(_state.Inventory);
+            var suppliersView = new SuppliersView(_state.SupplierManager, _state.Inventory);
+            var usersView = new UsersView(_state.UserManager, user);
+
+            Dictionary<string, Action> actions = new()
+            {
+                ["1"] = salesView.RegisterSale,
+                ["2"] = inventoryView.ManageInventory,
+                ["3"] = productsView.SearchProduct,
+                ["4"] = alertsView.ShowTodayAlerts,
+                ["5"] = alertsView.ShowHistory,
+                ["6"] = reportsView.ShowReportsMenu,
+                ["7"] = productsView.ShowExpiredProducts,
+                ["8"] = usersView.ManageUsers,
+                ["9"] = suppliersView.ManageSuppliers,
+                ["10"] = suppliersView.GenerateAllSupplierOrders
+            };
 
             while (running)
             {
                 string option = mainMenuComponent.ReadOption(user);
 
-                switch (option)
+                if (option == "0")
                 {
-                    case "1":
-                        RegisterSale();
-                        break;
+                    _appDataService.Save(_state);
+                    running = false;
+                    continue;
+                }
 
-                    case "2":
-                        inventoryView.ManageInventory();
-                        break;
-
-                    case "3":
-                        productsView.SearchProduct();
-                        break;
-
-                    case "4":
-                        alertsView.ShowTodayAlerts();
-                        break;
-
-                    case "5":
-                        alertsView.ShowHistory();
-                        break;
-
-                    case "6":
-                        reportsView.ShowReportsMenu();
-                        break;
-
-                    case "7":
-                        productsView.ShowExpiredProducts();
-                        break;
-
-                    case "8":
-                        usersView.ManageUsers();
-                        break;
-
-                    case "9":
-                        suppliersView.ManageSuppliers();
-                        break;
-
-                    case "10":
-                        suppliersView.GenerateAllSupplierOrders();
-                        break;
-
-                    case "0":
-                        SaveData();
-                        running = false;
-                        break;
-
-                    default:
-                        Console.WriteLine("Opción inválida.");
-                        ConsoleHelper.Pause();
-                        break;
+                if (actions.TryGetValue(option, out var action))
+                    action();
+                else
+                {
+                    Console.WriteLine("Opción inválida.");
+                    ConsoleHelper.Pause();
                 }
             }
-        }
-
-        private void RegisterSale()
-        {
-            var salesView = new SalesView(_inventory, _sales, _salesCount);
-            salesView.RegisterSale();
-            _salesCount = salesView.SalesCounter;
-        }
-
-        private void SaveData()
-        {
-            _persistence.SaveProducts(_inventory.GetProducts.ToList());
-            _persistence.SaveSales(_sales);
-            _persistence.SaveUsers(_userManager.GetAllUsers().ToList());
-            _persistence.SaveSuppliers(_supplierManager.GetSuppliers().ToList());
-            _persistence.SaveHistory(_historyManager.GetHistory().ToList());
         }
     }
 }
