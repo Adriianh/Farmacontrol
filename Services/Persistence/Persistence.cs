@@ -5,10 +5,10 @@ namespace Farmacontrol.Services.Persistence
 {
     public class Persistence
     {
-        private const string ProductsArchive = "products.json";
-        private const string SalesArchive = "sales.json";
-        private const string UsersArchive = "users.json";
-        private const string SuppliersArchive = "suppliers.json";
+        private const string ProductsFile = "products.json";
+        private const string SalesFile = "sales.json";
+        private const string UsersFile = "users.json";
+        private const string SuppliersFile = "suppliers.json";
         
         private JsonSerializerOptions Options => new()
         {
@@ -25,60 +25,60 @@ namespace Farmacontrol.Services.Persistence
         public void SaveProducts(List<Product> products)
         {
             string json = JsonSerializer.Serialize(products, Options);
-            File.WriteAllText(ProductsArchive, json);
+            File.WriteAllText(ProductsFile, json);
         }
 
         public void SaveSales(List<Sale> sales)
         {
             string json = JsonSerializer.Serialize(sales, Options);
-            File.WriteAllText(SalesArchive, json);
+            File.WriteAllText(SalesFile, json);
         }
 
         public void SaveUsers(List<User> users)
         {
             string json = JsonSerializer.Serialize(users, UserOptions);
-            File.WriteAllText(UsersArchive, json);
+            File.WriteAllText(UsersFile, json);
         }
 
         public void SaveSuppliers(List<Supplier> suppliers)
         {
             string json = JsonSerializer.Serialize(suppliers, Options);
-            File.WriteAllText(SuppliersArchive, json);
+            File.WriteAllText(SuppliersFile, json);
         }
 
         public List<Product> LoadProducts()
         {
-            if (!File.Exists(ProductsArchive))
+            if (!File.Exists(ProductsFile))
                 return new List<Product>();
 
-            string json = File.ReadAllText(ProductsArchive);
+            string json = File.ReadAllText(ProductsFile);
             return JsonSerializer.Deserialize<List<Product>>(json, Options) ?? new List<Product>();
         }
 
         public List<Sale> LoadSales()
         {
-            if (!File.Exists(SalesArchive))
+            if (!File.Exists(SalesFile))
                 return new List<Sale>();
 
-            string json = File.ReadAllText(SalesArchive);
+            string json = File.ReadAllText(SalesFile);
             return JsonSerializer.Deserialize<List<Sale>>(json, Options) ?? new List<Sale>();
         }
 
         public List<User> LoadUsers()
         {
-            if (!File.Exists(UsersArchive))
+            if (!File.Exists(UsersFile))
                 return new List<User>();
             
-            string json = File.ReadAllText(UsersArchive);
+            string json = File.ReadAllText(UsersFile);
             return JsonSerializer.Deserialize<List<User>>(json, UserOptions) ?? new List<User>();
         }
 
         public List<Supplier> LoadSuppliers()
         {
-            if (!File.Exists(SuppliersArchive))
+            if (!File.Exists(SuppliersFile))
                 return new List<Supplier>();
 
-            string json = File.ReadAllText(SuppliersArchive);
+            string json = File.ReadAllText(SuppliersFile);
             return JsonSerializer.Deserialize<List<Supplier>>(json, Options) ?? new List<Supplier>();
         }
     }
