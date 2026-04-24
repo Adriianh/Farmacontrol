@@ -5,7 +5,7 @@ namespace Farmacontrol.Services
 {
     public class HistoryManager
     {
-        List<Alert> _history = new();
+        private readonly List<Alert> _history = new();
 
         public void VerifyAlert(List<Product> products)
         {
@@ -38,13 +38,13 @@ namespace Farmacontrol.Services
                 Console.WriteLine("No hay alertas registradas.");
                 return;
             }
-            
+
             _history
                 .OrderByDescending(alert => alert.Date)
                 .ToList()
                 .ForEach(alert => alert.ShowAlert());
         }
-        
+
         public void ShowTodayAlerts()
         {
             List<Alert> recentAlerts = _history
@@ -58,12 +58,18 @@ namespace Farmacontrol.Services
                 Console.WriteLine("No hay alertas registradas hoy.");
                 return;
             }
-        
+
             recentAlerts.ForEach(alert => alert.ShowAlert());
         }
-        
+
         public IReadOnlyList<Alert> GetHistory() => _history.AsReadOnly();
-        
+
+        public void LoadHistory(IEnumerable<Alert> alerts)
+        {
+            foreach (Alert alert in alerts)
+                RegisterAlert(alert);
+        }
+
         private void RegisterAlert(Alert alert)
         {
             bool alreadyRegistered = _history.Any(a =>
