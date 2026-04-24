@@ -34,7 +34,5 @@ namespace Farmacontrol.Model
             Console.WriteLine($"Stock: {Stock}");
             Console.WriteLine(GetDescription());
         }
-    
-    
     }
 }
