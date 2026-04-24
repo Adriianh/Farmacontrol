@@ -8,8 +8,6 @@ namespace Farmacontrol.UI.View
     {
         private int _salesCounter = salesCounter;
 
-        public int SalesCounter => _salesCounter;
-
         public void RegisterSale()
         {
             if (!inventory.GetProducts.Any())
