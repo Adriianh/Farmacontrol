@@ -13,6 +13,7 @@ namespace Farmacontrol.UI
         private readonly Report _report;
         private readonly Persistence _persistence = new();
         private readonly UserManager _userManager = new();
+        private readonly SupplierManager _supplierManager = new();
         private User? _actualUser;
         private int _salesCount;
 
@@ -25,6 +26,10 @@ namespace Farmacontrol.UI
             List<Product> savedProducts = _persistence.LoadProducts();
             savedProducts.ForEach(p => _inventory.AddProduct(p));
 
+            List<Supplier> savedSuppliers = _persistence.LoadSuppliers();
+            if (savedSuppliers.Count > 0)
+                savedSuppliers.ForEach(s => _supplierManager.AddSupplier(s));
+
             _sales = _persistence.LoadSales();
             _report = new Report(_sales);
 
@@ -36,7 +41,7 @@ namespace Farmacontrol.UI
         public void Iniciar()
         {
             if (Login())
-                ShowMainMenu();
+                ShowMainMenu(_actualUser ?? throw new InvalidOperationException("Usuario no encontrado."));
             else
             {
                 Console.WriteLine("Demasiados intentos fallidos. El sistema se cerrará.");
@@ -76,15 +81,6 @@ namespace Farmacontrol.UI
             }
 
             return false;
-        }
-
-        private bool HasAccess(string opcion)
-        {
-            if (_actualUser is Administrator)
-                return true;
-
-            List<string> allowedActions = ["1", "3", "4", "0"];
-            return allowedActions.Contains(opcion);
         }
 
         private void ManageUsers()
@@ -213,20 +209,13 @@ namespace Farmacontrol.UI
             return password;
         }
 
-        private void ShowMainMenu()
+        private void ShowMainMenu(User user)
         {
             bool running = true;
             while (running)
             {
                 Console.Clear();
-                Console.WriteLine("=== FARMACONTROL ===");
-                Console.WriteLine("1. Registrar venta");
-                Console.WriteLine("2. Gestionar inventario");
-                Console.WriteLine("3. Buscar producto");
-                Console.WriteLine("4. Ver alertas");
-                Console.WriteLine("5. Ver reporte de ventas");
-                Console.WriteLine("6. Ver medicamentos vencidos");
-                Console.WriteLine("0. Salir");
+                user.GetAllowedActions().ForEach(Console.WriteLine);
                 Console.Write("\nSeleccione una opción: ");
 
                 switch (Console.ReadLine())
@@ -243,7 +232,22 @@ namespace Farmacontrol.UI
                         _inventory.GetExpiredProducts();
                         Pause();
                         break;
-                    case "0": running = false; break;
+                    case "7": ManageUsers(); break;
+                    case "8": ManageSuppliers(); break;
+                    case "9":
+                        _supplierManager.GenerateAllOrders(_inventory.GetProducts.ToList());
+                        Pause();
+                        break;
+                    case "0":
+                    {
+                        _persistence.SaveProducts(_inventory.GetProducts.ToList());
+                        _persistence.SaveSales(_sales);
+                        _persistence.SaveUsers(_userManager.GetAllUsers().ToList());
+                        _persistence.SaveSuppliers(_supplierManager.GetSuppliers().ToList());
+
+                        running = false;
+                        break;
+                    }
                     default:
                         Console.WriteLine("Opción inválida.");
                         Pause();
@@ -434,6 +438,75 @@ namespace Farmacontrol.UI
                 case "3": _report.BestSellingProducts(); break;
             }
 
+            Pause();
+        }
+
+        private void ManageSuppliers()
+        {
+            Console.Clear();
+            Console.WriteLine("=== GESTIONAR PROVEEDORES ===");
+            Console.WriteLine("1. Agregar proveedor");
+            Console.WriteLine("2. Eliminar proveedor");
+            Console.WriteLine("3. Listar proveedores");
+            Console.WriteLine("4. Generar pedido por proveedor");
+            Console.Write("\nSeleccione una opción: ");
+
+            switch (Console.ReadLine())
+            {
+                case "1": AddSupplier(); break;
+                case "2": RemoveSupplier(); break;
+                case "3":
+                    _supplierManager.GetAllSuppliers();
+                    Pause();
+                    break;
+                case "4": PlaceOrderBySupplier(); break;
+            }
+        }
+
+        private void AddSupplier()
+        {
+            Console.Clear();
+            Console.WriteLine("=== AGREGAR PROVEEDOR ===");
+
+            Console.Write("Código: ");
+            string code = Console.ReadLine() ?? throw new InvalidOperationException();
+
+            Console.Write("Nombre: ");
+            string name = Console.ReadLine() ?? throw new InvalidOperationException();
+
+            Console.Write("Teléfono: ");
+            string phoneNumber = Console.ReadLine() ?? throw new InvalidOperationException();
+
+            Console.Write("Correo: ");
+            string email = Console.ReadLine() ?? throw new InvalidOperationException();
+
+            Console.Write("Días de entrega estimados: ");
+            int leadTimeDays = int.Parse(Console.ReadLine() ?? throw new InvalidOperationException());
+
+            _supplierManager.AddSupplier(new Supplier(code, name, phoneNumber, email, leadTimeDays));
+            Console.WriteLine("Proveedor agregado correctamente.");
+            Pause();
+        }
+
+        private void RemoveSupplier()
+        {
+            Console.Clear();
+            _supplierManager.GetAllSuppliers();
+            Console.Write("Código del proveedor a eliminar: ");
+            _supplierManager.RemoveSupplier(Console.ReadLine() ?? throw new InvalidOperationException());
+            Console.WriteLine("Proveedor eliminado.");
+            Pause();
+        }
+
+        private void PlaceOrderBySupplier()
+        {
+            Console.Clear();
+            Console.Write("Nombre o código del proveedor: ");
+            Supplier supplier =
+                _supplierManager.SearchSupplier(Console.ReadLine() ?? throw new InvalidOperationException())
+                ?? throw new InvalidOperationException("Proveedor no encontrado.");
+
+            supplier.PlaceOrder(_inventory.GetProducts.ToList());
             Pause();
         }
 
