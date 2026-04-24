@@ -1,6 +1,7 @@
 using Farmacontrol.Model;
 using Farmacontrol.Services;
 using Farmacontrol.Services.Persistence;
+using Farmacontrol.UI.Component;
 using Farmacontrol.UI.Helper;
 using Farmacontrol.UI.View;
 
@@ -47,57 +48,34 @@ namespace Farmacontrol.UI
 
         public void Start()
         {
-            if (Login())
-                ShowMainMenu(_actualUser ?? throw new InvalidOperationException("Usuario no encontrado."));
-            else
+            _actualUser = new LoginComponent(_userManager).Login();
+
+            if (_actualUser == null)
             {
                 Console.WriteLine("Demasiados intentos fallidos. El sistema se cerrará.");
                 ConsoleHelper.Pause();
-            }
-        }
-
-        private bool Login()
-        {
-            int attempts = 0;
-
-            while (attempts < 3)
-            {
-                ConsoleHelper.ShowTitle("Farmacontrol");
-                Console.WriteLine($"Intentos restantes: {3 - attempts}");
-                Console.WriteLine();
-
-                string username = ConsoleHelper.ReadText("Usuario: ");
-
-                Console.Write("Contraseña: ");
-                string password = ConsoleHelper.ReadPassword();
-
-                _actualUser = _userManager.Authenticate(username, password);
-
-                if (_actualUser != null)
-                {
-                    Console.WriteLine($"\nBienvenido, {_actualUser.Name} ({_actualUser.Role}).");
-                    ConsoleHelper.Pause();
-                    return true;
-                }
-
-                Console.WriteLine("\nUsuario o contraseña incorrectos.");
-                ConsoleHelper.Pause();
-                attempts++;
+                return;
             }
 
-            return false;
+            ShowMainMenu(_actualUser);
         }
 
         private void ShowMainMenu(User user)
         {
             bool running = true;
 
+            var mainMenuComponent = new MainMenuComponent();
+
+            var inventoryView = new InventoryView(_inventory, _supplierManager);
+            var alertsView = new AlertsView(_historyManager, _inventory);
+            var reportsView = new ReportsView(_report);
+            var productsView = new ProductsView(_inventory);
+            var suppliersView = new SuppliersView(_supplierManager, _inventory);
+            var usersView = new UsersView(_userManager, user);
+
             while (running)
             {
-                Console.Clear();
-                user.GetAllowedActions().ForEach(Console.WriteLine);
-
-                string option = ConsoleHelper.ReadText("\nSeleccione una opción: ");
+                string option = mainMenuComponent.ReadOption(user);
 
                 switch (option)
                 {
@@ -106,39 +84,39 @@ namespace Farmacontrol.UI
                         break;
 
                     case "2":
-                        new InventoryView(_inventory, _supplierManager).ManageInventory();
+                        inventoryView.ManageInventory();
                         break;
 
                     case "3":
-                        SearchProduct();
+                        productsView.SearchProduct();
                         break;
 
                     case "4":
-                        new AlertsView(_historyManager, _inventory).ShowTodayAlerts();
+                        alertsView.ShowTodayAlerts();
                         break;
 
                     case "5":
-                        new AlertsView(_historyManager, _inventory).ShowHistory();
+                        alertsView.ShowHistory();
                         break;
 
                     case "6":
-                        new ReportsView(_report).ShowReportsMenu();
+                        reportsView.ShowReportsMenu();
                         break;
 
                     case "7":
-                        ShowExpiredProducts();
+                        productsView.ShowExpiredProducts();
                         break;
 
                     case "8":
-                        new UsersView(_userManager, user).ManageUsers();
+                        usersView.ManageUsers();
                         break;
 
                     case "9":
-                        new SuppliersView(_supplierManager, _inventory).ManageSuppliers();
+                        suppliersView.ManageSuppliers();
                         break;
 
                     case "10":
-                        GenerateAllSupplierOrders();
+                        suppliersView.GenerateAllSupplierOrders();
                         break;
 
                     case "0":
@@ -159,67 +137,6 @@ namespace Farmacontrol.UI
             var salesView = new SalesView(_inventory, _sales, _salesCount);
             salesView.RegisterSale();
             _salesCount = salesView.SalesCounter;
-        }
-
-        private void SearchProduct()
-        {
-            ConsoleHelper.ShowTitle("Buscar Producto");
-
-            if (!_inventory.GetProducts.Any())
-            {
-                Console.WriteLine("No hay productos en inventario.");
-                ConsoleHelper.Pause();
-                return;
-            }
-
-            string input = ConsoleHelper.ReadText("Nombre o código del producto (o 'fin' para cancelar): ");
-            if (input.ToLower() == "fin") return;
-
-            Product? product = _inventory.SearchProduct(input);
-
-            if (product == null)
-                Console.WriteLine("Producto no encontrado.");
-            else
-                product.ShowInformation();
-
-            ConsoleHelper.Pause();
-        }
-
-        private void ShowExpiredProducts()
-        {
-            ConsoleHelper.ShowTitle("Productos Vencidos");
-
-            if (!_inventory.GetProducts.Any())
-            {
-                Console.WriteLine("No hay productos en inventario.");
-                ConsoleHelper.Pause();
-                return;
-            }
-
-            _inventory.GetExpiredProducts();
-            ConsoleHelper.Pause();
-        }
-
-        private void GenerateAllSupplierOrders()
-        {
-            ConsoleHelper.ShowTitle("Generar Pedidos");
-
-            if (!_supplierManager.GetSuppliers().Any())
-            {
-                Console.WriteLine("No hay proveedores registrados.");
-                ConsoleHelper.Pause();
-                return;
-            }
-
-            if (!_inventory.GetProducts.Any())
-            {
-                Console.WriteLine("No hay productos en inventario.");
-                ConsoleHelper.Pause();
-                return;
-            }
-
-            _supplierManager.GenerateAllOrders(_inventory.GetProducts.ToList());
-            ConsoleHelper.Pause();
         }
 
         private void SaveData()
