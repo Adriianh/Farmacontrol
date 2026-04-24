@@ -1,6 +1,6 @@
 namespace Farmacontrol.Model
 {
-    public abstract class Supplier(string code, string name, string phoneNumber, string email, int leadTimeDays)
+    public class Supplier(string code, string name, string phoneNumber, string email, int leadTimeDays)
     {
         public string Code { get; set; } = code;
         public string Name { get; set; } = name;
