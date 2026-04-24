@@ -6,6 +6,7 @@ namespace Farmacontrol.Model.ProductEntity
 {
     public class Supplement : Product, IAlertable, IExpirable
     {
+        public string ProductType => "Suplemento";
         public string ActivePrinciple { get; set; }
         public string Type { get; set; }
         public SupplementFormat Format { get; set; }

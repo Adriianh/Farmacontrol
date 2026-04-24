@@ -4,6 +4,7 @@ namespace Farmacontrol.Model.ProductEntity
 {
     public class Cosmetic : Product, IAlertable, IExpirable
     {
+        public string ProductType => "Cosmetico";
         public string Brand { get; set; }
         public string Type { get; set; }
         public DateTime ExpirationDate { get; set; }

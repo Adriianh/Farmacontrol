@@ -4,6 +4,7 @@ namespace Farmacontrol.Model.ProductEntity
 {
     public class Supply : Product, IAlertable, IExpirable
     {
+        public string ProductType => "Suministro";
         public string Brand { get; set; }
         public string Type { get; set; }
         public string? Size { get; set; }

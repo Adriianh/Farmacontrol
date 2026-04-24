@@ -4,6 +4,7 @@ namespace Farmacontrol.Model.ProductEntity
 {
     public class Medicine : Product, IAlertable, IExpirable
     {
+        public string ProductType => "Medicamento";
         public string ActivePrinciple  { get; set; }
         public DateTime ExpirationDate { get; set; }
         public bool RequiresPrescription { get; set; }
