@@ -7,7 +7,7 @@ namespace Farmacontrol.Services
     {
         private readonly List<Product> _products = new();
         
-        public IReadOnlyList<Product> Products => _products.AsReadOnly();
+        public IReadOnlyList<Product> GetProducts => _products.AsReadOnly();
 
         public void AddProduct(Product product)
         {
