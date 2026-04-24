@@ -14,6 +14,7 @@ namespace Farmacontrol.UI
         private readonly Persistence _persistence = new();
         private readonly UserManager _userManager = new();
         private readonly SupplierManager _supplierManager = new();
+        private readonly HistoryManager _historyManager = new();
         private User? _actualUser;
         private int _salesCount;
 
@@ -23,12 +24,17 @@ namespace Farmacontrol.UI
             if (savedUsers.Count > 0)
                 savedUsers.ForEach(u => _userManager.AddUser(u));
 
-            List<Product> savedProducts = _persistence.LoadProducts();
-            savedProducts.ForEach(p => _inventory.AddProduct(p));
+            List<Product> savedProducts = _persistence.LoadProducts(); 
+            if (savedProducts.Count > 0)
+                savedProducts.ForEach(p => _inventory.AddProduct(p));
 
             List<Supplier> savedSuppliers = _persistence.LoadSuppliers();
             if (savedSuppliers.Count > 0)
                 savedSuppliers.ForEach(s => _supplierManager.AddSupplier(s));
+
+            List<Alert> savedHistory = _persistence.LoadHistory();
+            if (savedHistory.Count > 0)
+                savedHistory.ForEach(_ => _persistence.SaveHistory(savedHistory));
 
             _sales = _persistence.LoadSales();
             _report = new Report(_sales);
@@ -224,17 +230,21 @@ namespace Farmacontrol.UI
                     case "2": ManageInventory(); break;
                     case "3": SearchProduct(); break;
                     case "4":
-                        _inventory.GetAlerts();
+                        _historyManager.VerifyAlert(_inventory.GetProducts.ToList());
+                        _historyManager.ShowRecentHistory();
                         Pause();
                         break;
-                    case "5": ShowReportsMenu(); break;
-                    case "6":
+                    case "5":
+                        _historyManager.ShowHistory();
+                        break;
+                    case "6": ShowReportsMenu(); break;
+                    case "7":
                         _inventory.GetExpiredProducts();
                         Pause();
                         break;
-                    case "7": ManageUsers(); break;
-                    case "8": ManageSuppliers(); break;
-                    case "9":
+                    case "8": ManageUsers(); break;
+                    case "9": ManageSuppliers(); break;
+                    case "10":
                         _supplierManager.GenerateAllOrders(_inventory.GetProducts.ToList());
                         Pause();
                         break;
