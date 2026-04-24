@@ -2,14 +2,16 @@ namespace Farmacontrol.Model
 {
     public class SaleDetail
     {
-        public Product Product { get; set; }
+        public string ProductCode { get; set; }
+        public string ProductName { get; set; }
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal Subtotal { get; set; }
 
         public SaleDetail(Product product, int quantity)
         {
-            Product = product;
+            ProductCode = product.Code;
+            ProductName = product.Name;
             Quantity = quantity;
             UnitPrice = product.Price;
             Subtotal = CalculateSubtotal();
@@ -18,6 +20,6 @@ namespace Farmacontrol.Model
         private decimal CalculateSubtotal() => Quantity * UnitPrice;
         
         public void ShowDetails() =>
-            Console.WriteLine($"{Product.GetDescription()} | Cantidad: {Quantity} | Subtotal: Q{Subtotal:F2}");
+            Console.WriteLine($"{ProductName} (${ProductCode}) | Cantidad: {Quantity} | Subtotal: Q{Subtotal:F2}");
     }
 }

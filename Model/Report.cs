@@ -38,7 +38,7 @@ namespace Farmacontrol.Model
 
             sales
                 .SelectMany(sale => sale.GetDetails)
-                .GroupBy(detail => detail.Product.Name)
+                .GroupBy(detail => detail.ProductName)
                 .Select(group => new
                 {
                     ProductName = group.Key,
