@@ -10,8 +10,6 @@
     <ItemGroup>
       <Folder Include="Exception\" />
       <Folder Include="Repository\" />
-      <Folder Include="Services\Converter\" />
-      <Folder Include="UI\" />
     </ItemGroup>
 
 </Project>
