@@ -4,17 +4,8 @@ using Farmacontrol.UI.Helper;
 
 namespace Farmacontrol.UI.View
 {
-    public class SuppliersView
+    public class SuppliersView(SupplierManager supplierManager, Inventory inventory)
     {
-        private readonly SupplierManager _supplierManager;
-        private readonly Inventory _inventory;
-
-        public SuppliersView(SupplierManager supplierManager, Inventory inventory)
-        {
-            _supplierManager = supplierManager;
-            _inventory = inventory;
-        }
-
         public void ManageSuppliers()
         {
             ConsoleHelper.ShowTitle("Gestionar Proveedores");
@@ -30,14 +21,36 @@ namespace Farmacontrol.UI.View
                 case "1": AddSupplier(); break;
                 case "2": RemoveSupplier(); break;
                 case "3":
-                    if (!_supplierManager.GetSuppliers().Any())
+                    if (!supplierManager.GetSuppliers().Any())
                         Console.WriteLine("No hay proveedores registrados.");
                     else
-                        _supplierManager.GetAllSuppliers();
+                        supplierManager.GetAllSuppliers();
                     ConsoleHelper.Pause();
                     break;
                 case "4": GenerateOrderBySupplier(); break;
             }
+        }
+
+        public void GenerateAllSupplierOrders()
+        {
+            ConsoleHelper.ShowTitle("Generar Pedidos");
+
+            if (!supplierManager.GetSuppliers().Any())
+            {
+                Console.WriteLine("No hay proveedores registrados.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            if (!inventory.GetProducts.Any())
+            {
+                Console.WriteLine("No hay productos en inventario.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            supplierManager.GenerateAllOrders(inventory.GetProducts.ToList());
+            ConsoleHelper.Pause();
         }
 
         private void AddSupplier()
@@ -46,7 +59,7 @@ namespace Farmacontrol.UI.View
 
             string code = ConsoleHelper.ReadText("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
-            if (_supplierManager.SearchSupplier(code) != null)
+            if (supplierManager.SearchSupplier(code) != null)
             {
                 Console.WriteLine("Ya existe un proveedor con ese código.");
                 ConsoleHelper.Pause();
@@ -76,7 +89,7 @@ namespace Farmacontrol.UI.View
             }
 
             var supplier = new Supplier(code, name, phone, email, leadTime);
-            _supplierManager.AddSupplier(supplier);
+            supplierManager.AddSupplier(supplier);
             Console.WriteLine("Proveedor agregado correctamente.");
             ConsoleHelper.Pause();
         }
@@ -84,28 +97,28 @@ namespace Farmacontrol.UI.View
         private void RemoveSupplier()
         {
             ConsoleHelper.ShowTitle("Eliminar Proveedor");
-            if (!_supplierManager.GetSuppliers().Any())
+            if (!supplierManager.GetSuppliers().Any())
             {
                 Console.WriteLine("No hay proveedores registrados.");
                 ConsoleHelper.Pause();
                 return;
             }
 
-            _supplierManager.GetAllSuppliers();
+            supplierManager.GetAllSuppliers();
 
             if (!ConsoleHelper.Confirm("\n¿Desea eliminar un proveedor? (o 'fin' para cancelar)"))
                 return;
 
             string code = ConsoleHelper.ReadText("Código del proveedor a eliminar (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
-            if (_supplierManager.SearchSupplier(code) == null)
+            if (supplierManager.SearchSupplier(code) == null)
             {
                 Console.WriteLine("No existe un proveedor con ese código.");
                 ConsoleHelper.Pause();
                 return;
             }
 
-            _supplierManager.RemoveSupplier(code);
+            supplierManager.RemoveSupplier(code);
             Console.WriteLine("Proveedor eliminado.");
             ConsoleHelper.Pause();
         }
@@ -113,7 +126,7 @@ namespace Farmacontrol.UI.View
         private void GenerateOrderBySupplier()
         {
             ConsoleHelper.ShowTitle("Generar Pedido");
-            if (!_supplierManager.GetSuppliers().Any())
+            if (!supplierManager.GetSuppliers().Any())
             {
                 Console.WriteLine("No hay proveedores registrados.");
                 ConsoleHelper.Pause();
@@ -122,7 +135,7 @@ namespace Farmacontrol.UI.View
 
             string input = ConsoleHelper.ReadText("Nombre o código del proveedor (o 'fin' para cancelar): ");
             if (input.ToLower() == "fin") return;
-            var supplier = _supplierManager.SearchSupplier(input);
+            var supplier = supplierManager.SearchSupplier(input);
 
             if (supplier == null)
             {
@@ -131,7 +144,7 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            supplier.PlaceOrder(_inventory.GetProducts.ToList());
+            supplier.PlaceOrder(inventory.GetProducts.ToList());
             ConsoleHelper.Pause();
         }
     }

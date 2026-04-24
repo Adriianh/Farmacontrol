@@ -1,0 +1,41 @@
+using Farmacontrol.Model;
+using Farmacontrol.Services;
+using Farmacontrol.UI.Helper;
+
+namespace Farmacontrol.UI.Component
+{
+    public class LoginComponent(UserManager userManager)
+    {
+        public User? Login(int maxAttempts = 3)
+        {
+            int attempts = 0;
+
+            while (attempts < maxAttempts)
+            {
+                ConsoleHelper.ShowTitle("Farmacontrol");
+                Console.WriteLine($"Intentos restantes: {maxAttempts - attempts}");
+                Console.WriteLine();
+
+                string username = ConsoleHelper.ReadText("Usuario: ");
+
+                Console.Write("Contraseña: ");
+                string password = ConsoleHelper.ReadPassword();
+
+                User? user = userManager.Authenticate(username, password);
+
+                if (user != null)
+                {
+                    Console.WriteLine($"\nBienvenido, {user.Name} ({user.Role}).");
+                    ConsoleHelper.Pause();
+                    return user;
+                }
+
+                Console.WriteLine("\nUsuario o contraseña incorrectos.");
+                ConsoleHelper.Pause();
+                attempts++;
+            }
+
+            return null;
+        }
+    }
+}
