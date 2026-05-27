@@ -30,6 +30,9 @@ namespace Farmacontrol.UI.View
                 ClientName = clientName,
                 PaymentMethod = paymentMethod
             };
+            
+            decimal discount = ConsoleHelper.ReadDecimal("Porcentaje de Descuento (ej. 10 para 10%, 0 si no aplica): ");
+            sale.DiscountPercentage = discount;
 
             bool adding = true;
             int productsAdded = 0;
@@ -67,7 +70,13 @@ namespace Farmacontrol.UI.View
                             ConsoleHelper.Pause();
                             continue;
                         }
+                        string presDocName = ConsoleHelper.ReadText("Nombre del médico: ", allowEmpty: true);
+                        string presPatient = ConsoleHelper.ReadText("Nombre del paciente: ", allowEmpty: true);
+                        string presDate = ConsoleHelper.ReadText("Fecha de emisión (dd/MM/yyyy): ", allowEmpty: true);
+                        string presFolio = ConsoleHelper.ReadText("Referencias / Folio: ", allowEmpty: true);
+
                         sale.DoctorLicense = license;
+                        sale.Prescription = new Prescription(sale.Code, license, presDocName, (string.IsNullOrEmpty(presPatient) ? clientName : presPatient), presDate, presFolio);
                     }
                 }
 
@@ -124,9 +133,33 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
+            if (ConsoleHelper.Confirm("¿Aplicar impuestos (IVA)?"))
+            {
+                decimal subtotal = sale.Details.Sum(d => d.Subtotal);
+                decimal discountAmt = subtotal * (sale.DiscountPercentage / 100);
+                sale.TaxAmount = (subtotal - discountAmt) * 0.12m; // Asumiendo un 12% de IVA
+            }
+
             salesManager.RegisterSale(sale);
             ConsoleHelper.ShowTitle("Resumen de Venta");
             sale.ShowResume();
+            ConsoleHelper.Pause();
+        }
+
+        public void VoidSale()
+        {
+            ConsoleHelper.ShowTitle("Anular Venta");
+            int saleCode = ConsoleHelper.ReadInt("Ingrese el código de la venta a anular: ");
+            
+            try
+            {
+                salesManager.VoidSale(saleCode);
+                Console.WriteLine($"Venta #{saleCode} anulada exitosamente (si existía).");
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine($"Error al intentar anular: {ex.Message}");
+            }
             ConsoleHelper.Pause();
         }
 
