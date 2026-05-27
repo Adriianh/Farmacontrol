@@ -23,20 +23,23 @@ namespace Farmacontrol.Services
 
         private void EnsureAdminUser()
         {
-            if (!_db.Users.Any())
-            {
-                _db.Users.Add(new Administrator("Admin", "admin", "admin123"));
-                _db.SaveChanges();
-            }
+            if (_db.Users.Any()) return;
+            _db.Users.Add(new Administrator("Admin", "admin", "admin123"));
+            _db.SaveChanges();
         }
         
         public bool VerifyMasterKey(string password) =>
-            Hash.Hashing(password) == _masterKey;
+            Hash.Validate(password, _masterKey);
 
-        public User? Authenticate(string username, string password) =>
-            _db.Users.AsNoTracking().FirstOrDefault(user =>
-                user.Username == username && user.Password == Hash.Hashing(password)
-            );
+        public User? Authenticate(string username, string password)
+        {
+            var user = _db.Users.AsNoTracking().FirstOrDefault(u => u.Username == username);
+            if (user != null && user.ValidatePassword(password))
+            {
+                return user;
+            }
+            return null;
+        }
         
         public void AddUser(User user)
         {

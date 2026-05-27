@@ -7,8 +7,28 @@ namespace Farmacontrol.Util
     {
         public static string Hashing(string input)
         {
-            byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-            return Convert.ToHexString(bytes).ToLower();
+            return BCrypt.Net.BCrypt.HashPassword(input);
+        }
+
+        public static bool Validate(string input, string hash)
+        {
+            if (string.IsNullOrEmpty(hash)) return false;
+
+            if (!hash.StartsWith("$2") && hash.Length == 64)
+            {
+                byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+                string oldHash = Convert.ToHexString(bytes).ToLower();
+                return oldHash == hash;
+            }
+
+            try 
+            {
+                return BCrypt.Net.BCrypt.Verify(input, hash);
+            }
+            catch (System.Exception)
+            {
+                return false;
+            }
         }
     }
 }

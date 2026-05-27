@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Farmacontrol.Util;
+
 namespace Farmacontrol.Model
 {
     public abstract class User
@@ -22,6 +22,6 @@ namespace Farmacontrol.Model
         public abstract List<string> GetAllowedActions();
         
         public bool ValidatePassword(string password) =>
-            Password == Hash.Hashing(password);
+            Hash.Validate(password, Password);
     }
 }
