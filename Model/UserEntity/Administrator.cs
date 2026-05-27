@@ -1,11 +1,14 @@
 namespace Farmacontrol.Model.UserEntity
 {
-    public class Administrator(string name, string username, string password) : User(name, username, password)
+    public class Administrator : User
     {
         public override string Role => "Administrador";
-
-        public override List<string> GetAllowedActions() => new()
-        {
+        
+        public Administrator(string name, string username, string password) : base(name, username, password) { }
+        private Administrator() : base() { }
+        
+        public override List<string> GetAllowedActions() =>
+        [
             "1. Registrar venta",
             "2. Gestionar inventario",
             "3. Buscar producto",
@@ -17,6 +20,6 @@ namespace Farmacontrol.Model.UserEntity
             "9. Gestionar proveedores",
             "10. Generar pedidos pendientes",
             "0. Salir"
-        };
+        ];
     }
 }
