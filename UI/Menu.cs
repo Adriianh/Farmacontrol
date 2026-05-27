@@ -1,29 +1,26 @@
 using Farmacontrol.Model;
 using Farmacontrol.Services;
-using Farmacontrol.Services.Persistence;
 using Farmacontrol.UI.Component;
 using Farmacontrol.UI.Helper;
 using Farmacontrol.UI.View;
-using Farmacontrol.Exception;
 
 namespace Farmacontrol.UI
 {
-    public class Menu
+    public class Menu(
+        UserManager userManager,
+        InventoryView inventoryView,
+        SalesView salesView,
+        AlertsView alertsView,
+        ReportsView reportsView,
+        ProductsView productsView,
+        SuppliersView suppliersView,
+        UsersView usersView)
     {
-        private readonly AppDataService _appDataService;
-        private readonly AppState _state;
-
         private User? _actualUser;
-
-        public Menu()
-        {
-            _appDataService = new AppDataService(new Persistence());
-            _state = _appDataService.Load();
-        }
 
         public void Start()
         {
-            _actualUser = new LoginComponent(_state.UserManager).Login();
+            _actualUser = new LoginComponent(userManager).Login();
 
             if (_actualUser == null)
             {
@@ -41,14 +38,6 @@ namespace Farmacontrol.UI
 
             var mainMenuComponent = new MainMenuComponent();
 
-            var inventoryView = new InventoryView(_state.Inventory, _state.SupplierManager);
-            var salesView = new SalesView(_state.Inventory, _state.Sales, _state.SalesCount);
-            var alertsView = new AlertsView(_state.HistoryManager, _state.Inventory);
-            var reportsView = new ReportsView(_state.Report);
-            var productsView = new ProductsView(_state.Inventory);
-            var suppliersView = new SuppliersView(_state.SupplierManager, _state.Inventory);
-            var usersView = new UsersView(_state.UserManager, user);
-
             Dictionary<string, Action> actions = new()
             {
                 ["1"] = salesView.RegisterSale,
@@ -58,7 +47,7 @@ namespace Farmacontrol.UI
                 ["5"] = alertsView.ShowHistory,
                 ["6"] = reportsView.ShowReportsMenu,
                 ["7"] = productsView.ShowExpiredProducts,
-                ["8"] = usersView.ManageUsers,
+                ["8"] = () => usersView.ManageUsers(user),
                 ["9"] = suppliersView.ManageSuppliers,
                 ["10"] = suppliersView.GenerateAllSupplierOrders
             };
@@ -69,18 +58,6 @@ namespace Farmacontrol.UI
 
                 if (option == "0")
                 {
-                    try
-                    {
-                        _appDataService.Save(_state);
-                    }
-                    catch (PersistenceOperationException ex)
-                    {
-                        Console.WriteLine($"\n[ERROR CRÍTICO] {ex.Message}");
-                        if (ex.InnerException != null)
-                            Console.WriteLine($"Detalle: {ex.InnerException.Message}");
-                        ConsoleHelper.Pause();
-                    }
-                    
                     running = false;
                     continue;
                 }
