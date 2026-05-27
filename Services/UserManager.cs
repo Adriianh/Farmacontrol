@@ -2,17 +2,22 @@ using Farmacontrol.Model;
 using Farmacontrol.Model.UserEntity;
 using Farmacontrol.Repository;
 using Farmacontrol.Util;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Farmacontrol.Services
 {
     public class UserManager
     {
         private readonly AppDbContext _db;
-        private const string MasterKey = "ef92b778bafe771207a9974a1257addb1a13c195"; // hash de "claveMaestra123"
+        private readonly string _masterKey;
+        private readonly AuditService _audit;
 
-        public UserManager(AppDbContext db)
+        public UserManager(AppDbContext db, IConfiguration configuration, AuditService audit)
         {
             _db = db;
+            _masterKey = configuration["Security:MasterKey"] ?? "ef92b778bafe771207a9974a1257addb1a13c195";
+            _audit = audit;
             EnsureAdminUser();
         }
 
@@ -26,10 +31,10 @@ namespace Farmacontrol.Services
         }
         
         public bool VerifyMasterKey(string password) =>
-            Hash.Hashing(password) == MasterKey;
+            Hash.Hashing(password) == _masterKey;
 
         public User? Authenticate(string username, string password) =>
-            _db.Users.FirstOrDefault(user =>
+            _db.Users.AsNoTracking().FirstOrDefault(user =>
                 user.Username == username && user.Password == Hash.Hashing(password)
             );
         
@@ -37,6 +42,7 @@ namespace Farmacontrol.Services
         {
             _db.Users.Add(user);
             _db.SaveChanges();
+            _audit.Log("Crear Usuario", $"Se creó el usuario '{user.Username}' con rol '{user.Role}'.");
         }
         
         public void RemoveUser(string username)
@@ -46,9 +52,10 @@ namespace Farmacontrol.Services
             {
                 _db.Users.Remove(user);
                 _db.SaveChanges();
+                _audit.Log("Eliminar Usuario", $"Se eliminó el usuario '{username}'.");
             }
         }
         
-        public IReadOnlyList<User> GetAllUsers() => _db.Users.ToList().AsReadOnly();
+        public IReadOnlyList<User> GetAllUsers() => _db.Users.AsNoTracking().ToList().AsReadOnly();
     }
 }
