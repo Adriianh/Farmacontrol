@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Farmacontrol.Model
 {
     public class Sale
@@ -12,10 +8,15 @@ namespace Farmacontrol.Model
         public DateTime Date { get; set; } = DateTime.Now;
         public decimal Total { get; set; }
 
-        // Nuevos atributos de venta de farmacia
         public string? ClientName { get; set; }
         public string? DoctorLicense { get; set; }
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+        
+        public bool IsVoided { get; set; }
+        public decimal DiscountPercentage { get; set; }
+        public decimal TaxAmount { get; set; }
+        
+        public Prescription? Prescription { get; set; }
 
         public Sale(int code)
         {
@@ -30,12 +31,23 @@ namespace Farmacontrol.Model
 
         public void AddDetail(Product product, int quantity)
         {
-            product.UpdateStock(-quantity);
             _details.Add(new SaleDetail(product, quantity));
             Total = CalculateTotal();
         }
 
-        private decimal CalculateTotal() => _details.Sum(detail => detail.Subtotal);
+        private decimal CalculateTotal() 
+        {
+            decimal subtotal = _details.Sum(detail => detail.Subtotal);
+            decimal discount = subtotal * (DiscountPercentage / 100);
+            return subtotal - discount + TaxAmount;
+        }
+
+        public void VoidSale()
+        {
+            if (IsVoided) return;
+            IsVoided = true;
+            Total = 0;
+        }
 
         private string GetPaymentMethodName() => PaymentMethod switch
         {
@@ -48,7 +60,7 @@ namespace Farmacontrol.Model
 
         public void ShowResume()
         {
-            Console.WriteLine($"Venta #{Code} - {Date:dd/MM/yyyy HH:mm:ss}");
+            Console.WriteLine($"Venta #{Code} - {Date:dd/MM/yyyy HH:mm:ss} {(IsVoided ? "[ANULADA]" : "")}");
             if (!string.IsNullOrEmpty(ClientName)) Console.WriteLine($"Cliente: {ClientName}");
             if (!string.IsNullOrEmpty(DoctorLicense)) Console.WriteLine($"Cédula de Médico: {DoctorLicense}");
             Console.WriteLine($"Método de Pago: {GetPaymentMethodName()}");
@@ -58,6 +70,9 @@ namespace Farmacontrol.Model
             {
                 detail.ShowDetails();
             }
+
+            if (DiscountPercentage > 0) Console.WriteLine($"Descuento: {DiscountPercentage}%");
+            if (TaxAmount > 0) Console.WriteLine($"Impuestos: Q{TaxAmount:F2}");
 
             Console.WriteLine("------------------");
             Console.WriteLine($"Total: Q{Total:F2}");

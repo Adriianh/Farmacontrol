@@ -28,20 +28,48 @@ namespace Farmacontrol.Services
                 
                 foreach (var detail in sale.Details)
                 {
-                    var dbProduct = _db.Products.Find(detail.ProductCode);
-                    if (dbProduct != null)
+                    var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
+                    if (dbProduct == null) continue;
+                    var entry = _db.Entry(dbProduct);
+                    if (entry.State != EntityState.Modified)
                     {
-                        var entry = _db.Entry(dbProduct);
-                        if (entry.State != EntityState.Modified)
-                        {
-                            dbProduct.UpdateStock(-detail.Quantity);
-                        }
+                        dbProduct.ReduceBatchStock(detail.Quantity);
                     }
                 }
                 
                 _db.SaveChanges();
                 transaction.Commit();
                 _audit.Log("Registrar Venta", $"Venta #{sale.Code} registrada con éxito. Total: Q{sale.Total:F2}");
+            }
+            catch (System.Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public void VoidSale(int saleCode)
+        {
+            using var transaction = _db.Database.BeginTransaction();
+            try
+            {
+                var sale = _db.Sales.Include(s => s.Details).FirstOrDefault(s => s.Code == saleCode);
+                if (sale == null || sale.IsVoided) return;
+
+                sale.VoidSale();
+
+                foreach (var detail in sale.Details)
+                {
+                    var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
+                    if (dbProduct != null)
+                    {
+                        dbProduct.AddBatch("DEVOLUCION", detail.Quantity, DateTime.Today.AddYears(1));
+                    }
+                }
+
+                _db.SaveChanges();
+                transaction.Commit();
+                _audit.Log("Anular Venta", $"Venta #{saleCode} ha sido anulada y el inventario restaurado.");
             }
             catch (System.Exception)
             {
