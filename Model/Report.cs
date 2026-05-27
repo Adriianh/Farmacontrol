@@ -12,7 +12,7 @@ namespace Farmacontrol.Model
             
             DateTime actualDate = DateTime.Today;
             List<Sale> todaySales = sales
-                .Where(sale => sale.Date.Date == actualDate)
+                .Where(sale => sale.Date.Date == actualDate && !sale.IsVoided)
                 .ToList();
 
             var sb = new StringBuilder();
@@ -31,7 +31,8 @@ namespace Farmacontrol.Model
             }
 
             decimal total = todaySales.Sum(sale => sale.Total);
-            sb.AppendLine($"Total de ventas del día: Q{total:F2}");
+            sb.AppendLine($"Ingreso Neto del día: Q{total:F2}");
+            sb.AppendLine($"Ventas Anuladas: {sales.Count(s => s.Date.Date == actualDate && s.IsVoided)}");
             return sb.ToString();
         }
 
@@ -41,7 +42,7 @@ namespace Farmacontrol.Model
             
             DateTime actualDate = DateTime.Today;
             List<Sale> monthSales = sales
-                .Where(sale => sale.Date.Month == actualDate.Month && sale.Date.Year == actualDate.Year)
+                .Where(sale => sale.Date.Month == actualDate.Month && sale.Date.Year == actualDate.Year && !sale.IsVoided)
                 .ToList();
 
             var sb = new StringBuilder();
@@ -60,7 +61,8 @@ namespace Farmacontrol.Model
             }
 
             decimal total = monthSales.Sum(sale => sale.Total);
-            sb.AppendLine($"Total de ventas del mes: Q{total:F2}");
+            sb.AppendLine($"Ingreso Neto del mes: Q{total:F2}");
+            sb.AppendLine($"Ventas Anuladas: {sales.Count(s => s.Date.Month == actualDate.Month && s.Date.Year == actualDate.Year && s.IsVoided)}");
             return sb.ToString();
         }
 
@@ -71,6 +73,7 @@ namespace Farmacontrol.Model
             sb.AppendLine("=== Productos más vendidos ===");
 
             var bestSelling = sales
+                .Where(sale => !sale.IsVoided)
                 .SelectMany(sale => sale.GetDetails)
                 .GroupBy(detail => detail.ProductName)
                 .Select(group => new

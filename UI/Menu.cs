@@ -52,7 +52,8 @@ namespace Farmacontrol.UI
                 ["7"] = productsView.ShowExpiredProducts,
                 ["8"] = () => usersView.ManageUsers(user),
                 ["9"] = suppliersView.ManageSuppliers,
-                ["10"] = suppliersView.GenerateAllSupplierOrders
+                ["10"] = suppliersView.GenerateAllSupplierOrders,
+                ["11"] = salesView.VoidSale
             };
 
             while (running)
