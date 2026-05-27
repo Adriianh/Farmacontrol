@@ -16,10 +16,24 @@ namespace Farmacontrol.Services
             _audit = audit;
         }
         
-        public IReadOnlyList<Product> GetProducts => _db.Products.AsNoTracking().ToList().AsReadOnly();
+        public IReadOnlyList<Product> GetProducts => _db.Products.AsNoTracking().Include(p => p.Suppliers).ToList().AsReadOnly();
 
         public void AddProduct(Product product)
         {
+            if (product.Suppliers.Count > 0)
+            {
+                var attachedSuppliers = new List<Supplier>();
+                foreach (var sup in product.Suppliers)
+                {
+                    var dbSup = _db.Suppliers.Find(sup.Code);
+                    if (dbSup != null)
+                    {
+                        attachedSuppliers.Add(dbSup);
+                    }
+                }
+                product.Suppliers = attachedSuppliers;
+            }
+
             _db.Products.Add(product);
             _db.SaveChanges();
             _audit.Log("Agregar Producto", $"Se agregó el producto '{product.Name}' (Código: {product.Code}) al inventario con stock inicial de {product.Stock}.");
@@ -33,14 +47,14 @@ namespace Farmacontrol.Services
         }
 
         public Product? SearchProduct(string query) =>
-            _db.Products.AsNoTracking().FirstOrDefault(product =>
+            _db.Products.AsNoTracking().Include(p => p.Suppliers).FirstOrDefault(product =>
                 product.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
                 product.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
             );
         
         public void ListProducts()
         {
-            var products = _db.Products.AsNoTracking().ToList();
+            var products = _db.Products.AsNoTracking().Include(p => p.Suppliers).ToList();
             foreach (var product in products)
             {
                 product.ShowInformation();
@@ -50,7 +64,7 @@ namespace Farmacontrol.Services
 
         public void GetAlerts()
         {
-            var products = _db.Products.AsNoTracking().ToList();
+            var products = _db.Products.AsNoTracking().Include(p => p.Suppliers).ToList();
             foreach (var product in products)
             {
                 if (product is IAlertable alertable)
@@ -62,7 +76,7 @@ namespace Farmacontrol.Services
 
         public void GetExpiredProducts()
         {
-            var products = _db.Products.AsNoTracking().ToList();
+            var products = _db.Products.AsNoTracking().Include(p => p.Suppliers).ToList();
             foreach (var product in products)
             {
                 if (product is IExpirable expirable && expirable.IsExpired())
@@ -70,6 +84,23 @@ namespace Farmacontrol.Services
                     Console.WriteLine($"Producto vencido: {product.Name} (Código: {product.Code})");
                 }
             }
+        }
+
+        public bool AssociateSupplier(string productCode, string supplierCode)
+        {
+            var product = _db.Products.Include(p => p.Suppliers).FirstOrDefault(p => p.Code == productCode);
+            var supplier = _db.Suppliers.FirstOrDefault(s => s.Code == supplierCode);
+
+            if (product != null && supplier != null)
+            {
+                if (product.Suppliers.Any(s => s.Code == supplierCode)) return false;
+                
+                product.Suppliers.Add(supplier);
+                _db.SaveChanges();
+                _audit.Log("Asociar Proveedor", $"Se asoció el proveedor '{supplier.Name}' al producto '{product.Name}'.");
+                return true;
+            }
+            return false;
         }
     }
 }

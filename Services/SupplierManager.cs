@@ -34,14 +34,14 @@ namespace Farmacontrol.Services
         }
 
         public Supplier? SearchSupplier(string query) =>
-            _db.Suppliers.AsNoTracking().FirstOrDefault(supplier =>
+            _db.Suppliers.AsNoTracking().Include(s => s.Products).FirstOrDefault(supplier =>
                 supplier.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
                 supplier.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
             );
 
         public void GetAllSuppliers()
         {
-            var suppliers = _db.Suppliers.AsNoTracking().ToList();
+            var suppliers = _db.Suppliers.AsNoTracking().Include(s => s.Products).ToList();
             if (suppliers.Count == 0)
             {
                 Console.WriteLine("No suppliers found.");
@@ -57,7 +57,7 @@ namespace Farmacontrol.Services
 
         public void GenerateAllOrders(List<Product> products)
         {
-            var suppliers = _db.Suppliers.AsNoTracking().ToList();
+            var suppliers = _db.Suppliers.AsNoTracking().Include(s => s.Products).ToList();
             if (suppliers.Count == 0)
             {
                 Console.WriteLine("No suppliers found.");
@@ -68,7 +68,7 @@ namespace Farmacontrol.Services
             foreach (var supplier in suppliers)
             {
                 List<Product> productsToOrder = products
-                    .Where(product => product.SupplierCode == supplier.Code && product.IsStockLow())
+                    .Where(product => product.Suppliers.Any(s => s.Code == supplier.Code) && product.IsStockLow())
                     .ToList();
 
                 if (productsToOrder.Count <= 0) continue;
@@ -82,6 +82,6 @@ namespace Farmacontrol.Services
                 Console.WriteLine("No hay pedidos pendientes.");
         }
         
-        public IReadOnlyList<Supplier> GetSuppliers() => _db.Suppliers.AsNoTracking().ToList().AsReadOnly();
+        public IReadOnlyList<Supplier> GetSuppliers() => _db.Suppliers.AsNoTracking().Include(s => s.Products).ToList().AsReadOnly();
     }
 }
