@@ -1,6 +1,7 @@
 using Farmacontrol.Interface;
 using Farmacontrol.Model;
 using Farmacontrol.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Services
 {
@@ -39,7 +40,7 @@ namespace Farmacontrol.Services
 
         public void ShowHistory()
         {
-            var history = _db.Alerts.ToList();
+            var history = _db.Alerts.AsNoTracking().ToList();
             if (history.Count == 0)
             {
                 Console.WriteLine("No hay alertas registradas.");
@@ -54,7 +55,7 @@ namespace Farmacontrol.Services
 
         public void ShowTodayAlerts()
         {
-            var history = _db.Alerts.ToList();
+            var history = _db.Alerts.AsNoTracking().ToList();
             List<Alert> recentAlerts = history
                 .Where(alert => alert.Date.Date == DateTime.Today)
                 .OrderByDescending(alert => alert.Date)
@@ -70,7 +71,7 @@ namespace Farmacontrol.Services
             recentAlerts.ForEach(alert => alert.ShowAlert());
         }
 
-        public IReadOnlyList<Alert> GetHistory() => _db.Alerts.ToList().AsReadOnly();
+        public IReadOnlyList<Alert> GetHistory() => _db.Alerts.AsNoTracking().ToList().AsReadOnly();
 
         public void LoadHistory(IEnumerable<Alert> alerts)
         {

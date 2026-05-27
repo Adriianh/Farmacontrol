@@ -7,15 +7,17 @@ namespace Farmacontrol.Services
     public class SalesManager
     {
         private readonly AppDbContext _db;
+        private readonly AuditService _audit;
 
-        public SalesManager(AppDbContext db)
+        public SalesManager(AppDbContext db, AuditService audit)
         {
             _db = db;
+            _audit = audit;
         }
 
         public int GetSalesCount() => _db.Sales.Any() ? _db.Sales.Max(s => s.Code) : 0;
 
-        public IReadOnlyList<Sale> GetAllSales() => _db.Sales.Include(s => s.Details).ToList().AsReadOnly();
+        public IReadOnlyList<Sale> GetAllSales() => _db.Sales.AsNoTracking().Include(s => s.Details).ToList().AsReadOnly();
 
         public void RegisterSale(Sale sale)
         {
@@ -39,6 +41,7 @@ namespace Farmacontrol.Services
                 
                 _db.SaveChanges();
                 transaction.Commit();
+                _audit.Log("Registrar Venta", $"Venta #{sale.Code} registrada con éxito. Total: Q{sale.Total:F2}");
             }
             catch (System.Exception)
             {

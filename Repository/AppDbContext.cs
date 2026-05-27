@@ -13,6 +13,7 @@ namespace Farmacontrol.Repository
         public DbSet<Supplier> Suppliers { get; set; }
         public DbSet<Alert> Alerts { get; set; }
         public DbSet<SaleDetail> SaleDetails { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -43,7 +44,7 @@ namespace Farmacontrol.Repository
                     .HasValue<Supplement>("Suplemento")
                     .HasValue<Supply>("Suministro");
                     
-                
+                entity.HasIndex(e => e.Name);
             });
 
             modelBuilder.Entity<User>(entity =>
@@ -74,6 +75,7 @@ namespace Farmacontrol.Repository
             modelBuilder.Entity<Supplier>(entity =>
             {
                 entity.HasKey(e => e.Code);
+                entity.HasIndex(e => e.Name);
             });
 
             modelBuilder.Entity<Alert>(entity =>

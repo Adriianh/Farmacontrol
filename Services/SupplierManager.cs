@@ -1,21 +1,25 @@
 using Farmacontrol.Model;
 using Farmacontrol.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Services
 {
     public class SupplierManager
     {
         private readonly AppDbContext _db;
+        private readonly AuditService _audit;
 
-        public SupplierManager(AppDbContext db)
+        public SupplierManager(AppDbContext db, AuditService audit)
         {
             _db = db;
+            _audit = audit;
         }
         
         public void AddSupplier(Supplier supplier)
         {
             _db.Suppliers.Add(supplier);
             _db.SaveChanges();
+            _audit.Log("Agregar Proveedor", $"Se agregó el proveedor '{supplier.Name}' (Código: {supplier.Code}).");
         }
         
         public void RemoveSupplier(string code)
@@ -25,18 +29,19 @@ namespace Farmacontrol.Services
             {
                 _db.Suppliers.Remove(supplier);
                 _db.SaveChanges();
+                _audit.Log("Eliminar Proveedor", $"Se eliminó el proveedor '{supplier.Name}' (Código: {code}).");
             }
         }
 
         public Supplier? SearchSupplier(string query) =>
-            _db.Suppliers.FirstOrDefault(supplier =>
+            _db.Suppliers.AsNoTracking().FirstOrDefault(supplier =>
                 supplier.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
                 supplier.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
             );
 
         public void GetAllSuppliers()
         {
-            var suppliers = _db.Suppliers.ToList();
+            var suppliers = _db.Suppliers.AsNoTracking().ToList();
             if (suppliers.Count == 0)
             {
                 Console.WriteLine("No suppliers found.");
@@ -52,7 +57,7 @@ namespace Farmacontrol.Services
 
         public void GenerateAllOrders(List<Product> products)
         {
-            var suppliers = _db.Suppliers.ToList();
+            var suppliers = _db.Suppliers.AsNoTracking().ToList();
             if (suppliers.Count == 0)
             {
                 Console.WriteLine("No suppliers found.");
@@ -77,6 +82,6 @@ namespace Farmacontrol.Services
                 Console.WriteLine("No hay pedidos pendientes.");
         }
         
-        public IReadOnlyList<Supplier> GetSuppliers() => _db.Suppliers.ToList().AsReadOnly();
+        public IReadOnlyList<Supplier> GetSuppliers() => _db.Suppliers.AsNoTracking().ToList().AsReadOnly();
     }
 }
