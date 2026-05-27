@@ -1,3 +1,4 @@
+using Farmacontrol.Exception;
 using Farmacontrol.Model;
 using Farmacontrol.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -126,12 +127,12 @@ namespace Farmacontrol.Services.Persistence
                 
                 db.SaveChanges();
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                throw new InvalidOperationException("No se pudieron guardar los usuarios.", ex);
+                throw new PersistenceOperationException("No se pudieron guardar los usuarios en la base de datos.", ex);
             }
         }
-        
+
         public void SaveSuppliers(List<Supplier> suppliers)
         {
             using var db = new AppDbContext();

@@ -1,3 +1,5 @@
+using Farmacontrol.Exception;
+
 namespace Farmacontrol.Model
 {
     public abstract class Product
@@ -23,9 +25,12 @@ namespace Farmacontrol.Model
             return Stock < MinimumStock;
         }
 
-        public void UpdateStock(int stock)
+        public void UpdateStock(int quantity)
         {
-            Stock = stock;
+            if (Stock + quantity < 0)
+                throw new InsufficientStockException(Name, Math.Abs(quantity), Stock);
+                
+            Stock += quantity;
         }
 
         public void ShowInformation()

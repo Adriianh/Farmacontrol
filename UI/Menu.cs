@@ -4,6 +4,7 @@ using Farmacontrol.Services.Persistence;
 using Farmacontrol.UI.Component;
 using Farmacontrol.UI.Helper;
 using Farmacontrol.UI.View;
+using Farmacontrol.Exception;
 
 namespace Farmacontrol.UI
 {
@@ -68,7 +69,18 @@ namespace Farmacontrol.UI
 
                 if (option == "0")
                 {
-                    _appDataService.Save(_state);
+                    try
+                    {
+                        _appDataService.Save(_state);
+                    }
+                    catch (PersistenceOperationException ex)
+                    {
+                        Console.WriteLine($"\n[ERROR CRÍTICO] {ex.Message}");
+                        if (ex.InnerException != null)
+                            Console.WriteLine($"Detalle: {ex.InnerException.Message}");
+                        ConsoleHelper.Pause();
+                    }
+                    
                     running = false;
                     continue;
                 }

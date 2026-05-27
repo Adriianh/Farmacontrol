@@ -1,6 +1,7 @@
 using Farmacontrol.Services;
 using Farmacontrol.Model;
 using Farmacontrol.UI.Helper;
+using Farmacontrol.Exception;
 
 namespace Farmacontrol.UI.View
 {
@@ -79,7 +80,7 @@ namespace Farmacontrol.UI.View
                     Console.WriteLine("Producto agregado.");
                     Console.WriteLine($"Stock restante: {product.Stock}");
                 }
-                catch (InvalidOperationException ex)
+                catch (InsufficientStockException ex)
                 {
                     Console.WriteLine($"Error: {ex.Message}");
                 }
