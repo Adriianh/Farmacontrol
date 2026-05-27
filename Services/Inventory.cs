@@ -54,11 +54,11 @@ namespace Farmacontrol.Services
         
         public void ListProducts()
         {
-            var products = _db.Products.AsNoTracking().Include(p => p.Suppliers).ToList();
+            var products = GetProducts;
             foreach (var product in products)
             {
                 product.ShowInformation();
-                Console.WriteLine("----------");
+                Console.WriteLine("-------------------");
             }
         }
 
@@ -101,6 +101,23 @@ namespace Farmacontrol.Services
                 return true;
             }
             return false;
+        }
+
+        public void RegisterPurchase(Purchase purchase)
+        {
+            _db.Purchases.Add(purchase);
+            
+            foreach(var detail in purchase.Details)
+            {
+                var product = _db.Products.Find(detail.ProductCode);
+                if (product != null)
+                {
+                    product.UpdateStock(detail.Quantity);
+                }
+            }
+            
+            _db.SaveChanges();
+            _audit.Log("Registrar Ingreso", $"Factura {purchase.InvoiceNumber} del proveedor {purchase.SupplierCode} registrada por Q{purchase.TotalCost:F2}");
         }
     }
 }

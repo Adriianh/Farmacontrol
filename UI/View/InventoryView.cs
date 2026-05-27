@@ -16,6 +16,7 @@ namespace Farmacontrol.UI.View
             Console.WriteLine("4. Agregar suministro");
             Console.WriteLine("5. Mostrar todo el inventario");
             Console.WriteLine("6. Asociar proveedor a producto existente");
+            Console.WriteLine("7. Registrar ingreso (Compras)");
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
@@ -33,7 +34,69 @@ namespace Farmacontrol.UI.View
                     ConsoleHelper.Pause();
                     break;
                 case "6": AssociateSupplierToProduct(); break;
+                case "7": RegisterPurchase(); break;
             }
+        }
+
+        private void RegisterPurchase()
+        {
+            ConsoleHelper.ShowTitle("Registrar Ingreso (Compras)");
+            
+            string supplierCode = ConsoleHelper.ReadText("Código del proveedor (o 'fin' para cancelar): ");
+            if (supplierCode.ToLower() == "fin") return;
+            
+            var supplier = supplierManager.SearchSupplier(supplierCode);
+            if (supplier == null)
+            {
+                Console.WriteLine("Proveedor no encontrado.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            string invoice = ConsoleHelper.ReadText("Número de Factura: ");
+            var purchase = new Purchase(supplierCode, invoice);
+            
+            bool adding = true;
+            while(adding)
+            {
+                ConsoleHelper.ShowTitle($"Compra de {supplier.Name} - {invoice}");
+                string productCode = ConsoleHelper.ReadText("Código de producto ingresado (o 'fin' para terminar, 'nuevo' para crear uno): ");
+                
+                if (productCode.ToLower() == "fin")
+                {
+                    adding = false;
+                    continue;
+                }
+
+                if (productCode.ToLower() == "nuevo")
+                {
+                    Console.WriteLine("Por favor regístrelo usando el menú principal de inventario (1-4).");
+                    ConsoleHelper.Pause();
+                    continue;
+                }
+
+                var product = inventory.SearchProduct(productCode);
+                if (product == null)
+                {
+                    Console.WriteLine("Producto no encontrado en inventario.");
+                    continue;
+                }
+
+                string lotCode = ConsoleHelper.ReadText("Código de Lote: ");
+                int quantity = ConsoleHelper.ReadInt("Cantidad ingresada: ");
+                decimal unitCost = ConsoleHelper.ReadDecimal("Costo Unitario: Q");
+                DateTime expDate = ConsoleHelper.ReadDate("Fecha de expiración (dd/MM/yyyy): ");
+
+                purchase.AddDetail(product, lotCode, quantity, unitCost, expDate);
+                Console.WriteLine("Producto agregado al ingreso!");
+            }
+
+            if (purchase.Details.Any())
+            {
+                inventory.RegisterPurchase(purchase);
+                Console.WriteLine($"\nIngreso registrado exitosamente. Total: Q{purchase.TotalCost:F2}");
+            }
+            ConsoleHelper.Pause();
         }
 
         private void AddMedicine()
@@ -61,7 +124,7 @@ namespace Farmacontrol.UI.View
                 Presentation = ReadOptionalField("Presentación (ej. Caja con 20 tabletas)"),
                 ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
                 RequiresPrescription = ConsoleHelper.Confirm("¿Requiere receta médica?"),
-                IsControlled = ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica)?"),
+                IsControlled = ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica y registro)?"),
                 Suppliers = suppliers
             };
             inventory.AddProduct(medicine);
