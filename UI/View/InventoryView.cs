@@ -1,5 +1,6 @@
-using Farmacontrol.Services;
+using Farmacontrol.Model;
 using Farmacontrol.Model.ProductEntity;
+using Farmacontrol.Services;
 using Farmacontrol.UI.Helper;
 
 namespace Farmacontrol.UI.View
@@ -14,6 +15,7 @@ namespace Farmacontrol.UI.View
             Console.WriteLine("3. Agregar suplemento");
             Console.WriteLine("4. Agregar suministro");
             Console.WriteLine("5. Mostrar todo el inventario");
+            Console.WriteLine("6. Asociar proveedor a producto existente");
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
@@ -30,14 +32,14 @@ namespace Farmacontrol.UI.View
                         inventory.ListProducts();
                     ConsoleHelper.Pause();
                     break;
+                case "6": AssociateSupplierToProduct(); break;
             }
         }
 
         private void AddMedicine()
         {
             ConsoleHelper.ShowTitle("Agregar Medicamento");
-            var supplierCode = GetSupplierCodeOrReturn();
-            if (supplierCode == null) return;
+            var suppliers = GetSuppliersInteractive();
 
             string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
@@ -48,13 +50,19 @@ namespace Farmacontrol.UI.View
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: "),
+                Price = ReadCommonProductDecimal("Precio: Q"),
                 Stock = ReadCommonProductInt("Stock inicial: "),
                 MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Barcode = ReadOptionalField("Código de barras"),
+                Location = ReadOptionalField("Ubicación en estantería"),
+                Laboratory = ReadOptionalField("Laboratorio fabricante"),
                 ActivePrinciple = ConsoleHelper.ReadText("Principio activo: "),
+                Concentration = ReadOptionalField("Concentración (ej. 500 mg)"),
+                Presentation = ReadOptionalField("Presentación (ej. Caja con 20 tabletas)"),
                 ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
-                RequiresPrescription = ConsoleHelper.Confirm("¿Requiere receta?"),
-                SupplierCode = supplierCode
+                RequiresPrescription = ConsoleHelper.Confirm("¿Requiere receta médica?"),
+                IsControlled = ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica)?"),
+                Suppliers = suppliers
             };
             inventory.AddProduct(medicine);
             Console.WriteLine("Medicamento agregado correctamente.");
@@ -64,8 +72,7 @@ namespace Farmacontrol.UI.View
         private void AddCosmetic()
         {
             ConsoleHelper.ShowTitle("Agregar Producto de Belleza");
-            var supplierCode = GetSupplierCodeOrReturn();
-            if (supplierCode == null) return;
+            var suppliers = GetSuppliersInteractive();
 
             string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
@@ -76,13 +83,18 @@ namespace Farmacontrol.UI.View
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: "),
+                Price = ReadCommonProductDecimal("Precio: Q"),
                 Stock = ReadCommonProductInt("Stock inicial: "),
                 MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Barcode = ReadOptionalField("Código de barras"),
+                Location = ReadOptionalField("Ubicación en estantería"),
+                Laboratory = ReadOptionalField("Laboratorio fabricante"),
                 Brand = ConsoleHelper.ReadText("Marca: "),
                 Type = ConsoleHelper.ReadText("Tipo (shampoo, crema, etc.): "),
+                Presentation = ReadOptionalField("Presentación (ej. Frasco 250 ml)"),
+                Hypoallergenic = ConsoleHelper.Confirm("¿Es hipoalergénico?"),
                 ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
-                SupplierCode = supplierCode
+                Suppliers = suppliers
             };
             inventory.AddProduct(cosmetic);
             Console.WriteLine("Producto de belleza agregado correctamente.");
@@ -92,8 +104,7 @@ namespace Farmacontrol.UI.View
         private void AddSupplement()
         {
             ConsoleHelper.ShowTitle("Agregar Suplemento");
-            var supplierCode = GetSupplierCodeOrReturn();
-            if (supplierCode == null) return;
+            var suppliers = GetSuppliersInteractive();
 
             string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
@@ -104,14 +115,19 @@ namespace Farmacontrol.UI.View
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: "),
+                Price = ReadCommonProductDecimal("Precio: Q"),
                 Stock = ReadCommonProductInt("Stock inicial: "),
                 MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Barcode = ReadOptionalField("Código de barras"),
+                Location = ReadOptionalField("Ubicación en estantería"),
+                Laboratory = ReadOptionalField("Laboratorio fabricante"),
                 ActivePrinciple = ConsoleHelper.ReadText("Principio activo: "),
                 Type = ConsoleHelper.ReadText("Tipo: "),
                 Format = GetSupplementFormat(),
+                Concentration = ReadOptionalField("Concentración (ej. 1000 UI)"),
+                RecommendedDosage = ReadOptionalField("Dosis recomendada (ej. 1 cápsula al día)"),
                 ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
-                SupplierCode = supplierCode
+                Suppliers = suppliers
             };
             inventory.AddProduct(supplement);
             Console.WriteLine("Suplemento agregado correctamente.");
@@ -141,8 +157,7 @@ namespace Farmacontrol.UI.View
         private void AddSupply()
         {
             ConsoleHelper.ShowTitle("Agregar Suministro");
-            var supplierCode = GetSupplierCodeOrReturn();
-            if (supplierCode == null) return;
+            var suppliers = GetSuppliersInteractive();
 
             string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
@@ -153,32 +168,89 @@ namespace Farmacontrol.UI.View
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: "),
+                Price = ReadCommonProductDecimal("Precio: Q"),
                 Stock = ReadCommonProductInt("Stock inicial: "),
                 MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Barcode = ReadOptionalField("Código de barras"),
+                Location = ReadOptionalField("Ubicación en estantería"),
+                Laboratory = ReadOptionalField("Laboratorio fabricante"),
                 Brand = ConsoleHelper.ReadText("Marca: "),
                 Type = ConsoleHelper.ReadText("Tipo: "),
-                Size = ConsoleHelper.ReadText("Tamaño (opcional, enter para omitir): "),
-                Material = ConsoleHelper.ReadText("Material (opcional, enter para omitir): "),
+                Size = ReadOptionalField("Tamaño"),
+                Material = ReadOptionalField("Material"),
+                IsSterile = ConsoleHelper.Confirm("¿Es estéril (libre de bacterias)?"),
                 ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
-                SupplierCode = supplierCode
+                Suppliers = suppliers
             };
             inventory.AddProduct(supply);
             Console.WriteLine("Suministro agregado correctamente.");
             ConsoleHelper.Pause();
         }
 
-        private string? GetSupplierCodeOrReturn()
+        private List<Supplier> GetSuppliersInteractive()
         {
-            string supplierCode = ConsoleHelper.ReadText("Código de proveedor: ");
-            if (supplierManager.SearchSupplier(supplierCode) == null)
+            var selectedSuppliers = new List<Supplier>();
+            while (true)
+            {
+                string supplierCode = ConsoleHelper.ReadText("Código de proveedor (o presione Enter/escriba 'fin' para terminar): ");
+                if (string.IsNullOrWhiteSpace(supplierCode) || supplierCode.ToLower() == "fin")
+                {
+                    break;
+                }
+
+                var supplier = supplierManager.SearchSupplier(supplierCode);
+                if (supplier == null)
+                {
+                    Console.WriteLine("[Error] Proveedor no encontrado. Intente de nuevo.");
+                }
+                else
+                {
+                    if (selectedSuppliers.Any(s => s.Code == supplier.Code))
+                    {
+                        Console.WriteLine("Este proveedor ya ha sido agregado.");
+                    }
+                    else
+                    {
+                        selectedSuppliers.Add(supplier);
+                        Console.WriteLine($"[Ok] Proveedor '{supplier.Name}' asociado.");
+                    }
+                }
+            }
+            return selectedSuppliers;
+        }
+
+        private void AssociateSupplierToProduct()
+        {
+            ConsoleHelper.ShowTitle("Asociar Proveedor a Producto");
+            string productCode = ConsoleHelper.ReadText("Código del producto: ");
+            var product = inventory.SearchProduct(productCode);
+            if (product == null)
+            {
+                Console.WriteLine("Producto no encontrado.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            string supplierCode = ConsoleHelper.ReadText("Código del proveedor a asociar: ");
+            var supplier = supplierManager.SearchSupplier(supplierCode);
+            if (supplier == null)
             {
                 Console.WriteLine("Proveedor no encontrado.");
                 ConsoleHelper.Pause();
-                return null;
+                return;
             }
 
-            return supplierCode;
+            bool success = inventory.AssociateSupplier(productCode, supplierCode);
+            Console.WriteLine(success
+                ? $"[Éxito] Proveedor '{supplier.Name}' asociado correctamente al producto '{product.Name}'."
+                : "El proveedor ya estaba asociado a este producto o ocurrió un error.");
+            ConsoleHelper.Pause();
+        }
+
+        private string? ReadOptionalField(string fieldName)
+        {
+            string value = ConsoleHelper.ReadText($"{fieldName} (opcional, enter para omitir): ");
+            return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
         private string ReadCommonProductField(string prompt) => ConsoleHelper.ReadText(prompt);
