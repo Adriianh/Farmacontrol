@@ -14,14 +14,21 @@ namespace Farmacontrol.Repository
         public DbSet<Alert> Alerts { get; set; }
         public DbSet<SaleDetail> SaleDetails { get; set; }
 
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
+
         public AppDbContext()
         {
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var dbPath = Path.Combine(AppContext.BaseDirectory, "farmacontrol.db");
-            optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            if (!optionsBuilder.IsConfigured)
+            {
+                var dbPath = Path.Combine(AppContext.BaseDirectory, "farmacontrol.db");
+                optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
