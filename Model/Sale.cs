@@ -1,21 +1,22 @@
 namespace Farmacontrol.Model
 {
-    public class Sale(int code)
+    public class Sale
     {
-        private List<SaleDetail> _details = new();
+        private readonly List<SaleDetail> _details = new();
         
-        public int Code { get; set; } = code;
+        public int Code { get; set; }
         public DateTime Date { get; set; } = DateTime.Now;
         public decimal Total { get; set; }
 
+        public Sale(int code)
+        {
+            Code = code;
+        }
+
         public IReadOnlyList<SaleDetail> GetDetails => _details.AsReadOnly();
 
-        public List<SaleDetail> Details
-        {
-            get => _details;
-            private set => _details = value;
-        }
-        
+        public List<SaleDetail> Details => _details;
+
         public void AddDetail(Product product, int quantity)
         {
             product.UpdateStock(-quantity);

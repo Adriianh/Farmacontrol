@@ -16,7 +16,7 @@ namespace Farmacontrol.Model
             UnitPrice = product.Price;
             Subtotal = CalculateSubtotal();
         }
-        
+
         private decimal CalculateSubtotal() => Quantity * UnitPrice;
         
         public void ShowDetails() =>

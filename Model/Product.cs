@@ -2,45 +2,21 @@ namespace Farmacontrol.Model
 {
     public abstract class Product
     {
-        private string _name;
-        private string _code;
-        private decimal _price;
-        private int _stock;
-        private int _minimumStock;
+        public string SupplierCode { get; init; }
+
+        public string Name { get; init; }
+
+        public string Code { get; init; }
+
+        public decimal Price { get; init; }
+
+        public int Stock { get; set; }
+
+        public int MinimumStock { get; init; }
         
-        public string SupplierCode { get; set; }
-
-        public string Name
-        {
-            get => _name;
-            set => _name = value;
-        }
-
-        public string Code
-        {
-            get => _code;
-            set => _code = value;
-        }
-
-        public decimal Price
-        {
-            get => _price;
-            set => _price = value;
-        }
-
-        public int Stock
-        {
-            get => _stock;
-            set => _stock = value;
-        }
-
-        public int MinimumStock
-        {
-            get => _minimumStock;
-            set => _minimumStock = value;
-        }
 
         public abstract string GetDescription();
+        
 
         public bool IsStockLow()
         {

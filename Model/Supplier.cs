@@ -1,12 +1,21 @@
 namespace Farmacontrol.Model
 {
-    public class Supplier(string code, string name, string phoneNumber, string email, int leadTimeDays)
+    public class Supplier
     {
-        public string Code { get; set; } = code;
-        public string Name { get; set; } = name;
-        public string PhoneNumber { get; set; } = phoneNumber;
-        public string Email { get; set; } = email;
-        public int LeadTimeDays { get; set; } = leadTimeDays;
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string PhoneNumber { get; set; }
+        public string Email { get; set; }
+        public int LeadTimeDays { get; set; }
+
+        public Supplier(string code, string name, string phoneNumber, string email, int leadTimeDays)
+        {
+            Code = code;
+            Name = name;
+            PhoneNumber = phoneNumber;
+            Email = email;
+            LeadTimeDays = leadTimeDays;
+        }
 
         public void ShowInformation()
         {
