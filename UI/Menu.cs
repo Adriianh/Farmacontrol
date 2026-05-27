@@ -22,6 +22,30 @@ namespace Farmacontrol.UI
 
         public void Start()
         {
+            if (!userManager.IsMasterKeyConfigured)
+            {
+                ConsoleHelper.ShowTitle("Configuración Inicial");
+                Console.WriteLine("Por motivos de seguridad, detectamos que la clave maestra del sistema es defectuosa o no se ha configurado.");
+                Console.WriteLine("Por favor, ingrese una nueva clave maestra. Úsela para crear y borrar usuarios en el futuro.");
+                
+                string newKey;
+                while (true)
+                {
+                    Console.Write("\nNueva clave maestra: ");
+                    newKey = ConsoleHelper.ReadPassword();
+                    if (string.IsNullOrWhiteSpace(newKey) || newKey.Contains(" "))
+                    {
+                        Console.WriteLine("La clave no puede estar en blanco o contener espacios.");
+                        continue;
+                    }
+                    break;
+                }
+
+                userManager.SetMasterKey(newKey);
+                Console.WriteLine("\n[Ok] Clave Maestra configurada exitosamente.");
+                ConsoleHelper.Pause();
+            }
+
             _actualUser = new LoginComponent(userManager).Login();
 
             if (_actualUser == null)

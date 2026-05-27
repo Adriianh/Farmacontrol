@@ -10,15 +10,40 @@ namespace Farmacontrol.Services
     public class UserManager
     {
         private readonly AppDbContext _db;
-        private readonly string _masterKey;
+        private string _masterKey;
         private readonly AuditService _audit;
+        private readonly IConfiguration _configuration;
 
         public UserManager(AppDbContext db, IConfiguration configuration, AuditService audit)
         {
             _db = db;
-            _masterKey = configuration["Security:MasterKey"] ?? "ef92b778bafe771207a9974a1257addb1a13c195";
+            _configuration = configuration;
+            _masterKey = configuration["Security:MasterKey"] ?? string.Empty;
             _audit = audit;
             EnsureAdminUser();
+        }
+
+        public bool IsMasterKeyConfigured => !string.IsNullOrEmpty(_masterKey) && _masterKey.StartsWith("$2");
+
+        public void SetMasterKey(string newPassword)
+        {
+            _masterKey = Hash.Hashing(newPassword);
+            
+            try 
+            {
+                string path = "appsettings.json";
+                if (File.Exists(path))
+                {
+                    string json = File.ReadAllText(path);
+                    var pattern = @"(""MasterKey""\s*:\s*"")[^""]*("")";
+                    json = System.Text.RegularExpressions.Regex.Replace(json, pattern, $"${{1}}{_masterKey}${{2}}");
+                    File.WriteAllText(path, json);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine($"Advertencia: No se pudo guardar la clave maestra permanentemente en appsettings.json: {ex.Message}");
+            }
         }
 
         private void EnsureAdminUser()
