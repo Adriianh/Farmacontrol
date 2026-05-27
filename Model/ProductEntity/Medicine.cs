@@ -1,3 +1,4 @@
+using System;
 using Farmacontrol.Interface;
 
 namespace Farmacontrol.Model.ProductEntity
@@ -5,16 +6,26 @@ namespace Farmacontrol.Model.ProductEntity
     public class Medicine : Product, IAlertable, IExpirable
     {
         public string ProductType => "Medicamento";
-        public string ActivePrinciple  { get; set; }
+        public string ActivePrinciple { get; set; } = string.Empty;
         public DateTime ExpirationDate { get; set; }
         public bool RequiresPrescription { get; set; }
-    
+
+        // Nuevos atributos específicos de medicamentos
+        public string? Concentration { get; set; }
+        public string? Presentation { get; set; }
+        public bool IsControlled { get; set; }
+
         public bool IsExpired() => ExpirationDate < DateTime.Today;
 
         public int ExpiresIn() => (ExpirationDate - DateTime.Today).Days;
-    
+
         public override string GetDescription() =>
-            $"Principio Activo: {ActivePrinciple}, Fecha de Expiración: {ExpirationDate.ToShortDateString()}, Requiere Receta: {RequiresPrescription}";
+            $"Principio Activo: {ActivePrinciple}" +
+            $"{(Concentration != null ? $", Concentración: {Concentration}" : "")}" +
+            $"{(Presentation != null ? $", Presentación: {Presentation}" : "")}" +
+            $", Fecha de Expiración: {ExpirationDate.ToShortDateString()}" +
+            $", Requiere Receta: {RequiresPrescription}" +
+            $", Medicamento Controlado: {IsControlled}";
 
         public void VerifyAlert()
         {

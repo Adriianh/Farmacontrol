@@ -1,3 +1,4 @@
+using System;
 using Farmacontrol.Interface;
 
 namespace Farmacontrol.Model.ProductEntity
@@ -5,16 +6,23 @@ namespace Farmacontrol.Model.ProductEntity
     public class Cosmetic : Product, IAlertable, IExpirable
     {
         public string ProductType => "Cosmetico";
-        public string Brand { get; set; }
-        public string Type { get; set; }
+        public string Brand { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public DateTime ExpirationDate { get; set; }
-        
+
+        // Nuevos atributos específicos de cosméticos
+        public string? Presentation { get; set; }
+        public bool Hypoallergenic { get; set; }
+
         public bool IsExpired() => ExpirationDate < DateTime.Today;
 
         public int ExpiresIn() => (ExpirationDate - DateTime.Today).Days;
-        
+
         public override string GetDescription() =>
-            $"Marca: {Brand}, Tipo: {Type}, Fecha de Expiración: {ExpirationDate}";
+            $"Marca: {Brand}, Tipo: {Type}" +
+            $"{(Presentation != null ? $", Presentación: {Presentation}" : "")}" +
+            $", Hipoalergénico: {Hypoallergenic}" +
+            $", Fecha de Expiración: {ExpirationDate.ToShortDateString()}";
 
         public void VerifyAlert()
         {

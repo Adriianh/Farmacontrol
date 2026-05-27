@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using Farmacontrol.Interface;
 using Farmacontrol.Util;
@@ -7,17 +8,24 @@ namespace Farmacontrol.Model.ProductEntity
     public class Supplement : Product, IAlertable, IExpirable
     {
         public string ProductType => "Suplemento";
-        public string ActivePrinciple { get; set; }
-        public string Type { get; set; }
+        public string ActivePrinciple { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public SupplementFormat Format { get; set; }
         public DateTime ExpirationDate { get; set; }
+
+        // Nuevos atributos específicos de suplementos
+        public string? Concentration { get; set; }
+        public string? RecommendedDosage { get; set; }
 
         public bool IsExpired() => ExpirationDate < DateTime.Today;
 
         public int ExpiresIn() => (ExpirationDate - DateTime.Today).Days;
-        
+
         public override string GetDescription() =>
-            $"Principio Activo: {ActivePrinciple}, Tipo: {Type}, Formato: {Format.GetDescription()}";
+            $"Principio Activo: {ActivePrinciple}, Tipo: {Type}, Formato: {Format.GetDescription()}" +
+            $"{(Concentration != null ? $", Concentración: {Concentration}" : "")}" +
+            $"{(RecommendedDosage != null ? $", Dosis Recomendada: {RecommendedDosage}" : "")}" +
+            $", Fecha de Expiración: {ExpirationDate.ToShortDateString()}";
 
         public void VerifyAlert()
         {
@@ -29,18 +37,4 @@ namespace Farmacontrol.Model.ProductEntity
                 Console.WriteLine($"ALERTA: {Name} vence el {ExpirationDate:dd/MM/yyyy}");
         }
     }
-}
-
-public enum SupplementFormat
-{
-    [Description ("Cápsulas")]
-    Capsules,
-    [Description ("Tabletas")]
-    Tablets,
-    [Description ("Polvo")]
-    Powder,
-    [Description ("Líquido")]
-    Liquid,
-    [Description ("Gomitas")]
-    Gummies
 }

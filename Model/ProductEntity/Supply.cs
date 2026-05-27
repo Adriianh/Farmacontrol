@@ -1,3 +1,4 @@
+using System;
 using Farmacontrol.Interface;
 
 namespace Farmacontrol.Model.ProductEntity
@@ -5,19 +6,25 @@ namespace Farmacontrol.Model.ProductEntity
     public class Supply : Product, IAlertable, IExpirable
     {
         public string ProductType => "Suministro";
-        public string Brand { get; set; }
-        public string Type { get; set; }
+        public string Brand { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public string? Size { get; set; }
         public string? Material { get; set; }
         public DateTime ExpirationDate { get; set; }
 
+        // Nuevos atributos específicos de suministros
+        public bool IsSterile { get; set; }
+
         public bool IsExpired() => ExpirationDate < DateTime.Today;
 
         public int ExpiresIn() => (ExpirationDate - DateTime.Today).Days;
-        
+
         public override string GetDescription() =>
-            // ?????????????
-            $"Marca: {Brand}, Tipo: {Type} {(Size != null ? $", Tipo: {Size}" : "")} {(Material != null ? $", Material: {Material}" : "")}, Fecha de Expiración: {ExpirationDate:dd/MM/yyyy}";
+            $"Marca: {Brand}, Tipo: {Type}" +
+            $"{(Size != null ? $", Tamaño: {Size}" : "")}" +
+            $"{(Material != null ? $", Material: {Material}" : "")}" +
+            $", Estéril: {IsSterile}" +
+            $", Fecha de Expiración: {ExpirationDate:dd/MM/yyyy}";
 
         public void VerifyAlert()
         {
