@@ -18,14 +18,17 @@ namespace Farmacontrol.UI.View
             if (option.ToLower() == "fin") return;
             switch (option)
             {
-                case "1": CreateUser(); break;
+                case "1": CreateUser(currentUser); break;
                 case "2": RemoveUser(currentUser); break;
                 case "3": ListUsers(); break;
             }
         }
 
-        private bool VerifyMasterKey()
+        private bool VerifyMasterKey(User currentUser)
         {
+            if (currentUser is Administrator)
+                return true;
+
             Console.Write("Ingrese la clave maestra (o 'fin' para cancelar): ");
             string input = ConsoleHelper.ReadPassword();
             if (input.ToLower() == "fin") return false;
@@ -37,11 +40,11 @@ namespace Farmacontrol.UI.View
             return false;
         }
 
-        private void CreateUser()
+        private void CreateUser(User currentUser)
         {
             ConsoleHelper.ShowTitle("Crear Usuario");
 
-            if (!VerifyMasterKey())
+            if (!VerifyMasterKey(currentUser))
                 return;
 
             string name = ConsoleHelper.ReadText("Nombre completo (o 'fin' para cancelar): ");
@@ -99,7 +102,7 @@ namespace Farmacontrol.UI.View
         {
             ConsoleHelper.ShowTitle("Eliminar Usuario");
 
-            if (!VerifyMasterKey())
+            if (!VerifyMasterKey(currentUser))
                 return;
 
             ListUsers(false);

@@ -29,14 +29,17 @@ namespace Farmacontrol.Services
         {
             _masterKey = Hash.Hashing(newPassword);
             
+            // Reflejarlo en el archivo appsettings.json
             try 
             {
                 string path = "appsettings.json";
                 if (File.Exists(path))
                 {
                     string json = File.ReadAllText(path);
+                    // Para C# Regex.Replace, un '$' literal en el reemplazo debe escaparse como '$$'
+                    string replacement = _masterKey.Replace("$", "$$");
                     var pattern = @"(""MasterKey""\s*:\s*"")[^""]*("")";
-                    json = System.Text.RegularExpressions.Regex.Replace(json, pattern, $"${{1}}{_masterKey}${{2}}");
+                    json = System.Text.RegularExpressions.Regex.Replace(json, pattern, $"${{1}}{replacement}${{2}}");
                     File.WriteAllText(path, json);
                 }
             }
