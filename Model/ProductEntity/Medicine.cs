@@ -1,4 +1,3 @@
-using System;
 using Farmacontrol.Interface;
 
 namespace Farmacontrol.Model.ProductEntity
@@ -10,7 +9,6 @@ namespace Farmacontrol.Model.ProductEntity
         public DateTime ExpirationDate { get; set; }
         public bool RequiresPrescription { get; set; }
 
-        // Nuevos atributos específicos de medicamentos
         public string? Concentration { get; set; }
         public string? Presentation { get; set; }
         public bool IsControlled { get; set; }
@@ -24,8 +22,8 @@ namespace Farmacontrol.Model.ProductEntity
             $"{(Concentration != null ? $", Concentración: {Concentration}" : "")}" +
             $"{(Presentation != null ? $", Presentación: {Presentation}" : "")}" +
             $", Fecha de Expiración: {ExpirationDate.ToShortDateString()}" +
-            $", Requiere Receta: {RequiresPrescription}" +
-            $", Medicamento Controlado: {IsControlled}";
+            $", Requiere Receta: {(RequiresPrescription ? "Sí" : "No")}" +
+            $", Medicamento Controlado: {(IsControlled ? "Sí" : "No")}";
 
         public void VerifyAlert()
         {

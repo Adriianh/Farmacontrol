@@ -1,4 +1,3 @@
-using System;
 using Farmacontrol.Interface;
 
 namespace Farmacontrol.Model.ProductEntity
@@ -10,7 +9,6 @@ namespace Farmacontrol.Model.ProductEntity
         public string Type { get; set; } = string.Empty;
         public DateTime ExpirationDate { get; set; }
 
-        // Nuevos atributos específicos de cosméticos
         public string? Presentation { get; set; }
         public bool Hypoallergenic { get; set; }
 
@@ -21,7 +19,7 @@ namespace Farmacontrol.Model.ProductEntity
         public override string GetDescription() =>
             $"Marca: {Brand}, Tipo: {Type}" +
             $"{(Presentation != null ? $", Presentación: {Presentation}" : "")}" +
-            $", Hipoalergénico: {Hypoallergenic}" +
+            $", Hipoalergénico: {(Hypoallergenic ? "Sí" : "No")}" +
             $", Fecha de Expiración: {ExpirationDate.ToShortDateString()}";
 
         public void VerifyAlert()

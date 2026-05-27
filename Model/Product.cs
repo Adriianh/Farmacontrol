@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Farmacontrol.Exception;
 
 namespace Farmacontrol.Model
@@ -16,7 +14,6 @@ namespace Farmacontrol.Model
 
         public int MinimumStock { get; set; }
 
-        // Nuevos atributos de farmacia
         public string? Barcode { get; set; }
         public string? Location { get; set; }
         public string? Laboratory { get; set; }
@@ -50,7 +47,7 @@ namespace Farmacontrol.Model
             if (!string.IsNullOrEmpty(Laboratory)) Console.WriteLine($"Laboratorio: {Laboratory}");
             if (Suppliers.Count > 0)
             {
-                var supplierNames = string.Join(", ", System.Linq.Enumerable.Select(Suppliers, s => s.Name));
+                var supplierNames = string.Join(", ", Enumerable.Select(Suppliers, s => s.Name));
                 Console.WriteLine($"Proveedores: {supplierNames}");
             }
             Console.WriteLine(GetDescription());

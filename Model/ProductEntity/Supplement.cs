@@ -13,7 +13,6 @@ namespace Farmacontrol.Model.ProductEntity
         public SupplementFormat Format { get; set; }
         public DateTime ExpirationDate { get; set; }
 
-        // Nuevos atributos específicos de suplementos
         public string? Concentration { get; set; }
         public string? RecommendedDosage { get; set; }
 
