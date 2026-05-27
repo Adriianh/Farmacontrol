@@ -5,10 +5,8 @@ using Farmacontrol.Exception;
 
 namespace Farmacontrol.UI.View
 {
-    public class SalesView(Inventory inventory, List<Sale> sales, int salesCounter)
+    public class SalesView(Inventory inventory, SalesManager salesManager)
     {
-        private int _salesCounter = salesCounter;
-
         public void RegisterSale()
         {
             if (!inventory.GetProducts.Any())
@@ -18,8 +16,8 @@ namespace Farmacontrol.UI.View
                 ConsoleHelper.Pause();
                 return;
             }
-            _salesCounter++;
-            var sale = new Sale(_salesCounter);
+            int salesCounter = salesManager.GetSalesCount() + 1;
+            var sale = new Sale(salesCounter);
             bool adding = true;
             int productsAdded = 0;
 
@@ -96,7 +94,7 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            sales.Add(sale);
+            salesManager.RegisterSale(sale);
             ConsoleHelper.ShowTitle("Resumen de Venta");
             sale.ShowResume();
             ConsoleHelper.Pause();

@@ -5,9 +5,9 @@ using Farmacontrol.UI.Helper;
 
 namespace Farmacontrol.UI.View
 {
-    public class UsersView(UserManager userManager, User currentUser)
+    public class UsersView(UserManager userManager)
     {
-        public void ManageUsers()
+        public void ManageUsers(User currentUser)
         {
             ConsoleHelper.ShowTitle("Gestionar Usuarios");
             Console.WriteLine("1. Crear usuario");
@@ -19,7 +19,7 @@ namespace Farmacontrol.UI.View
             switch (option)
             {
                 case "1": CreateUser(); break;
-                case "2": RemoveUser(); break;
+                case "2": RemoveUser(currentUser); break;
                 case "3": ListUsers(); break;
             }
         }
@@ -95,7 +95,7 @@ namespace Farmacontrol.UI.View
             ConsoleHelper.Pause();
         }
 
-        private void RemoveUser()
+        private void RemoveUser(User currentUser)
         {
             ConsoleHelper.ShowTitle("Eliminar Usuario");
 

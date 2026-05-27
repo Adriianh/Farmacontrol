@@ -1,12 +1,16 @@
 using Farmacontrol.Model;
+using Farmacontrol.Services;
 using Farmacontrol.UI.Helper;
 
 namespace Farmacontrol.UI.View
 {
-    public class ReportsView(Report report)
+    public class ReportsView(SalesManager salesManager)
     {
         public void ShowReportsMenu()
         {
+            var sales = salesManager.GetAllSales().ToList();
+            var report = new Report(sales);
+
             ConsoleHelper.ShowTitle("Reportes");
             Console.WriteLine("1. Ventas del día");
             Console.WriteLine("2. Ventas del mes");
