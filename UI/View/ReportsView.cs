@@ -1,6 +1,7 @@
 using Farmacontrol.Model;
 using Farmacontrol.Services;
 using Farmacontrol.UI.Helper;
+using Farmacontrol.Util;
 
 namespace Farmacontrol.UI.View
 {
@@ -18,26 +19,56 @@ namespace Farmacontrol.UI.View
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
+
+            string content = string.Empty;
+            string reportType = string.Empty;
+
             switch (option)
             {
                 case "1":
                     if (!report.HasSales)
                         Console.WriteLine("No hay ventas registradas.");
                     else
-                        report.GenerateDailySales();
+                    {
+                        content = report.GenerateDailySales();
+                        reportType = "Reporte_Ventas_Diarias";
+                    }
                     break;
                 case "2":
                     if (!report.HasSales)
                         Console.WriteLine("No hay ventas registradas.");
                     else
-                        report.GenerateMonthSales();
+                    {
+                        content = report.GenerateMonthSales();
+                        reportType = "Reporte_Ventas_Mensuales";
+                    }
                     break;
                 case "3":
                     if (!report.HasSales)
                         Console.WriteLine("No hay ventas registradas.");
                     else
-                        report.BestSellingProducts();
+                    {
+                        content = report.BestSellingProducts();
+                        reportType = "Reporte_Productos_Mas_Vendidos";
+                    }
                     break;
+            }
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                Console.WriteLine("\n" + content);
+                if (ConsoleHelper.Confirm("¿Desea exportar este reporte a un archivo de texto?"))
+                {
+                    try
+                    {
+                        string path = ReportExporter.Export(reportType, content);
+                        Console.WriteLine($"\n[Éxito] Reporte exportado correctamente en: {path}");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Console.WriteLine($"\n[Error] No se pudo exportar el reporte: {ex.Message}");
+                    }
+                }
             }
 
             ConsoleHelper.Pause();
