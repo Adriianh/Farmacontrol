@@ -1,160 +1,103 @@
-using System.Text.Json;
 using Farmacontrol.Model;
-using Farmacontrol.Services.Converter;
+using Farmacontrol.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Services.Persistence
 {
     public class Persistence
     {
-        private const string ProductsFile = "products.json";
-        private const string SalesFile = "sales.json";
-        private const string UsersFile = "users.json";
-        private const string SuppliersFile = "suppliers.json";
-        private const string HistoryFile = "history.json";
-
-        private const string DefaultDataFolderName = "Data";
-
-        private readonly string _baseDirectory;
-
-        public string BaseDirectory => _baseDirectory;
-
-        private readonly JsonSerializerOptions _options = new()
-        {
-            WriteIndented = true,
-            Converters = { new ProductConverter() }
-        };
-
-        private readonly JsonSerializerOptions _userOptions = new()
-        {
-            WriteIndented = true,
-            Converters = { new UserConverter() }
-        };
-
-        /// <summary>
-        /// Create a Persistence instance. If dataDirectory is null, a default "Data" folder
-        /// inside the project root directory will be used.
-        /// </summary>
-        /// <param name="dataDirectory">Optional absolute or relative path for data files.</param>
+        private readonly AppDbContext _db;
+        
         public Persistence(string? dataDirectory = null)
         {
+            string baseDirectory;
             if (!string.IsNullOrWhiteSpace(dataDirectory))
             {
-                _baseDirectory = Path.IsPathRooted(dataDirectory)
+                baseDirectory = Path.IsPathRooted(dataDirectory)
                     ? dataDirectory
                     : Path.GetFullPath(Path.Combine(GetProjectRootDirectory(), dataDirectory));
             }
             else
             {
-                _baseDirectory = Path.Combine(GetProjectRootDirectory(), DefaultDataFolderName);
+                baseDirectory = Path.Combine(GetProjectRootDirectory(), "Data");
             }
-
-            Directory.CreateDirectory(_baseDirectory);
+            Directory.CreateDirectory(baseDirectory);
+            _db = new AppDbContext();
+            _db.Database.EnsureCreated();
         }
-
+        
         public void SaveProducts(List<Product> products)
         {
-            string json = JsonSerializer.Serialize(products, _options);
-            File.WriteAllText(GetFilePath(ProductsFile), json);
+            var existing = _db.Products.ToList();
+            var toDelete = existing.Except(products).ToList();
+            _db.Products.RemoveRange(toDelete);
+            var toAdd = products.Except(existing).ToList();
+            _db.Products.AddRange(toAdd);
+            _db.SaveChanges();
         }
-
+        
         public void SaveSales(List<Sale> sales)
         {
-            string json = JsonSerializer.Serialize(sales, _options);
-            File.WriteAllText(GetFilePath(SalesFile), json);
+            var existing = _db.Sales.Include(s => s.Details).ToList();
+            var toDelete = existing.Except(sales).ToList();
+            _db.Sales.RemoveRange(toDelete);
+            var toAdd = sales.Except(existing).ToList();
+            _db.Sales.AddRange(toAdd);
+            _db.SaveChanges();
         }
         
         public void SaveUsers(List<User> users)
         {
             try
             {
-                string json = JsonSerializer.Serialize(users, _userOptions);
-                File.WriteAllText(GetFilePath(UsersFile), json);
+                var existing = _db.Users.ToList();
+                var toDelete = existing.Except(users).ToList();
+                _db.Users.RemoveRange(toDelete);
+                var toAdd = users.Except(existing).ToList();
+                _db.Users.AddRange(toAdd);
+                _db.SaveChanges();
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("No se pudieron guardar los usuarios.", ex);
             }
         }
-
+        
         public void SaveSuppliers(List<Supplier> suppliers)
         {
-            string json = JsonSerializer.Serialize(suppliers, _options);
-            File.WriteAllText(GetFilePath(SuppliersFile), json);
+            var existing = _db.Suppliers.ToList();
+            var toDelete = existing.Except(suppliers).ToList();
+            _db.Suppliers.RemoveRange(toDelete);
+            var toAdd = suppliers.Except(existing).ToList();
+            _db.Suppliers.AddRange(toAdd);
+            _db.SaveChanges();
         }
-
+        
         public void SaveHistory(List<Alert> alerts)
         {
-            string json = JsonSerializer.Serialize(alerts, _options);
-            File.WriteAllText(GetFilePath(HistoryFile), json);
+            var existing = _db.Alerts.ToList();
+            var toDelete = existing.Except(alerts).ToList();
+            _db.Alerts.RemoveRange(toDelete);
+            var toAdd = alerts.Except(existing).ToList();
+            _db.Alerts.AddRange(toAdd);
+            _db.SaveChanges();
         }
-
-        public List<Product> LoadProducts()
-        {
-            var path = GetFilePath(ProductsFile);
-            if (!File.Exists(path))
-                return new List<Product>();
-
-            string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<List<Product>>(json, _options) ?? new List<Product>();
-        }
-
-        public List<Sale> LoadSales()
-        {
-            var path = GetFilePath(SalesFile);
-            if (!File.Exists(path))
-                return new List<Sale>();
-
-            string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<List<Sale>>(json, _options) ?? new List<Sale>();
-        }
-
-        public List<User> LoadUsers()
-        {
-            var path = GetFilePath(UsersFile);
-            if (!File.Exists(path))
-                return new List<User>();
-
-            string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<List<User>>(json, _userOptions) ?? new List<User>();
-        }
-
-        public List<Supplier> LoadSuppliers()
-        {
-            var path = GetFilePath(SuppliersFile);
-            if (!File.Exists(path))
-                return new List<Supplier>();
-
-            string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<List<Supplier>>(json, _options) ?? new List<Supplier>();
-        }
-
-        public List<Alert> LoadHistory()
-        {
-            var path = GetFilePath(HistoryFile);
-            if (!File.Exists(path))
-                return new List<Alert>();
-
-            string json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<List<Alert>>(json, _options) ?? new List<Alert>();
-        }
-
-        private string GetFilePath(string fileName)
-        {
-            return Path.Combine(_baseDirectory, fileName);
-        }
-
+        
+        public List<Product> LoadProducts() => _db.Products.ToList();
+        public List<Sale> LoadSales() => _db.Sales.Include(s => s.Details).ToList();
+        public List<User> LoadUsers() => _db.Users.ToList();
+        public List<Supplier> LoadSuppliers() => _db.Suppliers.ToList();
+        public List<Alert> LoadHistory() => _db.Alerts.ToList();
+        
         private static string GetProjectRootDirectory()
         {
             DirectoryInfo? directory = new(AppContext.BaseDirectory);
-
             while (directory != null)
             {
                 if (directory.GetFiles("*.csproj").Any())
                     return directory.FullName;
-
                 directory = directory.Parent;
             }
-
             return Directory.GetCurrentDirectory();
         }
     }
