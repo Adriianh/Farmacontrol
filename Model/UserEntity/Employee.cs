@@ -12,6 +12,8 @@ namespace Farmacontrol.Model.UserEntity
             "1. Registrar venta",
             "3. Buscar producto",
             "4. Ver alertas",
+            "5. Ver el historial de alertas",
+            "7. Ver medicamentos vencidos",
             "0. Salir"
         ];
     }

@@ -90,6 +90,14 @@ namespace Farmacontrol.UI
                     continue;
                 }
 
+                bool isAllowed = user.GetAllowedActions().Any(a => a.StartsWith(option + "."));
+                if (!isAllowed)
+                {
+                    Console.WriteLine("Opción no permitida para su rol.");
+                    ConsoleHelper.Pause();
+                    continue;
+                }
+
                 if (actions.TryGetValue(option, out var action))
                 {
                     try
