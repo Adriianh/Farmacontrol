@@ -61,7 +61,6 @@ namespace Farmacontrol.Repository
             modelBuilder.Entity<Sale>(entity =>
             {
                 entity.HasKey(e => e.Code);
-                // Allow EF to navigate the private Details list
                 entity.Metadata.FindNavigation(nameof(Sale.Details))?.SetPropertyAccessMode(PropertyAccessMode.Field);
                 entity.HasMany(e => e.Details).WithOne().HasForeignKey("SaleCode").OnDelete(DeleteBehavior.Cascade);
             });
@@ -77,6 +76,10 @@ namespace Farmacontrol.Repository
                 entity.HasKey(e => e.Code);
                 entity.HasIndex(e => e.Name);
             });
+
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Suppliers)
+                .WithMany(s => s.Products);
 
             modelBuilder.Entity<Alert>(entity =>
             {
