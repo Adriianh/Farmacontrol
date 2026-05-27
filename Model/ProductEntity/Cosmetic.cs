@@ -7,7 +7,11 @@ namespace Farmacontrol.Model.ProductEntity
         public string ProductType => "Cosmetico";
         public string Brand { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
-        public DateTime ExpirationDate { get; set; }
+        public DateTime ExpirationDate 
+        {
+            get => Batches.Where(b => b.Quantity > 0).OrderBy(b => b.ExpirationDate).FirstOrDefault()?.ExpirationDate ?? DateTime.MaxValue;
+            set { }
+        }
 
         public string? Presentation { get; set; }
         public bool Hypoallergenic { get; set; }

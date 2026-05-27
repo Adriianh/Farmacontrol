@@ -1,4 +1,5 @@
 using Farmacontrol.Interface;
+using System.Linq;
 
 namespace Farmacontrol.Model.ProductEntity
 {
@@ -9,7 +10,11 @@ namespace Farmacontrol.Model.ProductEntity
         public string Type { get; set; } = string.Empty;
         public string? Size { get; set; }
         public string? Material { get; set; }
-        public DateTime ExpirationDate { get; set; }
+        public DateTime ExpirationDate 
+        {
+            get => Batches.Where(b => b.Quantity > 0).OrderBy(b => b.ExpirationDate).FirstOrDefault()?.ExpirationDate ?? DateTime.MaxValue;
+            set { }
+        }
 
         public bool IsSterile { get; set; }
 

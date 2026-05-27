@@ -18,8 +18,9 @@ namespace Farmacontrol.Model
         public string? Location { get; set; }
         public string? Laboratory { get; set; }
 
-        // Relación muchos a muchos con proveedores
         public ICollection<Supplier> Suppliers { get; set; } = new List<Supplier>();
+
+        public ICollection<Batch> Batches { get; set; } = new List<Batch>();
 
         public abstract string GetDescription();
 
@@ -32,8 +33,48 @@ namespace Farmacontrol.Model
         {
             if (Stock + quantity < 0)
                 throw new InsufficientStockException(Name, Math.Abs(quantity), Stock);
-                
+
             Stock += quantity;
+        }
+
+        public void AddBatch(string lotCode, int quantity, DateTime expirationDate)
+        {
+            var batch = Batches.FirstOrDefault(b => b.LotCode == lotCode);
+            if (batch != null)
+            {
+                batch.Quantity += quantity;
+            }
+            else
+            {
+                Batches.Add(new Batch(Code, lotCode, quantity, expirationDate));
+            }
+
+            Stock += quantity;
+        }
+
+        public void ReduceBatchStock(int quantity)
+        {
+            if (Stock < quantity)
+                throw new InsufficientStockException(Name, quantity, Stock);
+
+            var batchesToReduce = Batches.Where(b => b.Quantity > 0).OrderBy(b => b.ExpirationDate).ToList();
+            int remaining = quantity;
+
+            foreach (var batch in batchesToReduce.TakeWhile(_ => remaining != 0))
+            {
+                if (batch.Quantity >= remaining)
+                {
+                    batch.Quantity -= remaining;
+                    remaining = 0;
+                }
+                else
+                {
+                    remaining -= batch.Quantity;
+                    batch.Quantity = 0;
+                }
+            }
+
+            Stock -= quantity;
         }
 
         public void ShowInformation()
@@ -50,6 +91,7 @@ namespace Farmacontrol.Model
                 var supplierNames = string.Join(", ", Enumerable.Select(Suppliers, s => s.Name));
                 Console.WriteLine($"Proveedores: {supplierNames}");
             }
+
             Console.WriteLine(GetDescription());
         }
     }

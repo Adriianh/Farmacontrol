@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using Farmacontrol.Interface;
+using System.Linq;
 using Farmacontrol.Util;
 
 namespace Farmacontrol.Model.ProductEntity
@@ -11,7 +12,11 @@ namespace Farmacontrol.Model.ProductEntity
         public string ActivePrinciple { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
         public SupplementFormat Format { get; set; }
-        public DateTime ExpirationDate { get; set; }
+        public DateTime ExpirationDate 
+        {
+            get => Batches.Where(b => b.Quantity > 0).OrderBy(b => b.ExpirationDate).FirstOrDefault()?.ExpirationDate ?? DateTime.MaxValue;
+            set { }
+        }
 
         public string? Concentration { get; set; }
         public string? RecommendedDosage { get; set; }

@@ -6,7 +6,11 @@ namespace Farmacontrol.Model.ProductEntity
     {
         public string ProductType => "Medicamento";
         public string ActivePrinciple { get; set; } = string.Empty;
-        public DateTime ExpirationDate { get; set; }
+        public DateTime ExpirationDate 
+        {
+            get => Batches.Where(b => b.Quantity > 0).OrderBy(b => b.ExpirationDate).FirstOrDefault()?.ExpirationDate ?? DateTime.MaxValue;
+            set { }
+        }
         public bool RequiresPrescription { get; set; }
 
         public string? Concentration { get; set; }
