@@ -8,6 +8,8 @@ namespace Farmacontrol.UI
 {
     public class Menu(
         UserManager userManager,
+        UserSession userSession,
+        FileLogger logger,
         InventoryView inventoryView,
         SalesView salesView,
         AlertsView alertsView,
@@ -29,6 +31,7 @@ namespace Farmacontrol.UI
                 return;
             }
 
+            userSession.CurrentUser = _actualUser;
             ShowMainMenu(_actualUser);
         }
 
@@ -63,7 +66,19 @@ namespace Farmacontrol.UI
                 }
 
                 if (actions.TryGetValue(option, out var action))
-                    action();
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        logger.LogError($"Excepción no controlada al ejecutar la opción {option}", ex);
+                        Console.WriteLine($"\n[ERROR] Ocurrió un error inesperado al procesar la solicitud: {ex.Message}");
+                        Console.WriteLine("Los detalles del error se han registrado en 'farmacontrol.log'.");
+                        ConsoleHelper.Pause();
+                    }
+                }
                 else
                 {
                     Console.WriteLine("Opción inválida.");
