@@ -1,10 +1,8 @@
-using System;
-using System.Linq;
-using Farmacontrol.Services;
+using Farmacontrol.Exception;
 using Farmacontrol.Model;
 using Farmacontrol.Model.ProductEntity;
+using Farmacontrol.Services;
 using Farmacontrol.UI.Helper;
-using Farmacontrol.Exception;
 
 namespace Farmacontrol.UI.View
 {
