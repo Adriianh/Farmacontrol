@@ -1,33 +1,42 @@
 using Farmacontrol.Interface;
 using Farmacontrol.Model;
+using Farmacontrol.Repository;
 
 namespace Farmacontrol.Services
 {
     public class Inventory
     {
-        private readonly List<Product> _products = new();
+        private readonly AppDbContext _db;
+
+        public Inventory(AppDbContext db)
+        {
+            _db = db;
+        }
         
-        public IReadOnlyList<Product> GetProducts => _products.AsReadOnly();
+        public IReadOnlyList<Product> GetProducts => _db.Products.ToList().AsReadOnly();
 
         public void AddProduct(Product product)
         {
-            _products.Add(product);
+            _db.Products.Add(product);
+            _db.SaveChanges();
         }
 
         public void RemoveProduct(Product product)
         {
-            _products.Remove(product);
+            _db.Products.Remove(product);
+            _db.SaveChanges();
         }
 
-        public Product? SearchProduct(String query) =>
-            _products.FirstOrDefault(product =>
+        public Product? SearchProduct(string query) =>
+            _db.Products.FirstOrDefault(product =>
                 product.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
                 product.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
             );
         
         public void ListProducts()
         {
-            foreach (var product in _products)
+            var products = _db.Products.ToList();
+            foreach (var product in products)
             {
                 product.ShowInformation();
                 Console.WriteLine("----------");
@@ -36,7 +45,8 @@ namespace Farmacontrol.Services
 
         public void GetAlerts()
         {
-            foreach (var product in _products)
+            var products = _db.Products.ToList();
+            foreach (var product in products)
             {
                 if (product is IAlertable alertable)
                 {
@@ -47,7 +57,8 @@ namespace Farmacontrol.Services
 
         public void GetExpiredProducts()
         {
-            foreach (var product in _products)
+            var products = _db.Products.ToList();
+            foreach (var product in products)
             {
                 if (product is IExpirable expirable && expirable.IsExpired())
                 {

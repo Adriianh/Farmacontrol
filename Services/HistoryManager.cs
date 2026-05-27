@@ -1,11 +1,17 @@
 using Farmacontrol.Interface;
 using Farmacontrol.Model;
+using Farmacontrol.Repository;
 
 namespace Farmacontrol.Services
 {
     public class HistoryManager
     {
-        private readonly List<Alert> _history = new();
+        private readonly AppDbContext _db;
+
+        public HistoryManager(AppDbContext db)
+        {
+            _db = db;
+        }
 
         public void VerifyAlert(List<Product> products)
         {
@@ -33,13 +39,14 @@ namespace Farmacontrol.Services
 
         public void ShowHistory()
         {
-            if (_history.Count == 0)
+            var history = _db.Alerts.ToList();
+            if (history.Count == 0)
             {
                 Console.WriteLine("No hay alertas registradas.");
                 return;
             }
 
-            _history
+            history
                 .OrderByDescending(alert => alert.Date)
                 .ToList()
                 .ForEach(alert => alert.ShowAlert());
@@ -47,7 +54,8 @@ namespace Farmacontrol.Services
 
         public void ShowTodayAlerts()
         {
-            List<Alert> recentAlerts = _history
+            var history = _db.Alerts.ToList();
+            List<Alert> recentAlerts = history
                 .Where(alert => alert.Date.Date == DateTime.Today)
                 .OrderByDescending(alert => alert.Date)
                 .Take(5)
@@ -62,7 +70,7 @@ namespace Farmacontrol.Services
             recentAlerts.ForEach(alert => alert.ShowAlert());
         }
 
-        public IReadOnlyList<Alert> GetHistory() => _history.AsReadOnly();
+        public IReadOnlyList<Alert> GetHistory() => _db.Alerts.ToList().AsReadOnly();
 
         public void LoadHistory(IEnumerable<Alert> alerts)
         {
@@ -72,14 +80,19 @@ namespace Farmacontrol.Services
 
         private void RegisterAlert(Alert alert)
         {
-            bool alreadyRegistered = _history.Any(a =>
+            bool alreadyRegistered = _db.Alerts.Any(a =>
                 a.ProductCode == alert.ProductCode &&
                 a.Type == alert.Type &&
-                a.Date.Date == alert.Date.Date
+                a.Date.Year == alert.Date.Year &&
+                a.Date.Month == alert.Date.Month &&
+                a.Date.Day == alert.Date.Day
             );
 
             if (!alreadyRegistered)
-                _history.Add(alert);
+            {
+                _db.Alerts.Add(alert);
+                _db.SaveChanges();
+            }
         }
     }
 }

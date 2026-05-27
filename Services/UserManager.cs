@@ -1,32 +1,54 @@
 using Farmacontrol.Model;
 using Farmacontrol.Model.UserEntity;
+using Farmacontrol.Repository;
 using Farmacontrol.Util;
 
 namespace Farmacontrol.Services
 {
     public class UserManager
     {
-        private readonly List<User> _users = new();
+        private readonly AppDbContext _db;
         private const string MasterKey = "ef92b778bafe771207a9974a1257addb1a13c195"; // hash de "claveMaestra123"
 
-        public UserManager()
+        public UserManager(AppDbContext db)
         {
-            if (_users.Count == 0)
-                _users.Add(new Administrator("Admin", "admin", "admin123"));
+            _db = db;
+            EnsureAdminUser();
+        }
+
+        private void EnsureAdminUser()
+        {
+            if (!_db.Users.Any())
+            {
+                _db.Users.Add(new Administrator("Admin", "admin", "admin123"));
+                _db.SaveChanges();
+            }
         }
         
         public bool VerifyMasterKey(string password) =>
             Hash.Hashing(password) == MasterKey;
 
         public User? Authenticate(string username, string password) =>
-            _users.FirstOrDefault(user =>
+            _db.Users.FirstOrDefault(user =>
                 user.Username == username && user.Password == Hash.Hashing(password)
             );
         
-        public void AddUser(User user)  => _users.Add(user);
+        public void AddUser(User user)
+        {
+            _db.Users.Add(user);
+            _db.SaveChanges();
+        }
         
-        public void RemoveUser(string username) => _users.RemoveAll(user => user.Username == username);
+        public void RemoveUser(string username)
+        {
+            var user = _db.Users.Find(username);
+            if (user != null)
+            {
+                _db.Users.Remove(user);
+                _db.SaveChanges();
+            }
+        }
         
-        public IReadOnlyList<User> GetAllUsers() => _users.AsReadOnly();
+        public IReadOnlyList<User> GetAllUsers() => _db.Users.ToList().AsReadOnly();
     }
 }

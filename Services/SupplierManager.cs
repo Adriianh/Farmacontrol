@@ -1,30 +1,49 @@
 using Farmacontrol.Model;
+using Farmacontrol.Repository;
 
 namespace Farmacontrol.Services
 {
     public class SupplierManager
     {
-        private readonly List<Supplier> _suppliers = new();
+        private readonly AppDbContext _db;
+
+        public SupplierManager(AppDbContext db)
+        {
+            _db = db;
+        }
         
-        public void AddSupplier(Supplier supplier) =>  _suppliers.Add(supplier);
+        public void AddSupplier(Supplier supplier)
+        {
+            _db.Suppliers.Add(supplier);
+            _db.SaveChanges();
+        }
         
-        public void RemoveSupplier(string code)  =>  _suppliers.RemoveAll(x => x.Code == code);
+        public void RemoveSupplier(string code)
+        {
+            var supplier = _db.Suppliers.Find(code);
+            if (supplier != null)
+            {
+                _db.Suppliers.Remove(supplier);
+                _db.SaveChanges();
+            }
+        }
 
         public Supplier? SearchSupplier(string query) =>
-            _suppliers.FirstOrDefault(supplier =>
+            _db.Suppliers.FirstOrDefault(supplier =>
                 supplier.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
                 supplier.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
             );
 
         public void GetAllSuppliers()
         {
-            if (_suppliers.Count == 0)
+            var suppliers = _db.Suppliers.ToList();
+            if (suppliers.Count == 0)
             {
                 Console.WriteLine("No suppliers found.");
                 return;
             }
 
-            foreach (var supplier in _suppliers)
+            foreach (var supplier in suppliers)
             {
                 supplier.ShowInformation();
                 Console.WriteLine("------------");
@@ -33,14 +52,15 @@ namespace Farmacontrol.Services
 
         public void GenerateAllOrders(List<Product> products)
         {
-            if (_suppliers.Count == 0)
+            var suppliers = _db.Suppliers.ToList();
+            if (suppliers.Count == 0)
             {
                 Console.WriteLine("No suppliers found.");
                 return;
             }
             
             var orderFound = false;
-            foreach (var supplier in _suppliers)
+            foreach (var supplier in suppliers)
             {
                 List<Product> productsToOrder = products
                     .Where(product => product.SupplierCode == supplier.Code && product.IsStockLow())
@@ -57,6 +77,6 @@ namespace Farmacontrol.Services
                 Console.WriteLine("No hay pedidos pendientes.");
         }
         
-        public IReadOnlyList<Supplier> GetSuppliers() => _suppliers.AsReadOnly();
+        public IReadOnlyList<Supplier> GetSuppliers() => _db.Suppliers.ToList().AsReadOnly();
     }
 }
