@@ -192,7 +192,7 @@ namespace Farmacontrol.UI.View
             var selectedSuppliers = new List<Supplier>();
             while (true)
             {
-                string supplierCode = ConsoleHelper.ReadText("Código de proveedor (o presione Enter/escriba 'fin' para terminar): ");
+                string supplierCode = ConsoleHelper.ReadText("Código de proveedor (o presione Enter/escriba 'fin' para terminar): ", allowEmpty: true);
                 if (string.IsNullOrWhiteSpace(supplierCode) || supplierCode.ToLower() == "fin")
                 {
                     break;
@@ -249,7 +249,7 @@ namespace Farmacontrol.UI.View
 
         private string? ReadOptionalField(string fieldName)
         {
-            string value = ConsoleHelper.ReadText($"{fieldName} (opcional, enter para omitir): ");
+            string value = ConsoleHelper.ReadText($"{fieldName} (opcional, enter para omitir): ", allowEmpty: true);
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 

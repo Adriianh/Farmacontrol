@@ -19,7 +19,7 @@ namespace Farmacontrol.UI.View
             }
 
             ConsoleHelper.ShowTitle("Registrar Venta");
-            string clientName = ConsoleHelper.ReadText("Nombre del cliente (opcional, presione Enter para omitir): ");
+            string clientName = ConsoleHelper.ReadText("Nombre del cliente (opcional, presione Enter para omitir): ", allowEmpty: true);
             if (string.IsNullOrWhiteSpace(clientName)) clientName = "Cliente General";
 
             PaymentMethod paymentMethod = GetPaymentMethodInteractive();
@@ -60,7 +60,7 @@ namespace Farmacontrol.UI.View
                     if (string.IsNullOrEmpty(sale.DoctorLicense))
                     {
                         Console.WriteLine($"\n[ATENCIÓN] El producto '{med.Name}' es un MEDICAMENTO CONTROLADO.");
-                        string license = ConsoleHelper.ReadText("Ingrese la Cédula Profesional del médico (obligatorio para proceder, o deje en blanco para cancelar): ");
+                        string license = ConsoleHelper.ReadText("Ingrese la Cédula Profesional del médico (obligatorio para proceder, o deje en blanco para cancelar): ", allowEmpty: true);
                         if (string.IsNullOrWhiteSpace(license))
                         {
                             Console.WriteLine("Operación cancelada. No se puede vender este producto sin receta médica.");

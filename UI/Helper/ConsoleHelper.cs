@@ -15,17 +15,20 @@ namespace Farmacontrol.UI.Helper
             Console.WriteLine();
         }
 
-        public static string ReadText(string message)
+        public static string ReadText(string message, bool allowEmpty = false)
         {
             while (true)
             {
                 Console.Write(message);
                 
-                var input = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(input) && !input.Contains(" "))
-                    return input;
+                var input = Console.ReadLine() ?? "";
+                if (allowEmpty && string.IsNullOrWhiteSpace(input))
+                    return "";
+                    
+                if (!string.IsNullOrWhiteSpace(input))
+                    return input.Trim();
                 
-                Console.WriteLine("Valor inválido, ingrese una cadena no vacía y sin espacios.");
+                Console.WriteLine("Valor inválido, ingrese una cadena no vacía.");
             }
         }
 
