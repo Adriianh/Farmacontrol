@@ -105,19 +105,33 @@ namespace Farmacontrol.Services
 
         public void RegisterPurchase(Purchase purchase)
         {
-            _db.Purchases.Add(purchase);
-            
-            foreach(var detail in purchase.Details)
+            using var transaction = _db.Database.BeginTransaction();
+
+            try
             {
-                var product = _db.Products.Find(detail.ProductCode);
-                if (product != null)
+                foreach (var detail in purchase.Details)
                 {
-                    product.UpdateStock(detail.Quantity);
+                    var product = _db.Products
+                        .Include(p => p.Batches)
+                        .FirstOrDefault(p => p.Code == detail.ProductCode);
+
+                    if (product != null)
+                    {
+                        product.AddBatch(detail.LotCode, detail.Quantity, detail.ExpirationDate);
+                    }
                 }
+
+                _db.Purchases.Add(purchase);
+                _db.SaveChanges();
+                transaction.Commit();
+
+                _audit.Log("Registrar Ingreso", $"Factura {purchase.InvoiceNumber} del proveedor {purchase.SupplierCode} registrada por Q{purchase.TotalCost:F2}");
             }
-            
-            _db.SaveChanges();
-            _audit.Log("Registrar Ingreso", $"Factura {purchase.InvoiceNumber} del proveedor {purchase.SupplierCode} registrada por Q{purchase.TotalCost:F2}");
+            catch (System.Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
     }
 }
