@@ -81,10 +81,18 @@ namespace Farmacontrol.Services
             var user = _db.Users.Find(username);
             if (user != null)
             {
-                _db.Users.Remove(user);
+                user.IsActive = false;
+                _db.Users.Update(user);
                 _db.SaveChanges();
-                _audit.Log("Eliminar Usuario", $"Se eliminó el usuario '{username}'.");
+                _audit.Log("Eliminar Usuario", $"Se eliminó (borrado lógico) el usuario '{username}'.");
             }
+        }
+        
+        public void UpdateUser(User user)
+        {
+            _db.Users.Update(user);
+            _db.SaveChanges();
+            _audit.Log("Modificar Usuario", $"Se modificó el usuario '{user.Username}'.");
         }
         
         public IReadOnlyList<User> GetAllUsers() => _db.Users.AsNoTracking().ToList().AsReadOnly();

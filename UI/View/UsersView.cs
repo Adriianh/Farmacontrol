@@ -13,6 +13,7 @@ namespace Farmacontrol.UI.View
             Console.WriteLine("1. Crear usuario");
             Console.WriteLine("2. Eliminar usuario");
             Console.WriteLine("3. Listar usuarios");
+            Console.WriteLine("4. Modificar usuario");
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
@@ -21,6 +22,7 @@ namespace Farmacontrol.UI.View
                 case "1": CreateUser(currentUser); break;
                 case "2": RemoveUser(currentUser); break;
                 case "3": ListUsers(); break;
+                case "4": UpdateUser(currentUser); break;
             }
         }
 
@@ -124,6 +126,40 @@ namespace Farmacontrol.UI.View
 
             userManager.RemoveUser(username);
             Console.WriteLine($"Usuario {username} eliminado.");
+            ConsoleHelper.Pause();
+        }
+
+        private void UpdateUser(User currentUser)
+        {
+            ConsoleHelper.ShowTitle("Modificar Usuario");
+
+            if (!VerifyMasterKey(currentUser))
+                return;
+
+            ListUsers(false);
+            string username = ConsoleHelper.ReadText("\nNombre de usuario a modificar (o 'fin' para cancelar): ");
+            if (username.ToLower() == "fin") return;
+
+            var userToEdit = userManager.GetAllUsers().FirstOrDefault(u => u.Username == username);
+            if (userToEdit == null)
+            {
+                Console.WriteLine("No existe un usuario con ese nombre de usuario.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            userToEdit.Name = ConsoleHelper.ReadTextWithDefault("Nombre completo", userToEdit.Name);
+            Console.WriteLine("Nota: El nombre de usuario (username) no puede ser modificado.");
+
+            string newPassword = ConsoleHelper.ReadText("Nueva contraseña (deje en blanco para mantener la actual): ", allowEmpty: true);
+            if (!string.IsNullOrWhiteSpace(newPassword))
+            {
+                // To update password properly we'd need to hash it. Since it's done in the constructor, we might need a method or direct hash.
+                userToEdit.Password = Farmacontrol.Util.Hash.Hashing(newPassword);
+            }
+
+            userManager.UpdateUser(userToEdit);
+            Console.WriteLine($"Usuario {username} modificado.");
             ConsoleHelper.Pause();
         }
 
