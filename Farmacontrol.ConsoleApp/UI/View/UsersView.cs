@@ -1,9 +1,9 @@
-using Farmacontrol.Services;
+using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Model;
 using Farmacontrol.Model.UserEntity;
-using Farmacontrol.UI.Helper;
+using Farmacontrol.Services;
 
-namespace Farmacontrol.UI.View
+namespace Farmacontrol.ConsoleApp.UI.View
 {
     public class UsersView(UserManager userManager)
     {

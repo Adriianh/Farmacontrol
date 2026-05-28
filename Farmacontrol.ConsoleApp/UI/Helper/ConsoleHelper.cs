@@ -1,4 +1,4 @@
-namespace Farmacontrol.UI.Helper
+namespace Farmacontrol.ConsoleApp.UI.Helper
 {
     public class ConsoleHelper
     {

@@ -1,8 +1,8 @@
+using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Model;
 using Farmacontrol.Services;
-using Farmacontrol.UI.Helper;
 
-namespace Farmacontrol.UI.Component
+namespace Farmacontrol.ConsoleApp.UI.Component
 {
     public class LoginComponent(UserManager userManager)
     {

@@ -1,12 +1,12 @@
+using Farmacontrol.ConsoleApp.UI;
+using Farmacontrol.ConsoleApp.UI.View;
+using Farmacontrol.DependencyInjection;
 using Farmacontrol.Repository;
 using Farmacontrol.Services;
-using Farmacontrol.UI;
-using Farmacontrol.UI.View;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Farmacontrol
+namespace Farmacontrol.ConsoleApp
 {
     internal static class Program
     {
@@ -20,20 +20,7 @@ namespace Farmacontrol
             var services = new ServiceCollection();
 
             services.AddSingleton<IConfiguration>(configuration);
-
-            var connectionString = configuration.GetConnectionString("DefaultConnection") ?? "Data Source=farmacontrol.db";
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlite(connectionString));
-
-            services.AddSingleton<UserSession>();
-            services.AddSingleton<FileLogger>();
-            services.AddTransient<AuditService>();
-
-            services.AddTransient<UserManager>();
-            services.AddTransient<Inventory>();
-            services.AddTransient<SupplierManager>();
-            services.AddTransient<HistoryManager>();
-            services.AddTransient<SalesManager>();
+            services.AddFarmacontrolCore(configuration);
 
             services.AddTransient<InventoryView>();
             services.AddTransient<SalesView>();
@@ -42,12 +29,12 @@ namespace Farmacontrol
             services.AddTransient<ProductsView>();
             services.AddTransient<SuppliersView>();
             services.AddTransient<UsersView>();
-
             services.AddTransient<Menu>();
 
             var serviceProvider = services.BuildServiceProvider();
 
             var logger = serviceProvider.GetRequiredService<FileLogger>();
+
             try
             {
                 using (var scope = serviceProvider.CreateScope())
@@ -59,8 +46,8 @@ namespace Farmacontrol
             catch (System.Exception ex)
             {
                 logger.LogError("Error crítico al inicializar la base de datos", ex);
-                Console.WriteLine("Error crítico: No se pudo establecer la conexión con la base de datos.");
-                Console.WriteLine("Consulte 'farmacontrol.log' para obtener más detalles.");
+                System.Console.WriteLine("Error crítico: No se pudo establecer la conexión con la base de datos.");
+                System.Console.WriteLine("Consulte 'farmacontrol.log' para obtener más detalles.");
                 return;
             }
 

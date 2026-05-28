@@ -1,9 +1,9 @@
+using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Model;
 using Farmacontrol.Services;
-using Farmacontrol.UI.Helper;
 using Farmacontrol.Util;
 
-namespace Farmacontrol.UI.View
+namespace Farmacontrol.ConsoleApp.UI.View
 {
     public class ReportsView(SalesManager salesManager)
     {
@@ -13,9 +13,9 @@ namespace Farmacontrol.UI.View
             var report = new Report(sales);
 
             ConsoleHelper.ShowTitle("Reportes");
-            Console.WriteLine("1. Ventas del día");
-            Console.WriteLine("2. Ventas del mes");
-            Console.WriteLine("3. Productos más vendidos");
+            System.Console.WriteLine("1. Ventas del día");
+            System.Console.WriteLine("2. Ventas del mes");
+            System.Console.WriteLine("3. Productos más vendidos");
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
@@ -27,7 +27,7 @@ namespace Farmacontrol.UI.View
             {
                 case "1":
                     if (!report.HasSales)
-                        Console.WriteLine("No hay ventas registradas.");
+                        System.Console.WriteLine("No hay ventas registradas.");
                     else
                     {
                         content = report.GenerateDailySales();
@@ -36,7 +36,7 @@ namespace Farmacontrol.UI.View
                     break;
                 case "2":
                     if (!report.HasSales)
-                        Console.WriteLine("No hay ventas registradas.");
+                        System.Console.WriteLine("No hay ventas registradas.");
                     else
                     {
                         content = report.GenerateMonthSales();
@@ -45,7 +45,7 @@ namespace Farmacontrol.UI.View
                     break;
                 case "3":
                     if (!report.HasSales)
-                        Console.WriteLine("No hay ventas registradas.");
+                        System.Console.WriteLine("No hay ventas registradas.");
                     else
                     {
                         content = report.BestSellingProducts();
@@ -56,17 +56,17 @@ namespace Farmacontrol.UI.View
 
             if (!string.IsNullOrEmpty(content))
             {
-                Console.WriteLine("\n" + content);
+                System.Console.WriteLine("\n" + content);
                 if (ConsoleHelper.Confirm("¿Desea exportar este reporte a un archivo de texto?"))
                 {
                     try
                     {
                         string path = ReportExporter.Export(reportType, content);
-                        Console.WriteLine($"\n[Éxito] Reporte exportado correctamente en: {path}");
+                        System.Console.WriteLine($"\n[Éxito] Reporte exportado correctamente en: {path}");
                     }
                     catch (System.Exception ex)
                     {
-                        Console.WriteLine($"\n[Error] No se pudo exportar el reporte: {ex.Message}");
+                        System.Console.WriteLine($"\n[Error] No se pudo exportar el reporte: {ex.Message}");
                     }
                 }
             }

@@ -1,10 +1,10 @@
+using Farmacontrol.ConsoleApp.UI.Component;
+using Farmacontrol.ConsoleApp.UI.Helper;
+using Farmacontrol.ConsoleApp.UI.View;
 using Farmacontrol.Model;
 using Farmacontrol.Services;
-using Farmacontrol.UI.Component;
-using Farmacontrol.UI.Helper;
-using Farmacontrol.UI.View;
 
-namespace Farmacontrol.UI
+namespace Farmacontrol.ConsoleApp.UI
 {
     public class Menu(
         UserManager userManager,

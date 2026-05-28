@@ -1,7 +1,7 @@
+using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Model;
-using Farmacontrol.UI.Helper;
 
-namespace Farmacontrol.UI.Component
+namespace Farmacontrol.ConsoleApp.UI.Component
 {
     public class MainMenuComponent
     {

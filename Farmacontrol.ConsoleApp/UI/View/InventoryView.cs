@@ -1,9 +1,9 @@
+using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Model;
 using Farmacontrol.Model.ProductEntity;
 using Farmacontrol.Services;
-using Farmacontrol.UI.Helper;
 
-namespace Farmacontrol.UI.View
+namespace Farmacontrol.ConsoleApp.UI.View
 {
     public class InventoryView(Inventory inventory, SupplierManager supplierManager)
     {
