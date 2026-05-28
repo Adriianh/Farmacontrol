@@ -17,8 +17,8 @@ namespace Farmacontrol.Model
         }
         
         private Alert() { }
-        
+    
         public void ShowAlert() =>
-            Console.WriteLine($"[{Date:dd/MM/yyyy HH:mm:ss} {Type} - {ProductName} ({ProductCode}) - {Description}");
+            Console.WriteLine($"[{Date:dd/MM/yyyy HH:mm:ss}] {Type} - {ProductName} ({ProductCode}) - {Description}");
     }
 }
