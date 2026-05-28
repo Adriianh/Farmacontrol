@@ -41,9 +41,18 @@ namespace Farmacontrol.Services
 
         public void RemoveProduct(Product product)
         {
-            _db.Products.Remove(product);
+            product.IsActive = false;
+            _db.Products.Update(product);
             _db.SaveChanges();
-            _audit.Log("Eliminar Producto", $"Se eliminó el producto '{product.Name}' (Código: {product.Code}) del inventario.");
+            _audit.Log("Eliminar Producto", $"Se eliminó (borrado lógico) el producto '{product.Name}' (Código: {product.Code}) del inventario.");
+        }
+
+        public void UpdateProduct(Product product)
+        {
+            product.UpdatedAt = DateTime.Now;
+            _db.Products.Update(product);
+            _db.SaveChanges();
+            _audit.Log("Modificar Producto", $"Se modificó el producto '{product.Name}' (Código: {product.Code}).");
         }
 
         public Product? SearchProduct(string query)

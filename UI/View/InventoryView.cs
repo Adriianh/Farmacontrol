@@ -17,6 +17,8 @@ namespace Farmacontrol.UI.View
             Console.WriteLine("5. Mostrar todo el inventario");
             Console.WriteLine("6. Asociar proveedor a producto existente");
             Console.WriteLine("7. Registrar ingreso (Compras)");
+            Console.WriteLine("8. Modificar producto");
+            Console.WriteLine("9. Eliminar producto");
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
@@ -35,6 +37,8 @@ namespace Farmacontrol.UI.View
                     break;
                 case "6": AssociateSupplierToProduct(); break;
                 case "7": RegisterPurchase(); break;
+                case "8": UpdateProduct(); break;
+                case "9": RemoveProduct(); break;
             }
         }
 
@@ -359,6 +363,96 @@ namespace Farmacontrol.UI.View
             Console.WriteLine(success
                 ? $"[Éxito] Proveedor '{supplier.Name}' asociado correctamente al producto '{product.Name}'."
                 : "El proveedor ya estaba asociado a este producto o ocurrió un error.");
+            ConsoleHelper.Pause();
+        }
+
+        private void RemoveProduct()
+        {
+            ConsoleHelper.ShowTitle("Eliminar Producto");
+            if (!inventory.GetProducts.Any())
+            {
+                Console.WriteLine("No hay productos en inventario.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            string code = ConsoleHelper.ReadText("Código del producto a eliminar (o 'fin' para cancelar): ");
+            if (code.ToLower() == "fin") return;
+
+            var product = inventory.SearchProduct(code);
+            if (product == null)
+            {
+                Console.WriteLine("No existe un producto con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            if (!ConsoleHelper.Confirm($"\n¿Está seguro que desea eliminar '{product.Name}'?"))
+                return;
+
+            inventory.RemoveProduct(product);
+            Console.WriteLine("Producto eliminado (borrado lógico) correctamente.");
+            ConsoleHelper.Pause();
+        }
+
+        private void UpdateProduct()
+        {
+            ConsoleHelper.ShowTitle("Modificar Producto");
+            if (!inventory.GetProducts.Any())
+            {
+                Console.WriteLine("No hay productos en inventario.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            string code = ConsoleHelper.ReadText("Código del producto a modificar (o 'fin' para cancelar): ");
+            if (code.ToLower() == "fin") return;
+
+            var product = inventory.SearchProduct(code);
+            if (product == null)
+            {
+                Console.WriteLine("No existe un producto con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            Console.WriteLine("\nNota: Presione Enter sin escribir nada para mantener el valor actual.");
+            product.Name = ConsoleHelper.ReadTextWithDefault("Nombre", product.Name);
+            product.Price = ConsoleHelper.ReadDecimalWithDefault("Precio: Q", product.Price);
+            product.MinimumStock = ConsoleHelper.ReadIntWithDefault("Stock mínimo", product.MinimumStock);
+            product.Barcode = ConsoleHelper.ReadTextWithDefault("Código de barras", product.Barcode ?? "");
+            product.Location = ConsoleHelper.ReadTextWithDefault("Ubicación en estantería", product.Location ?? "");
+            product.Laboratory = ConsoleHelper.ReadTextWithDefault("Laboratorio fabricante", product.Laboratory ?? "");
+
+            if (product is Medicine medicine)
+            {
+                medicine.ActivePrinciple = ConsoleHelper.ReadTextWithDefault("Principio activo", medicine.ActivePrinciple);
+                medicine.Concentration = ConsoleHelper.ReadTextWithDefault("Concentración", medicine.Concentration ?? "");
+                medicine.Presentation = ConsoleHelper.ReadTextWithDefault("Presentación", medicine.Presentation ?? "");
+            }
+            else if (product is Cosmetic cosmetic)
+            {
+                cosmetic.Brand = ConsoleHelper.ReadTextWithDefault("Marca", cosmetic.Brand);
+                cosmetic.Type = ConsoleHelper.ReadTextWithDefault("Tipo", cosmetic.Type);
+                cosmetic.Presentation = ConsoleHelper.ReadTextWithDefault("Presentación", cosmetic.Presentation ?? "");
+            }
+            else if (product is Supplement supplement)
+            {
+                supplement.ActivePrinciple = ConsoleHelper.ReadTextWithDefault("Principio activo", supplement.ActivePrinciple);
+                supplement.Type = ConsoleHelper.ReadTextWithDefault("Tipo", supplement.Type);
+                supplement.Concentration = ConsoleHelper.ReadTextWithDefault("Concentración", supplement.Concentration ?? "");
+                supplement.RecommendedDosage = ConsoleHelper.ReadTextWithDefault("Dosis recomendada", supplement.RecommendedDosage ?? "");
+            }
+            else if (product is Supply supply)
+            {
+                supply.Brand = ConsoleHelper.ReadTextWithDefault("Marca", supply.Brand);
+                supply.Type = ConsoleHelper.ReadTextWithDefault("Tipo", supply.Type);
+                supply.Size = ConsoleHelper.ReadTextWithDefault("Tamaño", supply.Size ?? "");
+                supply.Material = ConsoleHelper.ReadTextWithDefault("Material", supply.Material ?? "");
+            }
+
+            inventory.UpdateProduct(product);
+            Console.WriteLine("Producto modificado correctamente.");
             ConsoleHelper.Pause();
         }
 
