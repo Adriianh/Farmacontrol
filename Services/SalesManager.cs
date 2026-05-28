@@ -30,11 +30,27 @@ namespace Farmacontrol.Services
                 {
                     var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
                     if (dbProduct == null) continue;
+                    
+                    int previousStock = dbProduct.Stock;
+                    
                     var entry = _db.Entry(dbProduct);
                     if (entry.State != EntityState.Modified)
                     {
                         dbProduct.ReduceBatchStock(detail.Quantity);
                     }
+                    
+                    var movement = new InventoryMovement
+                    {
+                        ProductCode = dbProduct.Code,
+                        Date = DateTime.Now,
+                        Type = "Salida por venta",
+                        Quantity = -detail.Quantity,
+                        PreviousStock = previousStock,
+                        NewStock = dbProduct.Stock,
+                        Reason = "Venta a cliente",
+                        Reference = $"Venta #{sale.Code}"
+                    };
+                    _db.InventoryMovements.Add(movement);
                 }
                 
                 _db.SaveChanges();
@@ -63,7 +79,21 @@ namespace Farmacontrol.Services
                     var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
                     if (dbProduct != null)
                     {
+                        int previousStock = dbProduct.Stock;
                         dbProduct.AddBatch("DEVOLUCION", detail.Quantity, DateTime.Today.AddYears(1));
+                        
+                        var movement = new InventoryMovement
+                        {
+                            ProductCode = dbProduct.Code,
+                            Date = DateTime.Now,
+                            Type = "Entrada por devolución",
+                            Quantity = detail.Quantity,
+                            PreviousStock = previousStock,
+                            NewStock = dbProduct.Stock,
+                            Reason = "Anulación de venta",
+                            Reference = $"Venta #{sale.Code}"
+                        };
+                        _db.InventoryMovements.Add(movement);
                     }
                 }
 
