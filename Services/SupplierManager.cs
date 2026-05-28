@@ -27,10 +27,18 @@ namespace Farmacontrol.Services
             var supplier = _db.Suppliers.Find(code);
             if (supplier != null)
             {
-                _db.Suppliers.Remove(supplier);
+                supplier.IsActive = false;
+                _db.Suppliers.Update(supplier);
                 _db.SaveChanges();
-                _audit.Log("Eliminar Proveedor", $"Se eliminó el proveedor '{supplier.Name}' (Código: {code}).");
+                _audit.Log("Eliminar Proveedor", $"Se eliminó (borrado lógico) el proveedor '{supplier.Name}' (Código: {code}).");
             }
+        }
+
+        public void UpdateSupplier(Supplier supplier)
+        {
+            _db.Suppliers.Update(supplier);
+            _db.SaveChanges();
+            _audit.Log("Modificar Proveedor", $"Se modificó el proveedor '{supplier.Name}' (Código: {supplier.Code}).");
         }
 
         public Supplier? SearchSupplier(string query)

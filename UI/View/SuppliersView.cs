@@ -11,8 +11,9 @@ namespace Farmacontrol.UI.View
             ConsoleHelper.ShowTitle("Gestionar Proveedores");
             Console.WriteLine("1. Agregar proveedor");
             Console.WriteLine("2. Eliminar proveedor");
-            Console.WriteLine("3. Listar proveedores");
-            Console.WriteLine("4. Generar pedido por proveedor");
+            Console.WriteLine("3. Modificar proveedor");
+            Console.WriteLine("4. Listar proveedores");
+            Console.WriteLine("5. Generar pedido por proveedor");
 
             string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
@@ -20,14 +21,15 @@ namespace Farmacontrol.UI.View
             {
                 case "1": AddSupplier(); break;
                 case "2": RemoveSupplier(); break;
-                case "3":
+                case "3": UpdateSupplier(); break;
+                case "4":
                     if (!supplierManager.GetSuppliers().Any())
                         Console.WriteLine("No hay proveedores registrados.");
                     else
                         supplierManager.GetAllSuppliers();
                     ConsoleHelper.Pause();
                     break;
-                case "4": GenerateOrderBySupplier(); break;
+                case "5": GenerateOrderBySupplier(); break;
             }
         }
 
@@ -134,6 +136,43 @@ namespace Farmacontrol.UI.View
 
             supplierManager.RemoveSupplier(code);
             Console.WriteLine("Proveedor eliminado.");
+            ConsoleHelper.Pause();
+        }
+
+        private void UpdateSupplier()
+        {
+            ConsoleHelper.ShowTitle("Modificar Proveedor");
+            if (!supplierManager.GetSuppliers().Any())
+            {
+                Console.WriteLine("No hay proveedores registrados.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            supplierManager.GetAllSuppliers();
+            string code = ConsoleHelper.ReadText("\nCódigo del proveedor a modificar (o 'fin' para cancelar): ");
+            if (code.ToLower() == "fin") return;
+            
+            var supplier = supplierManager.GetSuppliers().FirstOrDefault(s => s.Code == code);
+            if (supplier == null)
+            {
+                Console.WriteLine("No existe un proveedor con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            Console.WriteLine("\nNota: Presione Enter sin escribir nada para mantener el valor actual.");
+            supplier.Name = ConsoleHelper.ReadTextWithDefault("Nombre", supplier.Name);
+            supplier.PhoneNumber = ConsoleHelper.ReadTextWithDefault("Teléfono", supplier.PhoneNumber);
+            supplier.Email = ConsoleHelper.ReadTextWithDefault("Correo", supplier.Email);
+            supplier.LeadTimeDays = ConsoleHelper.ReadIntWithDefault("Días de entrega estimados", supplier.LeadTimeDays);
+            supplier.TaxId = ConsoleHelper.ReadTextWithDefault("NIT o Identificación Fiscal", supplier.TaxId ?? "");
+            supplier.Address = ConsoleHelper.ReadTextWithDefault("Dirección", supplier.Address ?? "");
+            supplier.ContactName = ConsoleHelper.ReadTextWithDefault("Nombre de contacto", supplier.ContactName ?? "");
+            supplier.PaymentTerms = ConsoleHelper.ReadTextWithDefault("Condiciones de pago", supplier.PaymentTerms ?? "");
+
+            supplierManager.UpdateSupplier(supplier);
+            Console.WriteLine("Proveedor modificado correctamente.");
             ConsoleHelper.Pause();
         }
 
