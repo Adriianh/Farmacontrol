@@ -20,12 +20,21 @@ namespace Farmacontrol.UI.View
             string input = ConsoleHelper.ReadText("Nombre o código del producto (o 'fin' para cancelar): ");
             if (input.ToLower() == "fin") return;
 
-            Product? product = inventory.SearchProduct(input);
+            var products = inventory.SearchProducts(input);
 
-            if (product == null)
+            if (products.Count == 0)
+            {
                 Console.WriteLine("Producto no encontrado.");
+            }
             else
-                product.ShowInformation();
+            {
+                Console.WriteLine($"Se encontraron {products.Count} coincidencias:\n");
+                foreach (var product in products)
+                {
+                    product.ShowInformation();
+                    Console.WriteLine(new string('-', 20));
+                }
+            }
 
             ConsoleHelper.Pause();
         }
@@ -41,7 +50,27 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            inventory.GetExpiredProducts();
+            var products = inventory.GetProducts;
+            bool foundExpired = false;
+            foreach (var product in products)
+            {
+                var expiredBatches = product.Batches.Where(b => b.Quantity > 0 && b.ExpirationDate < DateTime.Today).ToList();
+                foreach (var batch in expiredBatches)
+                {
+                    foundExpired = true;
+                    Console.WriteLine($"Lote {batch.LotCode} - {product.Name} - Venció el {batch.ExpirationDate:dd/MM/yyyy} - Cantidad: {batch.Quantity}");
+                    if (ConsoleHelper.Confirm("¿Desea darlo de baja?"))
+                    {
+                        inventory.DiscardBatch(product.Code, batch.LotCode, "Vencimiento");
+                        Console.WriteLine("Lote dado de baja correctamente.");
+                    }
+                }
+            }
+
+            if (!foundExpired)
+            {
+                Console.WriteLine("No se encontraron lotes vencidos con stock disponible.");
+            }
             ConsoleHelper.Pause();
         }
     }

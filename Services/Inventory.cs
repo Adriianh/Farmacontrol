@@ -16,7 +16,7 @@ namespace Farmacontrol.Services
             _audit = audit;
         }
         
-        public IReadOnlyList<Product> GetProducts => _db.Products.AsNoTracking().Include(p => p.Suppliers).ToList().AsReadOnly();
+        public IReadOnlyList<Product> GetProducts => _db.Products.AsNoTracking().Include(p => p.Suppliers).Include(p => p.Batches).ToList().AsReadOnly();
 
         public void AddProduct(Product product)
         {
@@ -50,10 +50,20 @@ namespace Farmacontrol.Services
         {
             string normalizedQuery = query.ToLower();
 
-            return _db.Products.AsNoTracking().Include(p => p.Suppliers).FirstOrDefault(product =>
+            return _db.Products.AsNoTracking().Include(p => p.Suppliers).Include(p => p.Batches).FirstOrDefault(product =>
                 product.Code.ToLower() == normalizedQuery ||
                 product.Name.ToLower() == normalizedQuery
             );
+        }
+
+        public IReadOnlyList<Product> SearchProducts(string query)
+        {
+            string normalizedQuery = query.ToLower();
+
+            return _db.Products.AsNoTracking().Include(p => p.Suppliers).Include(p => p.Batches).Where(product =>
+                product.Code.ToLower().Contains(normalizedQuery) ||
+                product.Name.ToLower().Contains(normalizedQuery)
+            ).ToList().AsReadOnly();
         }
         
         public void ListProducts()
@@ -90,6 +100,38 @@ namespace Farmacontrol.Services
             }
         }
 
+        public void DiscardBatch(string productCode, string lotCode, string reason)
+        {
+            var product = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == productCode);
+            if (product != null)
+            {
+                var batch = product.Batches.FirstOrDefault(b => b.LotCode == lotCode);
+                if (batch != null && batch.Quantity > 0)
+                {
+                    int qty = batch.Quantity;
+                    int previousStock = product.Stock;
+                    
+                    product.Stock -= qty;
+                    batch.Quantity = 0;
+                    
+                    var movement = new InventoryMovement
+                    {
+                        ProductCode = product.Code,
+                        Date = DateTime.Now,
+                        Type = "Baja de inventario",
+                        Quantity = -qty,
+                        PreviousStock = previousStock,
+                        NewStock = product.Stock,
+                        Reason = reason,
+                        Reference = lotCode
+                    };
+                    _db.InventoryMovements.Add(movement);
+                    _db.SaveChanges();
+                    _audit.Log("Baja de Inventario", $"Se dio de baja {qty} unidades del lote {lotCode} del producto '{product.Name}'. Motivo: {reason}");
+                }
+            }
+        }
+
         public bool AssociateSupplier(string productCode, string supplierCode)
         {
             var product = _db.Products.Include(p => p.Suppliers).FirstOrDefault(p => p.Code == productCode);
@@ -121,7 +163,21 @@ namespace Farmacontrol.Services
 
                     if (product != null)
                     {
+                        int previousStock = product.Stock;
                         product.AddBatch(detail.LotCode, detail.Quantity, detail.ExpirationDate);
+                        
+                        var movement = new InventoryMovement
+                        {
+                            ProductCode = product.Code,
+                            Date = DateTime.Now,
+                            Type = "Entrada por compra",
+                            Quantity = detail.Quantity,
+                            PreviousStock = previousStock,
+                            NewStock = product.Stock,
+                            Reason = "Compra a proveedor",
+                            Reference = $"FAC-{purchase.InvoiceNumber}"
+                        };
+                        _db.InventoryMovements.Add(movement);
                     }
                 }
 
