@@ -8,12 +8,14 @@ namespace Farmacontrol.Model
         public string DoctorLicense { get; set; } = string.Empty;
         public string DoctorName { get; set; } = string.Empty;
         public string PatientName { get; set; } = string.Empty;
-        public string IssuedDate { get; set; } = string.Empty;
+        public DateTime IssuedDate { get; set; }
         public string ImageOrFolioReference { get; set; } = string.Empty;
+        public DateTime RegisteredAt { get; set; } = DateTime.Now;
+        public string? DiagnosisOrNotes { get; set; }
         
         private Prescription() { }
         
-        public Prescription(int saleCode, string docLicense, string docName, string patient, string issuedDate, string folio)
+        public Prescription(int saleCode, string docLicense, string docName, string patient, DateTime issuedDate, string folio)
         {
             SaleCode = saleCode;
             DoctorLicense = docLicense;

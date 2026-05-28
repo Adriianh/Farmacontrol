@@ -19,7 +19,8 @@ namespace Farmacontrol.UI.View
             }
 
             ConsoleHelper.ShowTitle("Registrar Venta");
-            string clientName = ConsoleHelper.ReadText("Nombre del cliente (opcional, presione Enter para omitir): ", allowEmpty: true);
+            string clientName = ConsoleHelper.ReadText("Nombre del cliente (opcional, presione Enter para omitir): ",
+                allowEmpty: true);
             if (string.IsNullOrWhiteSpace(clientName)) clientName = "Cliente General";
 
             PaymentMethod paymentMethod = GetPaymentMethodInteractive();
@@ -30,7 +31,7 @@ namespace Farmacontrol.UI.View
                 ClientName = clientName,
                 PaymentMethod = paymentMethod
             };
-        
+
             decimal discount;
             while (true)
             {
@@ -83,20 +84,32 @@ namespace Farmacontrol.UI.View
                     if (string.IsNullOrEmpty(sale.DoctorLicense))
                     {
                         Console.WriteLine($"\n[ATENCIÓN] El producto '{med.Name}' es un MEDICAMENTO CONTROLADO.");
-                        string license = ConsoleHelper.ReadText("Ingrese la Cédula Profesional del médico (obligatorio para proceder, o deje en blanco para cancelar): ", allowEmpty: true);
+                        string license = ConsoleHelper.ReadText(
+                            "Ingrese la Cédula Profesional del médico (obligatorio para proceder, o deje en blanco para cancelar): ",
+                            allowEmpty: true);
                         if (string.IsNullOrWhiteSpace(license))
                         {
-                            Console.WriteLine("Operación cancelada. No se puede vender este producto sin receta médica.");
+                            Console.WriteLine(
+                                "Operación cancelada. No se puede vender este producto sin receta médica.");
                             ConsoleHelper.Pause();
                             continue;
                         }
+
                         string presDocName = ConsoleHelper.ReadText("Nombre del médico: ", allowEmpty: true);
                         string presPatient = ConsoleHelper.ReadText("Nombre del paciente: ", allowEmpty: true);
-                        string presDate = ConsoleHelper.ReadText("Fecha de emisión (dd/MM/yyyy): ", allowEmpty: true);
+                        string presDateInput =
+                            ConsoleHelper.ReadText("Fecha de emisión (dd/MM/yyyy): ", allowEmpty: true);
+                        if (!DateTime.TryParseExact(presDateInput, "dd/MM/yyyy", null,
+                                System.Globalization.DateTimeStyles.None, out DateTime presDate))
+                        {
+                            presDate = DateTime.Now;
+                        }
+
                         string presFolio = ConsoleHelper.ReadText("Referencias / Folio: ", allowEmpty: true);
 
                         sale.DoctorLicense = license;
-                        sale.Prescription = new Prescription(sale.Code, license, presDocName, (string.IsNullOrEmpty(presPatient) ? clientName : presPatient), presDate, presFolio);
+                        sale.Prescription = new Prescription(sale.Code, license, presDocName,
+                            (string.IsNullOrEmpty(presPatient) ? clientName : presPatient), presDate, presFolio);
                     }
                 }
 
@@ -112,23 +125,29 @@ namespace Farmacontrol.UI.View
                         quantity = 0;
                         break;
                     }
+
                     if (!int.TryParse(qtyInput, out quantity))
                     {
                         Console.WriteLine("Valor inválido, intente de nuevo.");
                         continue;
                     }
+
                     if (quantity <= 0)
                     {
                         Console.WriteLine("La cantidad debe ser mayor que cero.");
                         continue;
                     }
+
                     if (quantity > availableStock)
                     {
-                        Console.WriteLine($"No hay suficiente stock disponible para esta venta. Stock disponible: {availableStock}");
+                        Console.WriteLine(
+                            $"No hay suficiente stock disponible para esta venta. Stock disponible: {availableStock}");
                         continue;
                     }
+
                     break;
                 }
+
                 if (quantity == 0)
                     continue;
 
@@ -150,7 +169,7 @@ namespace Farmacontrol.UI.View
 
                 ConsoleHelper.Pause();
             }
-            
+
             if (productsAdded == 0)
             {
                 ConsoleHelper.ShowTitle("Venta cancelada");
@@ -178,7 +197,7 @@ namespace Farmacontrol.UI.View
         {
             ConsoleHelper.ShowTitle("Anular Venta");
             int saleCode = ConsoleHelper.ReadInt("Ingrese el código de la venta a anular: ");
-            
+
             try
             {
                 salesManager.VoidSale(saleCode);
@@ -188,6 +207,7 @@ namespace Farmacontrol.UI.View
             {
                 Console.WriteLine($"Error al intentar anular: {ex.Message}");
             }
+
             ConsoleHelper.Pause();
         }
 
