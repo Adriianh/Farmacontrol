@@ -19,6 +19,7 @@ namespace Farmacontrol.Repository
         public DbSet<Purchase> Purchases { get; set; }
         public DbSet<PurchaseDetail> PurchaseDetails { get; set; }
         public DbSet<Prescription> Prescriptions { get; set; }
+        public DbSet<InventoryMovement> InventoryMovements { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -123,6 +124,14 @@ namespace Farmacontrol.Repository
             {
                 entity.Property<int>("Id").ValueGeneratedOnAdd();
                 entity.HasKey("Id");
+            });
+
+            modelBuilder.Entity<InventoryMovement>(entity =>
+            {
+                entity.Property<int>("Id").ValueGeneratedOnAdd();
+                entity.HasKey("Id");
+                entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductCode)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }
