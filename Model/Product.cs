@@ -18,6 +18,10 @@ namespace Farmacontrol.Model
         public string? Location { get; set; }
         public string? Laboratory { get; set; }
 
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? UpdatedAt { get; set; }
+
         public ICollection<Supplier> Suppliers { get; set; } = new List<Supplier>();
 
         public ICollection<Batch> Batches { get; set; } = new List<Batch>();
