@@ -45,6 +45,7 @@ namespace Farmacontrol.UI.View
 
             bool adding = true;
             int productsAdded = 0;
+            Dictionary<string, int> reservedQuantities = new();
 
             while (adding)
             {
@@ -62,6 +63,16 @@ namespace Farmacontrol.UI.View
                 if (product == null)
                 {
                     Console.WriteLine("Producto no encontrado.");
+                    ConsoleHelper.Pause();
+                    continue;
+                }
+
+                int alreadyReserved = reservedQuantities.GetValueOrDefault(product.Code, 0);
+                int availableStock = product.Stock - alreadyReserved;
+
+                if (availableStock <= 0)
+                {
+                    Console.WriteLine($"No hay stock disponible para agregar más unidades de {product.Name}.");
                     ConsoleHelper.Pause();
                     continue;
                 }
@@ -90,6 +101,8 @@ namespace Farmacontrol.UI.View
                 }
 
                 product.ShowInformation();
+                Console.WriteLine($"Stock disponible para esta venta: {availableStock}");
+
                 int quantity;
                 while (true)
                 {
@@ -109,9 +122,9 @@ namespace Farmacontrol.UI.View
                         Console.WriteLine("La cantidad debe ser mayor que cero.");
                         continue;
                     }
-                    if (quantity > product.Stock)
+                    if (quantity > availableStock)
                     {
-                        Console.WriteLine($"No hay suficiente stock. Stock disponible: {product.Stock}");
+                        Console.WriteLine($"No hay suficiente stock disponible para esta venta. Stock disponible: {availableStock}");
                         continue;
                     }
                     break;
@@ -122,9 +135,13 @@ namespace Farmacontrol.UI.View
                 try
                 {
                     sale.AddDetail(product, quantity);
+
+                    reservedQuantities[product.Code] = alreadyReserved + quantity;
+                    int remainingStock = product.Stock - reservedQuantities[product.Code];
+
                     productsAdded++;
                     Console.WriteLine("Producto agregado.");
-                    Console.WriteLine($"Stock restante: {product.Stock}");
+                    Console.WriteLine($"Stock restante después de esta venta: {remainingStock}");
                 }
                 catch (InsufficientStockException ex)
                 {
@@ -133,7 +150,7 @@ namespace Farmacontrol.UI.View
 
                 ConsoleHelper.Pause();
             }
-
+            
             if (productsAdded == 0)
             {
                 ConsoleHelper.ShowTitle("Venta cancelada");
