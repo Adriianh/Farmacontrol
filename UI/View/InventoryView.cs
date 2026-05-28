@@ -83,9 +83,9 @@ namespace Farmacontrol.UI.View
                 }
 
                 string lotCode = ConsoleHelper.ReadText("Código de Lote: ");
-                int quantity = ConsoleHelper.ReadInt("Cantidad ingresada: ");
-                decimal unitCost = ConsoleHelper.ReadDecimal("Costo Unitario: Q");
-                DateTime expDate = ConsoleHelper.ReadDate("Fecha de expiración (dd/MM/yyyy): ");
+                int quantity = ReadPositiveQuantity("Cantidad ingresada: ");
+                decimal unitCost = ReadPositiveDecimal("Costo Unitario: Q");
+                DateTime expDate = ReadValidExpirationDate("Fecha de expiración (dd/MM/yyyy): ");
 
                 purchase.AddDetail(product, lotCode, quantity, unitCost, expDate);
                 Console.WriteLine("Producto agregado al ingreso!");
@@ -108,25 +108,38 @@ namespace Farmacontrol.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
+            if (inventory.SearchProduct(code) != null)
+            {
+                Console.WriteLine("Ya existe un producto con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
+            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
 
             var medicine = new Medicine
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: Q"),
-                Stock = ReadCommonProductInt("Stock inicial: "),
-                MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Price = ReadPositiveDecimal("Precio: Q"),
+                Stock = 0,
+                MinimumStock = ReadPositiveOrZeroInt("Stock mínimo: "),
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
                 ActivePrinciple = ConsoleHelper.ReadText("Principio activo: "),
                 Concentration = ReadOptionalField("Concentración (ej. 500 mg)"),
                 Presentation = ReadOptionalField("Presentación (ej. Caja con 20 tabletas)"),
-                ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
                 RequiresPrescription = ConsoleHelper.Confirm("¿Requiere receta médica?"),
                 IsControlled = ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica y registro)?"),
                 Suppliers = suppliers
             };
+
+            if (initialStock > 0)
+                medicine.AddBatch(lotCode, initialStock, expirationDate);
+
             inventory.AddProduct(medicine);
             Console.WriteLine("Medicamento agregado correctamente.");
             ConsoleHelper.Pause();
@@ -141,14 +154,24 @@ namespace Farmacontrol.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
+            if (inventory.SearchProduct(code) != null)
+            {
+                Console.WriteLine("Ya existe un producto con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
+            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
 
             var cosmetic = new Cosmetic
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: Q"),
-                Stock = ReadCommonProductInt("Stock inicial: "),
-                MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Price = ReadPositiveDecimal("Precio: Q"),
+                Stock = 0,
+                MinimumStock = ReadPositiveOrZeroInt("Stock mínimo: "),
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
@@ -156,9 +179,12 @@ namespace Farmacontrol.UI.View
                 Type = ConsoleHelper.ReadText("Tipo (shampoo, crema, etc.): "),
                 Presentation = ReadOptionalField("Presentación (ej. Frasco 250 ml)"),
                 Hypoallergenic = ConsoleHelper.Confirm("¿Es hipoalergénico?"),
-                ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
                 Suppliers = suppliers
             };
+
+            if (initialStock > 0)
+                cosmetic.AddBatch(lotCode, initialStock, expirationDate);
+
             inventory.AddProduct(cosmetic);
             Console.WriteLine("Producto de belleza agregado correctamente.");
             ConsoleHelper.Pause();
@@ -173,14 +199,24 @@ namespace Farmacontrol.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
+            if (inventory.SearchProduct(code) != null)
+            {
+                Console.WriteLine("Ya existe un producto con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
+            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
 
             var supplement = new Supplement
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: Q"),
-                Stock = ReadCommonProductInt("Stock inicial: "),
-                MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Price = ReadPositiveDecimal("Precio: Q"),
+                Stock = 0,
+                MinimumStock = ReadPositiveOrZeroInt("Stock mínimo: "),
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
@@ -189,9 +225,12 @@ namespace Farmacontrol.UI.View
                 Format = GetSupplementFormat(),
                 Concentration = ReadOptionalField("Concentración (ej. 1000 UI)"),
                 RecommendedDosage = ReadOptionalField("Dosis recomendada (ej. 1 cápsula al día)"),
-                ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
                 Suppliers = suppliers
             };
+
+            if (initialStock > 0)
+                supplement.AddBatch(lotCode, initialStock, expirationDate);
+
             inventory.AddProduct(supplement);
             Console.WriteLine("Suplemento agregado correctamente.");
             ConsoleHelper.Pause();
@@ -226,14 +265,24 @@ namespace Farmacontrol.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
+            if (inventory.SearchProduct(code) != null)
+            {
+                Console.WriteLine("Ya existe un producto con ese código.");
+                ConsoleHelper.Pause();
+                return;
+            }
+
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
+            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
 
             var supply = new Supply
             {
                 Name = name,
                 Code = code,
-                Price = ReadCommonProductDecimal("Precio: Q"),
-                Stock = ReadCommonProductInt("Stock inicial: "),
-                MinimumStock = ReadCommonProductInt("Stock mínimo: "),
+                Price = ReadPositiveDecimal("Precio: Q"),
+                Stock = 0,
+                MinimumStock = ReadPositiveOrZeroInt("Stock mínimo: "),
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
@@ -242,9 +291,12 @@ namespace Farmacontrol.UI.View
                 Size = ReadOptionalField("Tamaño"),
                 Material = ReadOptionalField("Material"),
                 IsSterile = ConsoleHelper.Confirm("¿Es estéril (libre de bacterias)?"),
-                ExpirationDate = ConsoleHelper.ReadDate("Fecha de vencimiento (dd/MM/yyyy): "),
                 Suppliers = suppliers
             };
+
+            if (initialStock > 0)
+                supply.AddBatch(lotCode, initialStock, expirationDate);
+
             inventory.AddProduct(supply);
             Console.WriteLine("Suministro agregado correctamente.");
             ConsoleHelper.Pause();
@@ -316,8 +368,54 @@ namespace Farmacontrol.UI.View
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
+        private int ReadPositiveOrZeroInt(string prompt)
+        {
+            while (true)
+            {
+                int value = ConsoleHelper.ReadInt(prompt);
+                if (value >= 0)
+                    return value;
+
+                Console.WriteLine("El valor no puede ser negativo.");
+            }
+        }
+
+        private int ReadPositiveQuantity(string prompt)
+        {
+            while (true)
+            {
+                int value = ConsoleHelper.ReadInt(prompt);
+                if (value > 0)
+                    return value;
+
+                Console.WriteLine("La cantidad debe ser mayor que cero.");
+            }
+        }
+
+        private decimal ReadPositiveDecimal(string prompt)
+        {
+            while (true)
+            {
+                decimal value = ConsoleHelper.ReadDecimal(prompt);
+                if (value > 0)
+                    return value;
+
+                Console.WriteLine("El valor debe ser mayor que cero.");
+            }
+        }
+
+        private DateTime ReadValidExpirationDate(string prompt)
+        {
+            while (true)
+            {
+                DateTime date = ConsoleHelper.ReadDate(prompt);
+                if (date > DateTime.Today)
+                    return date;
+
+                Console.WriteLine("La fecha de vencimiento debe ser posterior a la fecha actual.");
+            }
+        }
+
         private string ReadCommonProductField(string prompt) => ConsoleHelper.ReadText(prompt);
-        private int ReadCommonProductInt(string prompt) => ConsoleHelper.ReadInt(prompt);
-        private decimal ReadCommonProductDecimal(string prompt) => ConsoleHelper.ReadDecimal(prompt);
     }
 }
