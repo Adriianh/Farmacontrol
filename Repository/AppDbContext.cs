@@ -44,6 +44,7 @@ namespace Farmacontrol.Repository
             {
                 entity.HasKey(e => e.Code);
                 entity.Ignore("ExpirationDate");
+                entity.HasQueryFilter(e => e.IsActive);
 
                 entity.HasDiscriminator<string>("Discriminator")
                     .HasValue<Cosmetic>("Cosmetico")
@@ -57,6 +58,7 @@ namespace Farmacontrol.Repository
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Username);
+                entity.HasQueryFilter(e => e.IsActive);
 
                 entity.HasDiscriminator<string>("Discriminator")
                     .HasValue<Administrator>("Administrador")
@@ -114,6 +116,7 @@ namespace Farmacontrol.Repository
             {
                 entity.HasKey(e => e.Code);
                 entity.HasIndex(e => e.Name);
+                entity.HasQueryFilter(e => e.IsActive);
             });
 
             modelBuilder.Entity<Product>()
