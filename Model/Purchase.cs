@@ -23,7 +23,6 @@ namespace Farmacontrol.Model
         {
             var detail = new PurchaseDetail(this, product.Code, lotCode, quantity, unitCost, expDate);
             _details.Add(detail);
-            product.AddBatch(lotCode, quantity, expDate);
             TotalCost = _details.Sum(d => d.SubTotal);
         }
     }
