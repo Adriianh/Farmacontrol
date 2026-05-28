@@ -12,11 +12,13 @@ namespace Farmacontrol.Model
         public string Email { get; set; } = string.Empty;
         public int LeadTimeDays { get; set; }
 
-        // Nuevos atributos de proveedor
+        public string? TaxId { get; set; }
+        public string? PaymentTerms { get; set; }
+        public bool IsActive { get; set; } = true;
+
         public string? ContactName { get; set; }
         public string? Address { get; set; }
 
-        // Relación muchos a muchos con productos
         public ICollection<Product> Products { get; set; } = new List<Product>();
 
         public Supplier(string code, string name, string phoneNumber, string email, int leadTimeDays, string? contactName = null, string? address = null)
@@ -36,11 +38,14 @@ namespace Farmacontrol.Model
         {
             Console.WriteLine($"Código: {Code}");
             Console.WriteLine($"Nombre: {Name}");
+            if (!string.IsNullOrEmpty(TaxId)) Console.WriteLine($"NIT/ID Fiscal: {TaxId}");
             Console.WriteLine($"Teléfono: {PhoneNumber}");
             Console.WriteLine($"Correo: {Email}");
             if (!string.IsNullOrEmpty(ContactName)) Console.WriteLine($"Contacto: {ContactName}");
             if (!string.IsNullOrEmpty(Address)) Console.WriteLine($"Dirección: {Address}");
+            if (!string.IsNullOrEmpty(PaymentTerms)) Console.WriteLine($"Condiciones de pago: {PaymentTerms}");
             Console.WriteLine($"Tiempo de Entrega: {LeadTimeDays} días");
+            Console.WriteLine($"Estado: {(IsActive ? "Activo" : "Inactivo")}");
         }
 
         public void PlaceOrder(List<Product> products)

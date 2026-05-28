@@ -88,7 +88,21 @@ namespace Farmacontrol.UI.View
                 Console.WriteLine("Debe ser mayor que cero.");
             }
 
-            var supplier = new Supplier(code, name, phone, email, leadTime);
+            string taxId =
+                ConsoleHelper.ReadText("NIT o Identificación Fiscal (opcional, deje en blanco para omitir): ",
+                    allowEmpty: true);
+            string address = ConsoleHelper.ReadText("Dirección (opcional): ", allowEmpty: true);
+            string contactName = ConsoleHelper.ReadText("Nombre de contacto (opcional): ", allowEmpty: true);
+            string paymentTerms = ConsoleHelper.ReadText("Condiciones de pago (opcional, ej. Contado, 30 días): ",
+                allowEmpty: true);
+
+            var supplier = new Supplier(code, name, phone, email, leadTime,
+                string.IsNullOrWhiteSpace(contactName) ? null : contactName,
+                string.IsNullOrWhiteSpace(address) ? null : address)
+            {
+                TaxId = string.IsNullOrWhiteSpace(taxId) ? null : taxId,
+                PaymentTerms = string.IsNullOrWhiteSpace(paymentTerms) ? null : paymentTerms
+            };
             supplierManager.AddSupplier(supplier);
             Console.WriteLine("Proveedor agregado correctamente.");
             ConsoleHelper.Pause();
