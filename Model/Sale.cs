@@ -16,6 +16,10 @@ namespace Farmacontrol.Model
         public decimal DiscountPercentage { get; set; }
         public decimal TaxAmount { get; set; }
 
+        public string? InvoiceNumber { get; set; }
+        public string? Notes { get; set; }
+        public string Status { get; set; } = "Completada";
+
         public Prescription? Prescription { get; set; }
 
         public Sale(int code)
@@ -55,6 +59,7 @@ namespace Farmacontrol.Model
         {
             if (IsVoided) return;
             IsVoided = true;
+            Status = "Anulada";
             Total = 0;
         }
 
