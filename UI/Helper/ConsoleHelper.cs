@@ -109,5 +109,58 @@ namespace Farmacontrol.UI.Helper
             Console.Write($"{message} (s/n): ");
             return Console.ReadLine()?.ToLower() == "s";
         }
+
+        public static string ReadTextWithDefault(string message, string currentValue)
+        {
+            Console.Write($"{message} [{currentValue}]: ");
+            var input = Console.ReadLine() ?? "";
+            return string.IsNullOrWhiteSpace(input) ? currentValue : input.Trim();
+        }
+
+        public static int ReadIntWithDefault(string message, int currentValue)
+        {
+            while (true)
+            {
+                Console.Write($"{message} [{currentValue}]: ");
+                var input = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(input)) return currentValue;
+                
+                if (int.TryParse(input, out int result))
+                    return result;
+                
+                Console.WriteLine("Valor inválido, intente de nuevo.");
+            }
+        }
+
+        public static decimal ReadDecimalWithDefault(string message, decimal currentValue)
+        {
+            while (true)
+            {
+                Console.Write($"{message} [{currentValue}]: ");
+                var input = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(input)) return currentValue;
+                
+                if (decimal.TryParse(input, out decimal result))
+                    return result;
+                
+                Console.WriteLine("Valor inválido, intente de nuevo.");
+            }
+        }
+
+        public static DateTime ReadDateWithDefault(string message, DateTime currentValue, string format = "dd/MM/yyyy")
+        {
+            while (true)
+            {
+                Console.Write($"{message} [{currentValue.ToString(format)}]: ");
+                var input = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(input)) return currentValue;
+                
+                if (DateTime.TryParseExact(input, format, null,
+                        System.Globalization.DateTimeStyles.None, out DateTime result))
+                    return result;
+                
+                Console.WriteLine($"Formato inválido. Use {format}.");
+            }
+        }
     }
 }
