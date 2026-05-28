@@ -17,6 +17,10 @@ namespace Farmacontrol.Model
         public string? Barcode { get; set; }
         public string? Location { get; set; }
         public string? Laboratory { get; set; }
+        
+        public string? Subcategory { get; set; }
+        public List<string> Ingredients { get; set; } = new();
+        public List<string> Tags { get; set; } = new();
 
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;

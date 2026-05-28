@@ -119,9 +119,14 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
-            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
-            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            DateTime? expirationDate = null;
+            string? lotCode = null;
+            if (initialStock > 0)
+            {
+                expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+                lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            }
 
             var medicine = new Medicine
             {
@@ -133,6 +138,7 @@ namespace Farmacontrol.UI.View
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
+                Subcategory = ReadOptionalField("Sub-categoría (ej. Analgésico)"),
                 ActivePrinciple = ConsoleHelper.ReadText("Principio activo: "),
                 Concentration = ReadOptionalField("Concentración (ej. 500 mg)"),
                 Presentation = ReadOptionalField("Presentación (ej. Caja con 20 tabletas)"),
@@ -140,9 +146,12 @@ namespace Farmacontrol.UI.View
                 IsControlled = ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica y registro)?"),
                 Suppliers = suppliers
             };
+            
+            medicine.Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): ");
+            medicine.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
-            if (initialStock > 0)
-                medicine.AddBatch(lotCode, initialStock, expirationDate);
+            if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
+                medicine.AddBatch(lotCode, initialStock, expirationDate.Value);
 
             inventory.AddProduct(medicine);
             Console.WriteLine("Medicamento agregado correctamente.");
@@ -165,9 +174,14 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
-            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
-            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            DateTime? expirationDate = null;
+            string? lotCode = null;
+            if (initialStock > 0)
+            {
+                expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+                lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            }
 
             var cosmetic = new Cosmetic
             {
@@ -179,15 +193,19 @@ namespace Farmacontrol.UI.View
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
+                Subcategory = ReadOptionalField("Sub-categoría (ej. Cuidado facial)"),
                 Brand = ConsoleHelper.ReadText("Marca: "),
                 Type = ConsoleHelper.ReadText("Tipo (shampoo, crema, etc.): "),
                 Presentation = ReadOptionalField("Presentación (ej. Frasco 250 ml)"),
                 Hypoallergenic = ConsoleHelper.Confirm("¿Es hipoalergénico?"),
                 Suppliers = suppliers
             };
+            
+            cosmetic.Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): ");
+            cosmetic.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
-            if (initialStock > 0)
-                cosmetic.AddBatch(lotCode, initialStock, expirationDate);
+            if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
+                cosmetic.AddBatch(lotCode, initialStock, expirationDate.Value);
 
             inventory.AddProduct(cosmetic);
             Console.WriteLine("Producto de belleza agregado correctamente.");
@@ -210,9 +228,14 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
-            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
-            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            DateTime? expirationDate = null;
+            string? lotCode = null;
+            if (initialStock > 0)
+            {
+                expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+                lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            }
 
             var supplement = new Supplement
             {
@@ -224,6 +247,7 @@ namespace Farmacontrol.UI.View
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
+                Subcategory = ReadOptionalField("Sub-categoría (ej. Vitamina)"),
                 ActivePrinciple = ConsoleHelper.ReadText("Principio activo: "),
                 Type = ConsoleHelper.ReadText("Tipo: "),
                 Format = GetSupplementFormat(),
@@ -231,9 +255,12 @@ namespace Farmacontrol.UI.View
                 RecommendedDosage = ReadOptionalField("Dosis recomendada (ej. 1 cápsula al día)"),
                 Suppliers = suppliers
             };
+            
+            supplement.Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): ");
+            supplement.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
-            if (initialStock > 0)
-                supplement.AddBatch(lotCode, initialStock, expirationDate);
+            if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
+                supplement.AddBatch(lotCode, initialStock, expirationDate.Value);
 
             inventory.AddProduct(supplement);
             Console.WriteLine("Suplemento agregado correctamente.");
@@ -276,9 +303,14 @@ namespace Farmacontrol.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial: ");
-            DateTime expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
-            string lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            DateTime? expirationDate = null;
+            string? lotCode = null;
+            if (initialStock > 0)
+            {
+                expirationDate = ReadValidExpirationDate("Fecha de vencimiento (dd/MM/yyyy): ");
+                lotCode = ConsoleHelper.ReadText("Código de lote inicial: ");
+            }
 
             var supply = new Supply
             {
@@ -290,6 +322,7 @@ namespace Farmacontrol.UI.View
                 Barcode = ReadOptionalField("Código de barras"),
                 Location = ReadOptionalField("Ubicación en estantería"),
                 Laboratory = ReadOptionalField("Laboratorio fabricante"),
+                Subcategory = ReadOptionalField("Sub-categoría (ej. Material de curación)"),
                 Brand = ConsoleHelper.ReadText("Marca: "),
                 Type = ConsoleHelper.ReadText("Tipo: "),
                 Size = ReadOptionalField("Tamaño"),
@@ -297,9 +330,11 @@ namespace Farmacontrol.UI.View
                 IsSterile = ConsoleHelper.Confirm("¿Es estéril (libre de bacterias)?"),
                 Suppliers = suppliers
             };
+            
+            supply.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
-            if (initialStock > 0)
-                supply.AddBatch(lotCode, initialStock, expirationDate);
+            if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
+                supply.AddBatch(lotCode, initialStock, expirationDate.Value);
 
             inventory.AddProduct(supply);
             Console.WriteLine("Suministro agregado correctamente.");
@@ -423,6 +458,9 @@ namespace Farmacontrol.UI.View
             product.Barcode = ConsoleHelper.ReadTextWithDefault("Código de barras", product.Barcode ?? "");
             product.Location = ConsoleHelper.ReadTextWithDefault("Ubicación en estantería", product.Location ?? "");
             product.Laboratory = ConsoleHelper.ReadTextWithDefault("Laboratorio fabricante", product.Laboratory ?? "");
+            product.Subcategory = ConsoleHelper.ReadTextWithDefault("Sub-categoría", product.Subcategory ?? "");
+            product.Ingredients = UpdateList("Ingredientes", product.Ingredients);
+            product.Tags = UpdateList("Etiquetas", product.Tags);
 
             if (product is Medicine medicine)
             {
@@ -460,6 +498,21 @@ namespace Farmacontrol.UI.View
         {
             string value = ConsoleHelper.ReadText($"{fieldName} (opcional, enter para omitir): ", allowEmpty: true);
             return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        private List<string> ReadList(string prompt)
+        {
+            string input = ConsoleHelper.ReadText(prompt, allowEmpty: true);
+            if (string.IsNullOrWhiteSpace(input)) return new List<string>();
+            return input.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+        }
+
+        private List<string> UpdateList(string prompt, List<string> currentList)
+        {
+            string currentStr = string.Join(", ", currentList);
+            string input = ConsoleHelper.ReadTextWithDefault($"{prompt} (separados por coma)", currentStr);
+            if (string.IsNullOrWhiteSpace(input)) return new List<string>();
+            return input.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
         }
 
         private int ReadPositiveOrZeroInt(string prompt)
