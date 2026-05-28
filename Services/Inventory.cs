@@ -46,11 +46,15 @@ namespace Farmacontrol.Services
             _audit.Log("Eliminar Producto", $"Se eliminó el producto '{product.Name}' (Código: {product.Code}) del inventario.");
         }
 
-        public Product? SearchProduct(string query) =>
-            _db.Products.AsNoTracking().Include(p => p.Suppliers).FirstOrDefault(product =>
-                product.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
-                product.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
+        public Product? SearchProduct(string query)
+        {
+            string normalizedQuery = query.ToLower();
+
+            return _db.Products.AsNoTracking().Include(p => p.Suppliers).FirstOrDefault(product =>
+                product.Code.ToLower() == normalizedQuery ||
+                product.Name.ToLower() == normalizedQuery
             );
+        }
         
         public void ListProducts()
         {

@@ -33,11 +33,15 @@ namespace Farmacontrol.Services
             }
         }
 
-        public Supplier? SearchSupplier(string query) =>
-            _db.Suppliers.AsNoTracking().Include(s => s.Products).FirstOrDefault(supplier =>
-                supplier.Code.Equals(query, StringComparison.OrdinalIgnoreCase) ||
-                supplier.Name.Equals(query, StringComparison.OrdinalIgnoreCase)
+        public Supplier? SearchSupplier(string query)
+        {
+            string normalizedQuery = query.ToLower();
+
+            return _db.Suppliers.AsNoTracking().Include(s => s.Products).FirstOrDefault(supplier =>
+                supplier.Code.ToLower() == normalizedQuery ||
+                supplier.Name.ToLower() == normalizedQuery
             );
+        }
 
         public void GetAllSuppliers()
         {
