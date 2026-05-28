@@ -30,8 +30,17 @@ namespace Farmacontrol.UI.View
                 ClientName = clientName,
                 PaymentMethod = paymentMethod
             };
-            
-            decimal discount = ConsoleHelper.ReadDecimal("Porcentaje de Descuento (ej. 10 para 10%, 0 si no aplica): ");
+        
+            decimal discount;
+            while (true)
+            {
+                discount = ConsoleHelper.ReadDecimal("Porcentaje de Descuento (ej. 10 para 10%, 0 si no aplica): ");
+                if (discount is >= 0 and <= 100)
+                    break;
+
+                Console.WriteLine("El descuento debe estar entre 0 y 100.");
+            }
+
             sale.DiscountPercentage = discount;
 
             bool adding = true;
@@ -139,6 +148,8 @@ namespace Farmacontrol.UI.View
                 decimal discountAmt = subtotal * (sale.DiscountPercentage / 100);
                 sale.TaxAmount = (subtotal - discountAmt) * 0.12m; // Asumiendo un 12% de IVA
             }
+
+            sale.RecalculateTotal();
 
             salesManager.RegisterSale(sale);
             ConsoleHelper.ShowTitle("Resumen de Venta");
