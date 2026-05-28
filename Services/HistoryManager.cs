@@ -29,12 +29,23 @@ namespace Farmacontrol.Services
                     ));
 
                 if (product is IExpirable expirable && expirable.IsExpired())
+                {
                     RegisterAlert(new Alert(
                         "PRODUCTO VENCIDO",
                         product.Code,
                         product.Name,
                         $"El producto {product.Name} está vencido. Fecha de vencimiento: {expirable.ExpirationDate:dd/MM/yyyy}"
                     ));
+                }
+                else if (product is IExpirable soonExpirable && !soonExpirable.IsExpired() && soonExpirable.ExpiresIn() <= 30 && product.Stock > 0)
+                {
+                    RegisterAlert(new Alert(
+                        "PRODUCTO PRÓXIMO A VENCER",
+                        product.Code,
+                        product.Name,
+                        $"El producto {product.Name} (Quedan {product.Stock} unidades) vencerá el {soonExpirable.ExpirationDate:dd/MM/yyyy}."
+                    ));
+                }
             }
         }
 
