@@ -3,7 +3,7 @@ namespace Farmacontrol.Model
     public class Sale
     {
         private readonly List<SaleDetail> _details = new();
-        
+
         public int Code { get; set; }
         public DateTime Date { get; set; } = DateTime.Now;
         public decimal Total { get; set; }
@@ -11,11 +11,11 @@ namespace Farmacontrol.Model
         public string? ClientName { get; set; }
         public string? DoctorLicense { get; set; }
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
-        
+
         public bool IsVoided { get; set; }
         public decimal DiscountPercentage { get; set; }
         public decimal TaxAmount { get; set; }
-        
+
         public Prescription? Prescription { get; set; }
 
         public Sale(int code)
@@ -23,7 +23,9 @@ namespace Farmacontrol.Model
             Code = code;
         }
 
-        private Sale() { }
+        private Sale()
+        {
+        }
 
         public IReadOnlyList<SaleDetail> GetDetails => _details.AsReadOnly();
 
@@ -32,10 +34,17 @@ namespace Farmacontrol.Model
         public void AddDetail(Product product, int quantity)
         {
             _details.Add(new SaleDetail(product, quantity));
-            Total = CalculateTotal();
+            RecalculateTotal();
         }
 
-        private decimal CalculateTotal() 
+        public void RecalculateTotal()
+        {
+            decimal subtotal = _details.Sum(detail => detail.Subtotal);
+            decimal discount = subtotal * (DiscountPercentage / 100);
+            Total = subtotal - discount + TaxAmount;
+        }
+
+        private decimal CalculateTotal()
         {
             decimal subtotal = _details.Sum(detail => detail.Subtotal);
             decimal discount = subtotal * (DiscountPercentage / 100);
