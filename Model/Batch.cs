@@ -1,4 +1,3 @@
-using System;
 namespace Farmacontrol.Model
 {
     public class Batch
@@ -10,6 +9,9 @@ namespace Farmacontrol.Model
         public int Quantity { get; set; }
         public DateTime ManufacturingDate { get; set; }
         public DateTime ExpirationDate { get; set; }
+        public decimal UnitCost { get; set; }
+        public DateTime ReceivedDate { get; set; } = DateTime.Now;
+        public string? SupplierCode { get; set; }
         
         private Batch() { }
         
