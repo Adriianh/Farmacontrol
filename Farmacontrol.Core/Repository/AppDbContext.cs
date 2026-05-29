@@ -3,7 +3,7 @@ using Farmacontrol.Model.ProductEntity;
 using Farmacontrol.Model.UserEntity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Farmacontrol.Repository
+namespace Farmacontrol.Core.Repository
 {
     public class AppDbContext : DbContext
     {

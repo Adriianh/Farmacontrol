@@ -1,11 +1,11 @@
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Model;
 using Farmacontrol.Model.UserEntity;
-using Farmacontrol.Repository;
 using Farmacontrol.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
-namespace Farmacontrol.Services
+namespace Farmacontrol.Core.Services
 {
     public class UserManager
     {

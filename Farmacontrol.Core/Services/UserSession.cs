@@ -1,6 +1,6 @@
 using Farmacontrol.Model;
 
-namespace Farmacontrol.Services
+namespace Farmacontrol.Core.Services
 {
     public class UserSession
     {

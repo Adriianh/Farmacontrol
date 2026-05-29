@@ -1,8 +1,8 @@
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Model;
-using Farmacontrol.Repository;
 using Microsoft.EntityFrameworkCore;
 
-namespace Farmacontrol.Services
+namespace Farmacontrol.Core.Services
 {
     public class SupplierManager
     {

@@ -1,5 +1,5 @@
-using Farmacontrol.Repository;
-using Farmacontrol.Services;
+using Farmacontrol.Core.Repository;
+using Farmacontrol.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

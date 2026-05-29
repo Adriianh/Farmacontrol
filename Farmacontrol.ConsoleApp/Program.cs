@@ -1,8 +1,8 @@
 using Farmacontrol.ConsoleApp.UI;
 using Farmacontrol.ConsoleApp.UI.View;
+using Farmacontrol.Core.Repository;
+using Farmacontrol.Core.Services;
 using Farmacontrol.DependencyInjection;
-using Farmacontrol.Repository;
-using Farmacontrol.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

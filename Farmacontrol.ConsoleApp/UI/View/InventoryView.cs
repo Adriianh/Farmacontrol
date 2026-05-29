@@ -1,7 +1,7 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
+using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
 using Farmacontrol.Model.ProductEntity;
-using Farmacontrol.Services;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
