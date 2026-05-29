@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace Farmacontrol.Model.ProductEntity
+namespace Farmacontrol.Core.Model.ProductEntity
 {
     public enum SupplementFormat
     {

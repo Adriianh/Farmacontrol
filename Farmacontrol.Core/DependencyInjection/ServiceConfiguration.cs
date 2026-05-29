@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Farmacontrol.DependencyInjection
+namespace Farmacontrol.Core.DependencyInjection
 {
     public static class ServiceConfiguration
     {

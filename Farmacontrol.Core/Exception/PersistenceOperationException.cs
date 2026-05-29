@@ -1,4 +1,4 @@
-namespace Farmacontrol.Exception
+namespace Farmacontrol.Core.Exception
 {
     public class PersistenceOperationException : System.Exception
     {

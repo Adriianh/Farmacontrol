@@ -1,4 +1,4 @@
-namespace Farmacontrol.Interface
+namespace Farmacontrol.Core.Interface
 {
     public interface IAlertable
     {

@@ -1,6 +1,7 @@
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Model.ProductEntity;
+using Farmacontrol.Core.Model.UserEntity;
 using Farmacontrol.Model;
-using Farmacontrol.Model.ProductEntity;
-using Farmacontrol.Model.UserEntity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Core.Repository

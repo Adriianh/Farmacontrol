@@ -1,6 +1,6 @@
-using Farmacontrol.Util;
+using Farmacontrol.Core.Util;
 
-namespace Farmacontrol.Model
+namespace Farmacontrol.Core.Model
 {
     public abstract class User
     {

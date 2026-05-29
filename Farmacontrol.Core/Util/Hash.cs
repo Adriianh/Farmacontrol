@@ -1,7 +1,4 @@
-using System.Security.Cryptography;
-using System.Text;
-
-namespace Farmacontrol.Util
+namespace Farmacontrol.Core.Util
 {
     public class Hash
     {

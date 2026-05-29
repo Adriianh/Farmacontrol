@@ -1,7 +1,9 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Model.UserEntity;
 using Farmacontrol.Core.Services;
+using Farmacontrol.Core.Util;
 using Farmacontrol.Model;
-using Farmacontrol.Model.UserEntity;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
@@ -155,7 +157,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (!string.IsNullOrWhiteSpace(newPassword))
             {
                 // To update password properly we'd need to hash it. Since it's done in the constructor, we might need a method or direct hash.
-                userToEdit.Password = Farmacontrol.Util.Hash.Hashing(newPassword);
+                userToEdit.Password = Hash.Hashing(newPassword);
             }
 
             userManager.UpdateUser(userToEdit);

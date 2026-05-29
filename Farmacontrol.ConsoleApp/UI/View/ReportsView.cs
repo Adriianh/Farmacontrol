@@ -1,7 +1,8 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Services;
+using Farmacontrol.Core.Util;
 using Farmacontrol.Model;
-using Farmacontrol.Util;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {

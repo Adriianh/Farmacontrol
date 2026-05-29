@@ -1,7 +1,7 @@
-using Farmacontrol.Interface;
-using System.Linq;
+using Farmacontrol.Core.Interface;
+using Farmacontrol.Model;
 
-namespace Farmacontrol.Model.ProductEntity
+namespace Farmacontrol.Core.Model.ProductEntity
 {
     public class Supply : Product, IAlertable, IExpirable
     {

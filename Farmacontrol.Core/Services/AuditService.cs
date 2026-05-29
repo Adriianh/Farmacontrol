@@ -1,3 +1,4 @@
+using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Repository;
 using Farmacontrol.Model;
 

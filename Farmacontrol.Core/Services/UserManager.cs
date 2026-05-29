@@ -1,7 +1,8 @@
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Model.UserEntity;
 using Farmacontrol.Core.Repository;
+using Farmacontrol.Core.Util;
 using Farmacontrol.Model;
-using Farmacontrol.Model.UserEntity;
-using Farmacontrol.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 

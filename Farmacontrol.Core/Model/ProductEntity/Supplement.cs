@@ -1,10 +1,8 @@
-using System;
-using System.ComponentModel;
-using Farmacontrol.Interface;
-using System.Linq;
-using Farmacontrol.Util;
+using Farmacontrol.Core.Interface;
+using Farmacontrol.Core.Util;
+using Farmacontrol.Model;
 
-namespace Farmacontrol.Model.ProductEntity
+namespace Farmacontrol.Core.Model.ProductEntity
 {
     public class Supplement : Product, IAlertable, IExpirable
     {

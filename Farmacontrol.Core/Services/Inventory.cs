@@ -1,5 +1,6 @@
+using Farmacontrol.Core.Interface;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Repository;
-using Farmacontrol.Interface;
 using Farmacontrol.Model;
 using Microsoft.EntityFrameworkCore;
 

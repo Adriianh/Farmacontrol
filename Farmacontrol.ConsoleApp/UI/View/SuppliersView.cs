@@ -1,4 +1,5 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
 

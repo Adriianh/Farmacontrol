@@ -1,4 +1,4 @@
-namespace Farmacontrol.Model
+namespace Farmacontrol.Core.Model
 {
     public class Alert
     {

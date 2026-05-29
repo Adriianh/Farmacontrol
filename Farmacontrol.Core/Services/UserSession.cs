@@ -1,3 +1,4 @@
+using Farmacontrol.Core.Model;
 using Farmacontrol.Model;
 
 namespace Farmacontrol.Core.Services

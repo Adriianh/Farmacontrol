@@ -1,8 +1,9 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
+using Farmacontrol.Core.Exception;
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Model.ProductEntity;
 using Farmacontrol.Core.Services;
-using Farmacontrol.Exception;
 using Farmacontrol.Model;
-using Farmacontrol.Model.ProductEntity;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {

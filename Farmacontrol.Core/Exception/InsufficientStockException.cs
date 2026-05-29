@@ -1,4 +1,4 @@
-namespace Farmacontrol.Exception
+namespace Farmacontrol.Core.Exception
 {
     public class InsufficientStockException : System.Exception
     {
