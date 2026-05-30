@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Core.Services
 {
-    public class SalesManager
+    public class SalesService
     {
         private readonly AppDbContext _db;
         private readonly AuditService _audit;
 
-        public SalesManager(AppDbContext db, AuditService audit)
+        public SalesService(AppDbContext db, AuditService audit)
         {
             _db = db;
             _audit = audit;

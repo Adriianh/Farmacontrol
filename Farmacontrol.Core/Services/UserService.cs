@@ -1,24 +1,22 @@
+using System.Text.RegularExpressions;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.UserEntity;
 using Farmacontrol.Core.Repository;
 using Farmacontrol.Core.Util;
-using Farmacontrol.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace Farmacontrol.Core.Services
 {
-    public class UserManager
+    public class UserService
     {
         private readonly AppDbContext _db;
         private string _masterKey;
         private readonly AuditService _audit;
-        private readonly IConfiguration _configuration;
 
-        public UserManager(AppDbContext db, IConfiguration configuration, AuditService audit)
+        public UserService(AppDbContext db, IConfiguration configuration, AuditService audit)
         {
             _db = db;
-            _configuration = configuration;
             _masterKey = configuration["Security:MasterKey"] ?? string.Empty;
             _audit = audit;
             EnsureAdminUser();
@@ -30,17 +28,15 @@ namespace Farmacontrol.Core.Services
         {
             _masterKey = Hash.Hashing(newPassword);
             
-            // Reflejarlo en el archivo appsettings.json
             try 
             {
                 string path = "appsettings.json";
                 if (File.Exists(path))
                 {
                     string json = File.ReadAllText(path);
-                    // Para C# Regex.Replace, un '$' literal en el reemplazo debe escaparse como '$$'
                     string replacement = _masterKey.Replace("$", "$$");
                     var pattern = @"(""MasterKey""\s*:\s*"")[^""]*("")";
-                    json = System.Text.RegularExpressions.Regex.Replace(json, pattern, $"${{1}}{replacement}${{2}}");
+                    json = Regex.Replace(json, pattern, $"${{1}}{replacement}${{2}}");
                     File.WriteAllText(path, json);
                 }
             }

@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Core.Services
 {
-    public class HistoryManager
+    public class HistoryService
     {
         private readonly AppDbContext _db;
 
-        public HistoryManager(AppDbContext db)
+        public HistoryService(AppDbContext db)
         {
             _db = db;
         }

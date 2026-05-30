@@ -5,7 +5,7 @@ using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.Component
 {
-    public class LoginComponent(UserManager userManager)
+    public class LoginComponent(UserService userService)
     {
         public User? Login(int maxAttempts = 3)
         {
@@ -22,7 +22,7 @@ namespace Farmacontrol.ConsoleApp.UI.Component
                 Console.Write("Contraseña: ");
                 string password = ConsoleHelper.ReadPassword();
 
-                User? user = userManager.Authenticate(username, password);
+                User? user = userService.Authenticate(username, password);
 
                 if (user != null)
                 {

@@ -3,13 +3,13 @@ using Farmacontrol.Core.Services;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
-    public class ProductsView(Inventory inventory)
+    public class ProductsView(InventoryService inventoryService)
     {
         public void SearchProduct()
         {
             ConsoleHelper.ShowTitle("Buscar Producto");
 
-            if (!inventory.GetProducts.Any())
+            if (!inventoryService.GetProducts.Any())
             {
                 Console.WriteLine("No hay productos en inventario.");
                 ConsoleHelper.Pause();
@@ -19,7 +19,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             string input = ConsoleHelper.ReadText("Nombre o código del producto (o 'fin' para cancelar): ");
             if (input.ToLower() == "fin") return;
 
-            var products = inventory.SearchProducts(input);
+            var products = inventoryService.SearchProducts(input);
 
             if (products.Count == 0)
             {
@@ -42,14 +42,14 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             ConsoleHelper.ShowTitle("Productos Vencidos");
 
-            if (!inventory.GetProducts.Any())
+            if (!inventoryService.GetProducts.Any())
             {
                 Console.WriteLine("No hay productos en inventario.");
                 ConsoleHelper.Pause();
                 return;
             }
 
-            var products = inventory.GetProducts;
+            var products = inventoryService.GetProducts;
             bool foundExpired = false;
             foreach (var product in products)
             {
@@ -60,7 +60,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     Console.WriteLine($"Lote {batch.LotCode} - {product.Name} - Venció el {batch.ExpirationDate:dd/MM/yyyy} - Cantidad: {batch.Quantity}");
                     if (ConsoleHelper.Confirm("¿Desea darlo de baja?"))
                     {
-                        inventory.DiscardBatch(product.Code, batch.LotCode, "Vencimiento");
+                        inventoryService.DiscardBatch(product.Code, batch.LotCode, "Vencimiento");
                         Console.WriteLine("Lote dado de baja correctamente.");
                     }
                 }

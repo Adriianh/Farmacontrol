@@ -6,11 +6,11 @@ using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
-    public class ReportsView(SalesManager salesManager)
+    public class ReportsView(SalesService salesService)
     {
         public void ShowReportsMenu()
         {
-            var sales = salesManager.GetAllSales().ToList();
+            var sales = salesService.GetAllSales().ToList();
             var report = new Report(sales);
 
             ConsoleHelper.ShowTitle("Reportes");

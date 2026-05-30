@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Core.Services
 {
-    public class Inventory
+    public class InventoryService
     {
         private readonly AppDbContext _db;
         private readonly AuditService _audit;
 
-        public Inventory(AppDbContext db, AuditService audit)
+        public InventoryService(AppDbContext db, AuditService audit)
         {
             _db = db;
             _audit = audit;

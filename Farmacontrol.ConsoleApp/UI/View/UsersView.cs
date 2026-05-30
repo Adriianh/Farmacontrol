@@ -7,7 +7,7 @@ using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
-    public class UsersView(UserManager userManager)
+    public class UsersView(UserService userService)
     {
         public void ManageUsers(User currentUser)
         {
@@ -36,7 +36,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             Console.Write("Ingrese la clave maestra (o 'fin' para cancelar): ");
             string input = ConsoleHelper.ReadPassword();
             if (input.ToLower() == "fin") return false;
-            if (userManager.VerifyMasterKey(input))
+            if (userService.VerifyMasterKey(input))
                 return true;
 
             Console.WriteLine("Clave maestra incorrecta.");
@@ -58,7 +58,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             {
                 username = ConsoleHelper.ReadText("Nombre de usuario (o 'fin' para cancelar): ");
                 if (username.ToLower() == "fin") return;
-                if (userManager.GetAllUsers().Any(u => u.Username == username))
+                if (userService.GetAllUsers().Any(u => u.Username == username))
                 {
                     Console.WriteLine("Ya existe un usuario con ese nombre de usuario.");
                     continue;
@@ -97,7 +97,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            userManager.AddUser(newUser);
+            userService.AddUser(newUser);
             Console.WriteLine($"Usuario {username} creado correctamente como {newUser.Role}.");
             ConsoleHelper.Pause();
         }
@@ -119,14 +119,14 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 ConsoleHelper.Pause();
                 return;
             }
-            if (userManager.GetAllUsers().All(u => u.Username != username))
+            if (userService.GetAllUsers().All(u => u.Username != username))
             {
                 Console.WriteLine("No existe un usuario con ese nombre de usuario.");
                 ConsoleHelper.Pause();
                 return;
             }
 
-            userManager.RemoveUser(username);
+            userService.RemoveUser(username);
             Console.WriteLine($"Usuario {username} eliminado.");
             ConsoleHelper.Pause();
         }
@@ -142,7 +142,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             string username = ConsoleHelper.ReadText("\nNombre de usuario a modificar (o 'fin' para cancelar): ");
             if (username.ToLower() == "fin") return;
 
-            var userToEdit = userManager.GetAllUsers().FirstOrDefault(u => u.Username == username);
+            var userToEdit = userService.GetAllUsers().FirstOrDefault(u => u.Username == username);
             if (userToEdit == null)
             {
                 Console.WriteLine("No existe un usuario con ese nombre de usuario.");
@@ -160,7 +160,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 userToEdit.Password = Hash.Hashing(newPassword);
             }
 
-            userManager.UpdateUser(userToEdit);
+            userService.UpdateUser(userToEdit);
             Console.WriteLine($"Usuario {username} modificado.");
             ConsoleHelper.Pause();
         }
@@ -168,7 +168,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         private void ListUsers(bool pause = true)
         {
             ConsoleHelper.ShowTitle("Usuarios Registrados");
-            var users = userManager.GetAllUsers();
+            var users = userService.GetAllUsers();
             if (!users.Any())
                 Console.WriteLine("No hay usuarios registrados.");
             else

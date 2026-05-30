@@ -22,11 +22,11 @@ namespace Farmacontrol.Core.DependencyInjection
             services.AddSingleton<FileLogger>();
             services.AddTransient<AuditService>();
 
-            services.AddTransient<UserManager>();
-            services.AddTransient<Inventory>();
-            services.AddTransient<SupplierManager>();
-            services.AddTransient<HistoryManager>();
-            services.AddTransient<SalesManager>();
+            services.AddTransient<UserService>();
+            services.AddTransient<InventoryService>();
+            services.AddTransient<SupplierService>();
+            services.AddTransient<HistoryService>();
+            services.AddTransient<SalesService>();
 
             return services;
         }

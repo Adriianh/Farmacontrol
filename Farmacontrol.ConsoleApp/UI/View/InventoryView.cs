@@ -6,7 +6,7 @@ using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
-    public class InventoryView(Inventory inventory, SupplierManager supplierManager)
+    public class InventoryView(InventoryService inventoryService, SupplierService supplierService)
     {
         public void ManageInventory()
         {
@@ -30,10 +30,10 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 case "3": AddSupplement(); break;
                 case "4": AddSupply(); break;
                 case "5":
-                    if (!inventory.GetProducts.Any())
+                    if (!inventoryService.GetProducts.Any())
                         Console.WriteLine("No hay productos en inventario.");
                     else
-                        inventory.ListProducts();
+                        inventoryService.ListProducts();
                     ConsoleHelper.Pause();
                     break;
                 case "6": AssociateSupplierToProduct(); break;
@@ -50,7 +50,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             string supplierCode = ConsoleHelper.ReadText("Código del proveedor (o 'fin' para cancelar): ");
             if (supplierCode.ToLower() == "fin") return;
             
-            var supplier = supplierManager.SearchSupplier(supplierCode);
+            var supplier = supplierService.SearchSupplier(supplierCode);
             if (supplier == null)
             {
                 Console.WriteLine("Proveedor no encontrado.");
@@ -80,7 +80,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     continue;
                 }
 
-                var product = inventory.SearchProduct(productCode);
+                var product = inventoryService.SearchProduct(productCode);
                 if (product == null)
                 {
                     Console.WriteLine("Producto no encontrado en inventario.");
@@ -98,7 +98,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
 
             if (purchase.Details.Any())
             {
-                inventory.RegisterPurchase(purchase);
+                inventoryService.RegisterPurchase(purchase);
                 Console.WriteLine($"\nIngreso registrado exitosamente. Total: Q{purchase.TotalCost:F2}");
             }
             ConsoleHelper.Pause();
@@ -113,7 +113,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
-            if (inventory.SearchProduct(code) != null)
+            if (inventoryService.SearchProduct(code) != null)
             {
                 Console.WriteLine("Ya existe un producto con ese código.");
                 ConsoleHelper.Pause();
@@ -154,7 +154,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 medicine.AddBatch(lotCode, initialStock, expirationDate.Value);
 
-            inventory.AddProduct(medicine);
+            inventoryService.AddProduct(medicine);
             Console.WriteLine("Medicamento agregado correctamente.");
             ConsoleHelper.Pause();
         }
@@ -168,7 +168,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
-            if (inventory.SearchProduct(code) != null)
+            if (inventoryService.SearchProduct(code) != null)
             {
                 Console.WriteLine("Ya existe un producto con ese código.");
                 ConsoleHelper.Pause();
@@ -208,7 +208,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 cosmetic.AddBatch(lotCode, initialStock, expirationDate.Value);
 
-            inventory.AddProduct(cosmetic);
+            inventoryService.AddProduct(cosmetic);
             Console.WriteLine("Producto de belleza agregado correctamente.");
             ConsoleHelper.Pause();
         }
@@ -222,7 +222,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
-            if (inventory.SearchProduct(code) != null)
+            if (inventoryService.SearchProduct(code) != null)
             {
                 Console.WriteLine("Ya existe un producto con ese código.");
                 ConsoleHelper.Pause();
@@ -263,7 +263,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 supplement.AddBatch(lotCode, initialStock, expirationDate.Value);
 
-            inventory.AddProduct(supplement);
+            inventoryService.AddProduct(supplement);
             Console.WriteLine("Suplemento agregado correctamente.");
             ConsoleHelper.Pause();
         }
@@ -297,7 +297,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (name.ToLower() == "fin") return;
             string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
-            if (inventory.SearchProduct(code) != null)
+            if (inventoryService.SearchProduct(code) != null)
             {
                 Console.WriteLine("Ya existe un producto con ese código.");
                 ConsoleHelper.Pause();
@@ -337,7 +337,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 supply.AddBatch(lotCode, initialStock, expirationDate.Value);
 
-            inventory.AddProduct(supply);
+            inventoryService.AddProduct(supply);
             Console.WriteLine("Suministro agregado correctamente.");
             ConsoleHelper.Pause();
         }
@@ -353,7 +353,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     break;
                 }
 
-                var supplier = supplierManager.SearchSupplier(supplierCode);
+                var supplier = supplierService.SearchSupplier(supplierCode);
                 if (supplier == null)
                 {
                     Console.WriteLine("[Error] Proveedor no encontrado. Intente de nuevo.");
@@ -378,7 +378,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             ConsoleHelper.ShowTitle("Asociar Proveedor a Producto");
             string productCode = ConsoleHelper.ReadText("Código del producto: ");
-            var product = inventory.SearchProduct(productCode);
+            var product = inventoryService.SearchProduct(productCode);
             if (product == null)
             {
                 Console.WriteLine("Producto no encontrado.");
@@ -387,7 +387,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             }
 
             string supplierCode = ConsoleHelper.ReadText("Código del proveedor a asociar: ");
-            var supplier = supplierManager.SearchSupplier(supplierCode);
+            var supplier = supplierService.SearchSupplier(supplierCode);
             if (supplier == null)
             {
                 Console.WriteLine("Proveedor no encontrado.");
@@ -395,7 +395,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            bool success = inventory.AssociateSupplier(productCode, supplierCode);
+            bool success = inventoryService.AssociateSupplier(productCode, supplierCode);
             Console.WriteLine(success
                 ? $"[Éxito] Proveedor '{supplier.Name}' asociado correctamente al producto '{product.Name}'."
                 : "El proveedor ya estaba asociado a este producto o ocurrió un error.");
@@ -405,7 +405,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         private void RemoveProduct()
         {
             ConsoleHelper.ShowTitle("Eliminar Producto");
-            if (!inventory.GetProducts.Any())
+            if (!inventoryService.GetProducts.Any())
             {
                 Console.WriteLine("No hay productos en inventario.");
                 ConsoleHelper.Pause();
@@ -415,7 +415,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             string code = ConsoleHelper.ReadText("Código del producto a eliminar (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
 
-            var product = inventory.SearchProduct(code);
+            var product = inventoryService.SearchProduct(code);
             if (product == null)
             {
                 Console.WriteLine("No existe un producto con ese código.");
@@ -426,7 +426,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (!ConsoleHelper.Confirm($"\n¿Está seguro que desea eliminar '{product.Name}'?"))
                 return;
 
-            inventory.RemoveProduct(product);
+            inventoryService.RemoveProduct(product);
             Console.WriteLine("Producto eliminado (borrado lógico) correctamente.");
             ConsoleHelper.Pause();
         }
@@ -434,7 +434,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         private void UpdateProduct()
         {
             ConsoleHelper.ShowTitle("Modificar Producto");
-            if (!inventory.GetProducts.Any())
+            if (!inventoryService.GetProducts.Any())
             {
                 Console.WriteLine("No hay productos en inventario.");
                 ConsoleHelper.Pause();
@@ -444,7 +444,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             string code = ConsoleHelper.ReadText("Código del producto a modificar (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
 
-            var product = inventory.SearchProduct(code);
+            var product = inventoryService.SearchProduct(code);
             if (product == null)
             {
                 Console.WriteLine("No existe un producto con ese código.");
@@ -490,7 +490,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 supply.Material = ConsoleHelper.ReadTextWithDefault("Material", supply.Material ?? "");
             }
 
-            inventory.UpdateProduct(product);
+            inventoryService.UpdateProduct(product);
             Console.WriteLine("Producto modificado correctamente.");
             ConsoleHelper.Pause();
         }

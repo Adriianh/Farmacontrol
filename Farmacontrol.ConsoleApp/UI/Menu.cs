@@ -8,7 +8,7 @@ using Farmacontrol.Model;
 namespace Farmacontrol.ConsoleApp.UI
 {
     public class Menu(
-        UserManager userManager,
+        UserService userService,
         UserSession userSession,
         FileLogger logger,
         InventoryView inventoryView,
@@ -23,7 +23,7 @@ namespace Farmacontrol.ConsoleApp.UI
 
         public void Start()
         {
-            if (!userManager.IsMasterKeyConfigured)
+            if (!userService.IsMasterKeyConfigured)
             {
                 ConsoleHelper.ShowTitle("Configuración Inicial");
                 Console.WriteLine("Por motivos de seguridad, detectamos que la clave maestra del sistema es defectuosa o no se ha configurado.");
@@ -42,12 +42,12 @@ namespace Farmacontrol.ConsoleApp.UI
                     break;
                 }
 
-                userManager.SetMasterKey(newKey);
+                userService.SetMasterKey(newKey);
                 Console.WriteLine("\n[Ok] Clave Maestra configurada exitosamente.");
                 ConsoleHelper.Pause();
             }
 
-            _actualUser = new LoginComponent(userManager).Login();
+            _actualUser = new LoginComponent(userService).Login();
 
             if (_actualUser == null)
             {
