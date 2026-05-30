@@ -1,10 +1,8 @@
-using System;
-using System.Linq;
-using Avalonia.Controls;
-using Avalonia.Data;
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
-using Avalonia.Media;
+using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Styling;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.ProductEntity;
 using Farmacontrol.Desktop.States;
 
@@ -12,12 +10,17 @@ namespace Farmacontrol.Desktop.Components;
 
 public static class AddProductModal
 {
+    private static readonly SolidColorBrush BackgroundTertiary = SolidColorBrush.Parse("#374151");
+    private static readonly SolidColorBrush BackgroundHover = SolidColorBrush.Parse("#4B5563");
     private static readonly SolidColorBrush BackgroundOverlay = SolidColorBrush.Parse("#80000000");
     private static readonly SolidColorBrush BackgroundCard = SolidColorBrush.Parse("#1F2937");
     private static readonly SolidColorBrush BackgroundInput = SolidColorBrush.Parse("#374151");
     private static readonly SolidColorBrush BorderColor = SolidColorBrush.Parse("#4B5563");
     private static readonly SolidColorBrush AccentBlue = SolidColorBrush.Parse("#2563EB");
     private static readonly SolidColorBrush TextMuted = SolidColorBrush.Parse("#9CA3AF");
+    private static readonly SolidColorBrush ErrorBackground = SolidColorBrush.Parse("#7F1D1D");
+    private static readonly SolidColorBrush ErrorBorder = SolidColorBrush.Parse("#DC2626");
+    private static readonly SolidColorBrush ErrorText = SolidColorBrush.Parse("#FCA5A5");
 
     public static Control Build(AddProductState state, Action onCancel, Action onSave)
     {
@@ -46,8 +49,32 @@ public static class AddProductModal
                     .Padding(24)
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .VerticalAlignment(VerticalAlignment.Center)
+                    .Styles(
+                        new Style(x => x.OfType<TextBox>().Class(":pointerover").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<TextBox>().Class(":focus").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
+                                new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
+                            }
+                        },
+                        new Style(x => x.OfType<FlyoutPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
+                                new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0))
+                            }
+                        }
+                    )
                     .Child(
-                        new Grid().Rows("Auto, *, Auto")
+                        new Grid().Rows("Auto, Auto, *, Auto")
                             .Children(
                                 new Grid().Cols("*, Auto").Row(0)
                                     .Children(
@@ -59,7 +86,8 @@ public static class AddProductModal
                                             .VerticalAlignment(VerticalAlignment.Center),
                                         closeButton
                                     ),
-                                new ScrollViewer().Row(1).Margin(0, 16)
+                                BuildErrorPanel(state).Row(1),
+                                new ScrollViewer().Row(2).Margin(0, 16)
                                     .Content(
                                         new StackPanel().Spacing(12)
                                             .Children(
@@ -139,7 +167,7 @@ public static class AddProductModal
                                                     )
                                             )
                                     ),
-                                BuildActionButtons(onCancel, onSave).Row(2)
+                                BuildActionButtons(onCancel, onSave).Row(3)
                             )
                     )
             );
@@ -178,6 +206,32 @@ public static class AddProductModal
 
     private static TextBlock BuildLabel(string text) =>
         new TextBlock().Text(text).FontSize(12).FontWeight(FontWeight.SemiBold).Foreground(TextMuted);
+
+    private static Control BuildErrorPanel(AddProductState state) =>
+        new Border()
+            .Background(ErrorBackground)
+            .BorderBrush(ErrorBorder)
+            .BorderThickness(1)
+            .CornerRadius(6)
+            .Padding(12, 8)
+            .Margin(0, 0, 0, 12)
+            .IsVisible(state, x => x.HasErrorMessage)
+            .Child(
+                new StackPanel().Spacing(6).Orientation(Orientation.Horizontal)
+                    .Children(
+                        new TextBlock()
+                            .Text("⚠")
+                            .FontSize(16)
+                            .Foreground(ErrorText)
+                            .VerticalAlignment(VerticalAlignment.Center),
+                        new TextBlock()
+                            .Text(state, x => x.ErrorMessage)
+                            .Foreground(ErrorText)
+                            .FontSize(13)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                    )
+            );
 
     private static Control BuildMedicinePanel(AddProductState state) =>
         new StackPanel().Spacing(12)
@@ -272,10 +326,55 @@ public static class AddProductModal
                 BuildFormRow("Costo Unitario (Opcional)",
                     new TextBox().Text(state, x => x.BatchUnitCost, BindingMode.TwoWay)),
                 addBatchButton,
-                new TextBlock()
-                    .Text(state, x => x.BatchesInfo)
-                    .Foreground(Brushes.White)
-                    .FontSize(12)
+                new Border().Height(1).Background(BorderColor).Margin(0, 8).IsVisible(state, x => x.HasBatches),
+                BuildLabel("Lotes Agregados").IsVisible(state, x => x.HasBatches),
+                new ItemsControl()
+                    .ItemsSource(state, x => x.Batches)
+                    .ItemTemplate(
+                        new FuncDataTemplate<(string LotCode, int Quantity, DateTime MfgDate, DateTime ExpDate, decimal
+                            UnitCost)>((batch, _) =>
+                        {
+                            var removeButton = new Button()
+                                .Content("✕")
+                                .Background(SolidColorBrush.Parse("#EF4444"))
+                                .Foreground(Brushes.White)
+                                .Padding(4)
+                                .FontSize(12)
+                                .CornerRadius(4);
+
+                            removeButton.Click += (_, _) =>
+                            {
+                                var index = state.Batches.IndexOf(batch);
+                                if (index >= 0) state.RemoveBatch(index);
+                            };
+
+                            return new Border()
+                                .Background(BackgroundInput)
+                                .BorderBrush(BorderColor)
+                                .BorderThickness(1)
+                                .CornerRadius(6)
+                                .Padding(12, 8)
+                                .Margin(0, 0, 0, 8)
+                                .Child(
+                                    new Grid().Cols("*, Auto")
+                                        .Children(
+                                            new StackPanel().Spacing(4)
+                                                .Children(
+                                                    new TextBlock()
+                                                        .Text($"Lote: {batch.LotCode}")
+                                                        .FontSize(12)
+                                                        .FontWeight(FontWeight.SemiBold)
+                                                        .Foreground(Brushes.White),
+                                                    new TextBlock()
+                                                        .Text(
+                                                            $"Stock: {batch.Quantity} unidades | Vencimiento: {batch.ExpDate:yyyy-MM-dd}")
+                                                        .FontSize(11)
+                                                        .Foreground(TextMuted)
+                                                ),
+                                            removeButton.Col(1).Margin(12, 0, 0, 0)
+                                        )
+                                );
+                        }))
                     .IsVisible(state, x => x.HasBatches)
             )
             .IsVisible(state, x => x.EnableBatches);
@@ -288,7 +387,7 @@ public static class AddProductModal
                 new ItemsControl()
                     .ItemsSource(state, x => x.AvailableSuppliers)
                     .ItemTemplate(
-                        new Avalonia.Controls.Templates.FuncDataTemplate<Farmacontrol.Core.Model.Supplier>((supplier,
+                        new FuncDataTemplate<Supplier>((supplier,
                             _) =>
                         {
                             var cb = new CheckBox()
@@ -297,7 +396,16 @@ public static class AddProductModal
                                 .Margin(0, 2);
                             cb.IsCheckedChanged += (_, _) => state.ToggleSupplier(supplier);
                             return cb;
-                        })),
+                        }))
+                    .IsVisible(state, x => x.HasSuppliers),
+                new Button()
+                    .Content("➕ Agregar Nuevo Proveedor")
+                    .Background(AccentBlue)
+                    .Foreground(Brushes.White)
+                    .HorizontalAlignment(HorizontalAlignment.Stretch)
+                    .Padding(12, 6)
+                    .CornerRadius(6)
+                    .IsVisible(state, x => !x.HasSuppliers),
                 new TextBlock()
                     .Text(state, x => x.SuppliersInfo)
                     .Foreground(Brushes.White)

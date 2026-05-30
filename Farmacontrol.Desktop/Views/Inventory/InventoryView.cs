@@ -1,13 +1,7 @@
-using System.Collections.Generic;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
-using Avalonia.Data;
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
-using Avalonia.Media;
 using Avalonia.Styling;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Desktop.Components;
 using Farmacontrol.Desktop.States;
 using Farmacontrol.Model;
@@ -79,7 +73,13 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         state.IsAddModalOpen = false;
                         state.LoadProducts();
                     }
-                ).IsVisible(state, x => x.IsAddModalOpen)
+                ).IsVisible(state, x => x.IsAddModalOpen),
+                
+                BatchesModal.Build(
+                    state.SelectedProduct?.Name ?? string.Empty,
+                    state.SelectedProduct?.Batches ?? new List<Batch>(),
+                    onClose: () => state.CloseBatchesModal()
+                ).IsVisible(state, x => x.IsBatchesModalOpen)
             );
 
     private Control BuildHeader(InventoryState state)
@@ -210,7 +210,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
         return filterMenuButton;
     }
 
-    private Control BuildDropdownButton(string text, bool isActive, System.Action onClickAction, Flyout flyout)
+    private Control BuildDropdownButton(string text, bool isActive, Action onClickAction, Flyout flyout)
     {
         var textBlock = new TextBlock()
             .Text(text)
@@ -287,7 +287,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                             .Margin(0, 0, 16, 0)
                             .VerticalAlignment(VerticalAlignment.Center),
                         BuildProductInfo(product).Col(1),
-                        BuildStockColumn(product).Col(2),
+                        BuildStockColumn(product, state).Col(2),
                         BuildPriceColumn(product).Col(3),
                         BuildActionButtons(product, state).Col(4)
                     )
@@ -316,25 +316,52 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                     )
             );
 
-    private Control BuildStockColumn(Product product) =>
-        new StackPanel()
-            .VerticalAlignment(VerticalAlignment.Center)
-            .HorizontalAlignment(HorizontalAlignment.Center)
-            .Children(
-                new TextBlock()
-                    .Text("STOCK")
-                    .FontSize(10)
-                    .FontWeight(FontWeight.Bold)
-                    .Foreground(TextMuted)
-                    .HorizontalAlignment(HorizontalAlignment.Center),
-                new TextBlock()
-                    .Text(product, p => p.Stock)
-                    .FontSize(16)
-                    .FontWeight(FontWeight.Bold)
-                    .Foreground(Brushes.White)
-                    .Margin(0, 4, 0, 0)
+    private Control BuildStockColumn(Product product, InventoryState state)
+    {
+        var button = new Button()
+            .Background(Brushes.Transparent)
+            .Foreground(Brushes.White)
+            .Padding(12, 8)
+            .CornerRadius(6)
+            .Content(
+                new StackPanel()
+                    .VerticalAlignment(VerticalAlignment.Center)
                     .HorizontalAlignment(HorizontalAlignment.Center)
+                    .Children(
+                        new TextBlock()
+                            .Text("STOCK")
+                            .FontSize(10)
+                            .FontWeight(FontWeight.Bold)
+                            .Foreground(TextMuted)
+                            .HorizontalAlignment(HorizontalAlignment.Center),
+                        new TextBlock()
+                            .Text(product, p => p.Stock)
+                            .FontSize(16)
+                            .FontWeight(FontWeight.Bold)
+                            .Foreground(Brushes.White)
+                            .Margin(0, 4, 0, 0)
+                            .HorizontalAlignment(HorizontalAlignment.Center)
+                    )
             );
+
+        button.Styles(
+            new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
+            {
+                Setters =
+                {
+                    new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
+                    new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
+                }
+            }
+        );
+
+        button.Click += (_, _) =>
+        {
+            state.ShowBatchesModal(product);
+        };
+
+        return button;
+    }
 
     private Control BuildPriceColumn(Product product) =>
         new StackPanel()
