@@ -32,11 +32,16 @@ namespace Farmacontrol.Core.Repository
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
-            {
-                var dbPath = Path.Combine(AppContext.BaseDirectory, "farmacontrol.db");
-                optionsBuilder.UseSqlite($"Data Source={dbPath}");
-            }
+            if (optionsBuilder.IsConfigured) return;
+            
+            var appDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Farmacontrol");
+
+            Directory.CreateDirectory(appDataPath);
+
+            var dbPath = Path.Combine(appDataPath, "farmacontrol.db");
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
