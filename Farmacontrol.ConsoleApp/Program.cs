@@ -20,7 +20,7 @@ namespace Farmacontrol.ConsoleApp
             var services = new ServiceCollection();
 
             services.AddSingleton<IConfiguration>(configuration);
-            services.AddFarmacontrolCore(configuration);
+            services.AddFarmacontrolCore();
 
             services.AddTransient<InventoryView>();
             services.AddTransient<SalesView>();

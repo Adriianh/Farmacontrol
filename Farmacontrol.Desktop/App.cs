@@ -1,25 +1,37 @@
+using System;
+using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Declarative;
 using Avalonia.Styling;
+using Avalonia.Themes.Fluent;
 using Farmacontrol.Core.DependencyInjection;
 using Farmacontrol.Core.Repository;
+using Farmacontrol.Desktop.States;
 using Farmacontrol.Desktop.Views;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacontrol.Desktop;
 
 public static class Program
 {
+    public static IServiceProvider ServiceProvider { get; private set; } = null!;
+
     [STAThread]
     public static async Task Main(string[] args)
     {
         var serviceProvider = ConfigureServices();
+        ServiceProvider = serviceProvider;
+        
         await ApplyMigrationsAsync(serviceProvider);
         BuildApp(args, serviceProvider);
     }
 
     private static ServiceProvider ConfigureServices() => new ServiceCollection()
-        .AddFarmacontrolCore(new ConfigurationBuilder().Build())
+        .AddFarmacontrolCore()
+        .AddTransient<InventoryState>()
         .BuildServiceProvider();
 
     private static async Task ApplyMigrationsAsync(IServiceProvider serviceProvider)
