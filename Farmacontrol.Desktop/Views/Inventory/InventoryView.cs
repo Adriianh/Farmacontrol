@@ -8,6 +8,7 @@ using Avalonia.Layout;
 using Avalonia.Markup.Declarative;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Farmacontrol.Desktop.Components;
 using Farmacontrol.Desktop.States;
 using Farmacontrol.Model;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,43 +31,58 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
     private static readonly SolidColorBrush DividerColor = SolidColorBrush.Parse("#111827");
 
     protected override object Build(InventoryState state) =>
-        new Border().RowSpan(2)
-            .Background(BackgroundPrimary)
-            .CornerRadius(12)
-            .Styles(
-                new Style(x => x.OfType<TextBox>().Class(":pointerover").Template().OfType<Border>())
-                    { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
-                new Style(x => x.OfType<TextBox>().Class(":focus").Template().OfType<Border>())
-                    { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
-                new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
-                {
-                    Setters =
-                    {
-                        new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
-                        new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
-                    }
-                },
-                new Style(x => x.OfType<FlyoutPresenter>())
-                {
-                    Setters =
-                    {
-                        new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
-                        new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
-                        new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
-                        new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0))
-                    }
-                }
-            )
-            .Child(
-                new Grid().Rows("Auto, Auto, *")
-                    .Children(
-                        BuildHeader().Row(0).Margin(20),
-                        BuildSearchBar(state).Row(1),
-                        BuildProductList(state).Row(2)
+        new Grid()
+            .Children(
+                new Border().RowSpan(2)
+                    .Background(BackgroundPrimary)
+                    .CornerRadius(12)
+                    .Styles(
+                        new Style(x => x.OfType<TextBox>().Class(":pointerover").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<TextBox>().Class(":focus").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
+                                new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
+                            }
+                        },
+                        new Style(x => x.OfType<FlyoutPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
+                                new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0))
+                            }
+                        }
                     )
+                    .Child(
+                        new Grid().Rows("Auto, Auto, *")
+                            .Children(
+                                BuildHeader(state).Row(0).Margin(20),
+                                BuildSearchBar(state).Row(1),
+                                BuildProductList(state).Row(2)
+                            )
+                    ),
+
+                AddProductModal.Build(
+                    state.AddProductForm,
+                    onCancel: () => state.IsAddModalOpen = false,
+                    onSave: () => {
+                        state.AddProductForm.SaveProduct();
+                        if (!string.IsNullOrEmpty(state.AddProductForm.ErrorMessage)) return;
+                        
+                        state.IsAddModalOpen = false;
+                        state.LoadProducts();
+                    }
+                ).IsVisible(state, x => x.IsAddModalOpen)
             );
 
-    private Control BuildHeader()
+    private Control BuildHeader(InventoryState state)
     {
         var addButton = new Button()
             .Content("➕ Agregar Medicamento")
@@ -86,6 +102,11 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                 }
             }
         );
+        
+        addButton.Click += (_, _) =>
+        {
+            state.PrepareAddProduct();
+        };
 
         return new Grid().Cols("*, Auto")
             .Children(
@@ -245,9 +266,9 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             .Margin(0, 12, 0, 0)
             .ItemsSource(state, x => x.FilteredProducts)
             .HorizontalAlignment(HorizontalAlignment.Stretch)
-            .ItemTemplate<Product>(BuildProductItem);
+            .ItemTemplate<Product>(product => BuildProductItem(product, state));
 
-    private Control BuildProductItem(Product product) =>
+    private Control BuildProductItem(Product product, InventoryState state) =>
         new Border()
             .Background(BackgroundSecondary)
             .CornerRadius(12)
@@ -268,7 +289,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         BuildProductInfo(product).Col(1),
                         BuildStockColumn(product).Col(2),
                         BuildPriceColumn(product).Col(3),
-                        BuildActionButtons().Col(4)
+                        BuildActionButtons(product, state).Col(4)
                     )
             );
 
@@ -344,24 +365,30 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                     )
             );
 
-    private Control BuildActionButtons() =>
-        new StackPanel()
+    private Control BuildActionButtons(Product product, InventoryState state)
+    {
+        var editButton = new Button()
+            .Content("✏️")
+            .Background(BackgroundTertiary)
+            .Foreground(Brushes.White)
+            .Padding(8)
+            .CornerRadius(6)
+            .Margin(0, 0, 8, 0);
+
+        var deleteButton = new Button()
+            .Content("🗑️")
+            .Background(DangerRed)
+            .Foreground(Brushes.White)
+            .Padding(8)
+            .CornerRadius(6);
+
+        editButton.Click += (_, _) => state.PrepareEditProduct(product);
+        deleteButton.Click += (_, _) => state.DeleteProduct(product);
+
+        return new StackPanel()
             .Orientation(Orientation.Horizontal)
             .VerticalAlignment(VerticalAlignment.Center)
             .Margin(16, 0, 0, 0)
-            .Children(
-                new Button()
-                    .Content("✏️")
-                    .Background(BackgroundTertiary)
-                    .Foreground(Brushes.White)
-                    .Padding(8)
-                    .CornerRadius(6)
-                    .Margin(0, 0, 8, 0),
-                new Button()
-                    .Content("🗑️")
-                    .Background(DangerRed)
-                    .Foreground(Brushes.White)
-                    .Padding(8)
-                    .CornerRadius(6)
-            );
+            .Children(editButton, deleteButton);
+    }
 }
