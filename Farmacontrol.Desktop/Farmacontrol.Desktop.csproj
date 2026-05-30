@@ -46,8 +46,4 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Farmacontrol.Core\Farmacontrol.Core.csproj" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Components\" />
-	</ItemGroup>
 </Project>
