@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
@@ -22,10 +20,16 @@ public partial class InventoryState : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProducts))]
     [NotifyPropertyChangedFor(nameof(SortIcon)) ]
-    public partial bool AscendingOrder { get; set; } = true;
+    public partial bool AscendingOrder { get; private set; } = true;
 
     [ObservableProperty]
     private bool _isAddModalOpen;
+
+    [ObservableProperty]
+    private bool _isBatchesModalOpen;
+
+    [ObservableProperty]
+    private Product? _selectedProduct;
 
     public AddProductState AddProductForm { get; }
 
@@ -65,6 +69,18 @@ public partial class InventoryState : ObservableObject
     {
         _inventoryService.RemoveProduct(product);
         LoadProducts();
+    }
+
+    public void ShowBatchesModal(Product product)
+    {
+        SelectedProduct = product;
+        IsBatchesModalOpen = true;
+    }
+
+    public void CloseBatchesModal()
+    {
+        IsBatchesModalOpen = false;
+        SelectedProduct = null;
     }
 
     public IEnumerable<Product> FilteredProducts
