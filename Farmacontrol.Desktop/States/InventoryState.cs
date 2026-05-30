@@ -21,25 +21,50 @@ public partial class InventoryState : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProducts))]
-    [NotifyPropertyChangedFor(nameof(SortIcon))]
+    [NotifyPropertyChangedFor(nameof(SortIcon)) ]
     public partial bool AscendingOrder { get; set; } = true;
+
+    [ObservableProperty]
+    private bool _isAddModalOpen;
+
+    public AddProductState AddProductForm { get; }
 
     public string SortIcon => AscendingOrder ? "🔼 Asc" : "🔽 Desc";
 
     public InventoryState(InventoryService inventoryService)
     {
         _inventoryService = inventoryService;
+        AddProductForm = new AddProductState(inventoryService);
         LoadProducts();
     }
 
     public void LoadProducts()
     {
         _baseProducts = _inventoryService.GetProducts.Where(p => p.IsActive).ToList();
+        OnPropertyChanged(nameof(FilteredProducts));
     }
 
     public void ToggleSortDirection()
     {
         AscendingOrder = !AscendingOrder;
+    }
+
+    public void PrepareAddProduct()
+    {
+        AddProductForm.PrepareForAdd();
+        IsAddModalOpen = true;
+    }
+
+    public void PrepareEditProduct(Product product)
+    {
+        AddProductForm.PrepareForEdit(product);
+        IsAddModalOpen = true;
+    }
+
+    public void DeleteProduct(Product product)
+    {
+        _inventoryService.RemoveProduct(product);
+        LoadProducts();
     }
 
     public IEnumerable<Product> FilteredProducts
