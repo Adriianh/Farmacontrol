@@ -160,6 +160,22 @@ public static class AddProductModal
             );
     }
 
+    private static Control BuildFormDatePickerRow(string labelText, CalendarDatePicker datePicker)
+    {
+        datePicker.Background(BackgroundInput)
+            .Foreground(Brushes.White)
+            .BorderBrush(BorderColor)
+            .CornerRadius(6)
+            .Padding(10, 6)
+            .HorizontalAlignment(HorizontalAlignment.Stretch);
+
+        return new StackPanel().Spacing(4)
+            .Children(
+                BuildLabel(labelText),
+                datePicker
+            );
+    }
+
     private static TextBlock BuildLabel(string text) =>
         new TextBlock().Text(text).FontSize(12).FontWeight(FontWeight.SemiBold).Foreground(TextMuted);
 
@@ -232,6 +248,10 @@ public static class AddProductModal
 
         addBatchButton.Click += (_, _) => state.AddBatch();
 
+        var expirationDatePicker = new CalendarDatePicker()
+            .SelectedDate(state, x => x.BatchExpirationDate, BindingMode.TwoWay);
+        expirationDatePicker.DisplayDateStart = DateTime.Today;
+
         return new StackPanel().Spacing(12)
             .Children(
                 new Grid().Cols("*, *")
@@ -244,12 +264,10 @@ public static class AddProductModal
                     ),
                 new Grid().Cols("*, *")
                     .Children(
-                        BuildFormRow("Fecha Fabricación",
-                                new TextBox().Text(state, x => x.BatchManufacturingDate, BindingMode.TwoWay)).Col(0)
-                            .Margin(0, 0, 6, 0),
-                        BuildFormRow("Fecha Expiración",
-                                new TextBox().Text(state, x => x.BatchExpirationDate, BindingMode.TwoWay)).Col(1)
-                            .Margin(6, 0, 0, 0)
+                        BuildFormDatePickerRow("Fecha Fabricación",
+                            new CalendarDatePicker().SelectedDate(state, x => x.BatchManufacturingDate,
+                                BindingMode.TwoWay)).Col(0).Margin(0, 0, 6, 0),
+                        BuildFormDatePickerRow("Fecha Expiración", expirationDatePicker).Col(1).Margin(6, 0, 0, 0)
                     ),
                 BuildFormRow("Costo Unitario (Opcional)",
                     new TextBox().Text(state, x => x.BatchUnitCost, BindingMode.TwoWay)),

@@ -52,8 +52,8 @@ public partial class AddProductState : ObservableObject
 
     [ObservableProperty] private string _batchLotCode = string.Empty;
     [ObservableProperty] private string _batchQuantity = string.Empty;
-    [ObservableProperty] private string _batchManufacturingDate = DateTime.Today.ToString("yyyy-MM-dd");
-    [ObservableProperty] private string _batchExpirationDate = DateTime.Today.AddYears(1).ToString("yyyy-MM-dd");
+    [ObservableProperty] private DateTime? _batchManufacturingDate = DateTime.Today;
+    [ObservableProperty] private DateTime? _batchExpirationDate = DateTime.Today.AddYears(1);
     [ObservableProperty] private string _batchUnitCost = string.Empty;
     [ObservableProperty] private bool _showBatchForm;
     [ObservableProperty] private string _batchesInfo = string.Empty;
@@ -294,21 +294,30 @@ public partial class AddProductState : ObservableObject
                 return;
             }
 
-            if (!DateTime.TryParse(BatchManufacturingDate, out var mfgDate))
+            if (!BatchManufacturingDate.HasValue)
             {
                 ErrorMessage = "Fecha de fabricación inválida";
                 return;
             }
 
-            if (!DateTime.TryParse(BatchExpirationDate, out var expDate))
+            if (!BatchExpirationDate.HasValue)
             {
                 ErrorMessage = "Fecha de expiración inválida";
                 return;
             }
+            
+            var mfgDate = BatchManufacturingDate.Value;
+            var expDate = BatchExpirationDate.Value;
 
             if (expDate <= mfgDate)
             {
                 ErrorMessage = "La fecha de expiración debe ser posterior a la de fabricación";
+                return;
+            }
+
+            if (expDate < DateTime.Today)
+            {
+                ErrorMessage = "La fecha de expiración no puede ser una fecha en el pasado";
                 return;
             }
 
@@ -349,8 +358,8 @@ public partial class AddProductState : ObservableObject
     {
         BatchLotCode = string.Empty;
         BatchQuantity = string.Empty;
-        BatchManufacturingDate = DateTime.Today.ToString("yyyy-MM-dd");
-        BatchExpirationDate = DateTime.Today.AddYears(1).ToString("yyyy-MM-dd");
+        BatchManufacturingDate = DateTime.Today;
+        BatchExpirationDate = DateTime.Today.AddYears(1);
         BatchUnitCost = string.Empty;
     }
 
