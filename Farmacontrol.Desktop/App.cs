@@ -1,37 +1,32 @@
 using Avalonia.Styling;
+using Farmacontrol.Core.DependencyInjection;
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Desktop.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacontrol.Desktop;
 
 public static class Program
 {
-    public static Task Main(string[] args)
+    [STAThread]
+    public static async Task Main(string[] args)
     {
-        try
-        {
-            var serviceProvider = ConfigureServices();
-            BuildApp(args, serviceProvider);
-            return Task.CompletedTask;
-        }
-        catch (System.Exception exception)
-        {
-            return Task.FromException(exception);
-        }
+        var serviceProvider = ConfigureServices();
+        await ApplyMigrationsAsync(serviceProvider);
+        BuildApp(args, serviceProvider);
     }
 
-    private static ServiceProvider ConfigureServices()
+    private static ServiceProvider ConfigureServices() => new ServiceCollection()
+        .AddFarmacontrolCore(new ConfigurationBuilder().Build())
+        .BuildServiceProvider();
+
+    private static async Task ApplyMigrationsAsync(IServiceProvider serviceProvider)
     {
-        var services = new ServiceCollection();
-
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Farmacontrol",
-            "farmacontrol.db"
-        );
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-
-        return services.BuildServiceProvider();
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
     }
 
     private static void BuildApp(string[] args, IServiceProvider serviceProvider)
