@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.ProductEntity;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
@@ -46,6 +47,22 @@ public partial class AddProductState : ObservableObject
     [ObservableProperty] private string _recommendedDosage = string.Empty;
     [ObservableProperty] private SupplementFormat _selectedFormat = SupplementFormat.Capsule;
 
+    [ObservableProperty] private bool _enableBatches;
+    [ObservableProperty] private bool _enableSuppliers;
+
+    [ObservableProperty] private string _batchLotCode = string.Empty;
+    [ObservableProperty] private string _batchQuantity = string.Empty;
+    [ObservableProperty] private string _batchManufacturingDate = DateTime.Today.ToString("yyyy-MM-dd");
+    [ObservableProperty] private string _batchExpirationDate = DateTime.Today.AddYears(1).ToString("yyyy-MM-dd");
+    [ObservableProperty] private string _batchUnitCost = string.Empty;
+    [ObservableProperty] private bool _showBatchForm;
+    [ObservableProperty] private string _batchesInfo = string.Empty;
+    private List<(string LotCode, int Quantity, DateTime MfgDate, DateTime ExpDate, decimal UnitCost)> _batches = new();
+
+    [ObservableProperty] private List<Supplier> _availableSuppliers = new();
+    [ObservableProperty] private List<Supplier> _selectedSuppliers = new();
+    [ObservableProperty] private string _suppliersInfo = string.Empty;
+
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _isSaving;
     [ObservableProperty] private string _title = "Nuevo Producto";
@@ -55,6 +72,8 @@ public partial class AddProductState : ObservableObject
     public bool IsSupplement => SelectedProductType == "Suplemento";
     public bool IsCosmetic => SelectedProductType == "Cosmético";
     public bool IsEditing => _editingProduct != null;
+    public bool HasBatches => _batches.Count > 0;
+    public bool HasSuppliers => SelectedSuppliers.Count > 0;
 
     public AddProductState(InventoryService inventoryService)
     {
@@ -259,6 +278,126 @@ public partial class AddProductState : ObservableObject
         }
     }
 
+    public void AddBatch()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(BatchLotCode))
+            {
+                ErrorMessage = "Número de lote es requerido";
+                return;
+            }
+
+            if (!int.TryParse(BatchQuantity, out var qty) || qty <= 0)
+            {
+                ErrorMessage = "Cantidad de lote inválida";
+                return;
+            }
+
+            if (!DateTime.TryParse(BatchManufacturingDate, out var mfgDate))
+            {
+                ErrorMessage = "Fecha de fabricación inválida";
+                return;
+            }
+
+            if (!DateTime.TryParse(BatchExpirationDate, out var expDate))
+            {
+                ErrorMessage = "Fecha de expiración inválida";
+                return;
+            }
+
+            if (expDate <= mfgDate)
+            {
+                ErrorMessage = "La fecha de expiración debe ser posterior a la de fabricación";
+                return;
+            }
+
+            var unitCost = string.IsNullOrWhiteSpace(BatchUnitCost) ? 0m : decimal.Parse(BatchUnitCost);
+
+            var newBatch = (BatchLotCode, qty, mfgDate, expDate, unitCost);
+            _batches.Add(newBatch);
+            
+            UpdateBatchesInfo();
+            ClearBatchForm();
+            ErrorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error al agregar lote: {ex.Message}";
+        }
+    }
+
+    public void RemoveBatch(int index)
+    {
+        if (index >= 0 && index < _batches.Count)
+        {
+            _batches.RemoveAt(index);
+            UpdateBatchesInfo();
+        }
+    }
+
+    public void ToggleBatchForm()
+    {
+        ShowBatchForm = !ShowBatchForm;
+        if (!ShowBatchForm)
+        {
+            ClearBatchForm();
+        }
+    }
+
+    private void ClearBatchForm()
+    {
+        BatchLotCode = string.Empty;
+        BatchQuantity = string.Empty;
+        BatchManufacturingDate = DateTime.Today.ToString("yyyy-MM-dd");
+        BatchExpirationDate = DateTime.Today.AddYears(1).ToString("yyyy-MM-dd");
+        BatchUnitCost = string.Empty;
+    }
+
+    private void UpdateBatchesInfo()
+    {
+        if (_batches.Count == 0)
+        {
+            BatchesInfo = string.Empty;
+            return;
+        }
+
+        var batchList = string.Join("\n", _batches.Select((b, i) => 
+            $"Lote {i + 1}: {b.LotCode} - {b.Quantity} unidades (Exp: {b.ExpDate:yyyy-MM-dd})"));
+        
+        BatchesInfo = $"Lotes agregados ({_batches.Count}):\n{batchList}";
+    }
+
+    public void SetAvailableSuppliers(List<Supplier> suppliers)
+    {
+        AvailableSuppliers = suppliers;
+    }
+
+    public void ToggleSupplier(Supplier supplier)
+    {
+        if (SelectedSuppliers.Contains(supplier))
+        {
+            SelectedSuppliers.Remove(supplier);
+        }
+        else
+        {
+            SelectedSuppliers.Add(supplier);
+        }
+        UpdateSuppliersInfo();
+    }
+
+    private void UpdateSuppliersInfo()
+    {
+        if (SelectedSuppliers.Count == 0)
+        {
+            SuppliersInfo = string.Empty;
+            return;
+        }
+
+        var supplierList = string.Join(", ", SelectedSuppliers.Select(s => s.Name));
+        SuppliersInfo = $"Proveedores: {supplierList}";
+    }
+
     private void Reset()
     {
         Name = Code = Price = Stock = MinimumStock = Barcode = Location = Laboratory = string.Empty;
@@ -269,5 +408,13 @@ public partial class AddProductState : ObservableObject
         SelectedFormat = SupplementFormat.Capsule;
         ErrorMessage = string.Empty;
         IsSaving = false;
+        ShowBatchForm = false;
+        EnableBatches = false;
+        EnableSuppliers = false;
+        ClearBatchForm();
+        _batches.Clear();
+        SelectedSuppliers.Clear();
+        UpdateBatchesInfo();
+        UpdateSuppliersInfo();
     }
 }

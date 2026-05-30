@@ -124,7 +124,19 @@ public static class AddProductModal
                                                 BuildMedicinePanel(state),
                                                 BuildSupplyPanel(state),
                                                 BuildSupplementPanel(state),
-                                                BuildCosmeticPanel(state)
+                                                BuildCosmeticPanel(state),
+                                                new Border().Height(1).Background(BorderColor).Margin(0, 4),
+                                                new StackPanel().Spacing(12)
+                                                    .Children(
+                                                        new CheckBox().Content("Añadir Lotes").Foreground(Brushes.White)
+                                                            .IsChecked(state, x => x.EnableBatches, BindingMode.TwoWay),
+                                                        BuildBatchesPanel(state),
+                                                        new CheckBox().Content("Asignar Proveedores")
+                                                            .Foreground(Brushes.White)
+                                                            .IsChecked(state, x => x.EnableSuppliers,
+                                                                BindingMode.TwoWay),
+                                                        BuildSuppliersPanel(state)
+                                                    )
                                             )
                                     ),
                                 BuildActionButtons(onCancel, onSave).Row(2)
@@ -207,6 +219,74 @@ public static class AddProductModal
                     .IsChecked(state, x => x.Hypoallergenic, BindingMode.TwoWay)
             )
             .IsVisible(state, x => x.IsCosmetic);
+
+    private static Control BuildBatchesPanel(AddProductState state)
+    {
+        var addBatchButton = new Button()
+            .Content("Agregar Lote")
+            .Background(AccentBlue)
+            .Foreground(Brushes.White)
+            .HorizontalAlignment(HorizontalAlignment.Right)
+            .Padding(12, 6)
+            .CornerRadius(6);
+
+        addBatchButton.Click += (_, _) => state.AddBatch();
+
+        return new StackPanel().Spacing(12)
+            .Children(
+                new Grid().Cols("*, *")
+                    .Children(
+                        BuildFormRow("Número de Lote",
+                                new TextBox().Text(state, x => x.BatchLotCode, BindingMode.TwoWay)).Col(0)
+                            .Margin(0, 0, 6, 0),
+                        BuildFormRow("Cantidad", new TextBox().Text(state, x => x.BatchQuantity, BindingMode.TwoWay))
+                            .Col(1).Margin(6, 0, 0, 0)
+                    ),
+                new Grid().Cols("*, *")
+                    .Children(
+                        BuildFormRow("Fecha Fabricación",
+                                new TextBox().Text(state, x => x.BatchManufacturingDate, BindingMode.TwoWay)).Col(0)
+                            .Margin(0, 0, 6, 0),
+                        BuildFormRow("Fecha Expiración",
+                                new TextBox().Text(state, x => x.BatchExpirationDate, BindingMode.TwoWay)).Col(1)
+                            .Margin(6, 0, 0, 0)
+                    ),
+                BuildFormRow("Costo Unitario (Opcional)",
+                    new TextBox().Text(state, x => x.BatchUnitCost, BindingMode.TwoWay)),
+                addBatchButton,
+                new TextBlock()
+                    .Text(state, x => x.BatchesInfo)
+                    .Foreground(Brushes.White)
+                    .FontSize(12)
+                    .IsVisible(state, x => x.HasBatches)
+            )
+            .IsVisible(state, x => x.EnableBatches);
+    }
+
+    private static Control BuildSuppliersPanel(AddProductState state) =>
+        new StackPanel().Spacing(12)
+            .Children(
+                BuildLabel("Proveedores Disponibles"),
+                new ItemsControl()
+                    .ItemsSource(state, x => x.AvailableSuppliers)
+                    .ItemTemplate(
+                        new Avalonia.Controls.Templates.FuncDataTemplate<Farmacontrol.Core.Model.Supplier>((supplier,
+                            _) =>
+                        {
+                            var cb = new CheckBox()
+                                .Content(supplier.Name)
+                                .Foreground(Brushes.White)
+                                .Margin(0, 2);
+                            cb.IsCheckedChanged += (_, _) => state.ToggleSupplier(supplier);
+                            return cb;
+                        })),
+                new TextBlock()
+                    .Text(state, x => x.SuppliersInfo)
+                    .Foreground(Brushes.White)
+                    .FontSize(12)
+                    .IsVisible(state, x => x.HasSuppliers)
+            )
+            .IsVisible(state, x => x.EnableSuppliers);
 
     private static Control BuildActionButtons(Action onCancel, Action onSave)
     {
