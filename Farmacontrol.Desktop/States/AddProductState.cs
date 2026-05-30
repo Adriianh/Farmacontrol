@@ -48,6 +48,7 @@ public partial class AddProductState : ObservableObject
 
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _isSaving;
+    [ObservableProperty] private string _title = "Nuevo Producto";
 
     public bool IsMedicine => SelectedProductType == "Medicamento";
     public bool IsSupply => SelectedProductType == "Suministro";
@@ -63,12 +64,14 @@ public partial class AddProductState : ObservableObject
     public void PrepareForAdd()
     {
         _editingProduct = null;
+        Title = "Nuevo Producto";
         Reset();
     }
 
     public void PrepareForEdit(Product product)
     {
         _editingProduct = product;
+        Title = "Editar Producto";
         Reset();
         
         Name = product.Name;
@@ -213,11 +216,10 @@ public partial class AddProductState : ObservableObject
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList();
 
-        if (IsEditing && _editingProduct != null)
-        {
-            product.Code = _editingProduct.Code;
-            product.CreatedAt = _editingProduct.CreatedAt;
-        }
+        if (!IsEditing || _editingProduct == null) return;
+        
+        product.Code = _editingProduct.Code;
+        product.CreatedAt = _editingProduct.CreatedAt;
     }
 
     private void PopulateTypeSpecificFields(Product product)

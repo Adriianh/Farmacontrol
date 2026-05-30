@@ -52,7 +52,7 @@ public static class AddProductModal
                                 new Grid().Cols("*, Auto").Row(0)
                                     .Children(
                                         new TextBlock()
-                                            .Text("Nuevo Producto")
+                                            .Text(state, x => x.Title)
                                             .FontSize(20)
                                             .FontWeight(FontWeight.Bold)
                                             .Foreground(Brushes.White)
