@@ -1,6 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.ProductEntity;
@@ -9,11 +7,10 @@ using Farmacontrol.Model;
 
 namespace Farmacontrol.Desktop.States;
 
-public partial class AddProductState : ObservableObject
+public partial class AddProductState(InventoryService inventoryService) : ObservableObject
 {
-    private readonly InventoryService _inventoryService;
     private Product? _editingProduct;
-    
+
     public List<string> ProductTypes { get; } = ["Medicamento", "Suministro", "Suplemento", "Cosmético"];
 
     [ObservableProperty]
@@ -57,13 +54,20 @@ public partial class AddProductState : ObservableObject
     [ObservableProperty] private string _batchUnitCost = string.Empty;
     [ObservableProperty] private bool _showBatchForm;
     [ObservableProperty] private string _batchesInfo = string.Empty;
-    private List<(string LotCode, int Quantity, DateTime MfgDate, DateTime ExpDate, decimal UnitCost)> _batches = new();
 
-    [ObservableProperty] private List<Supplier> _availableSuppliers = new();
+    [ObservableProperty]
+    private ObservableCollection<(string LotCode, int Quantity, DateTime MfgDate, DateTime ExpDate, decimal UnitCost)>
+        _batches = new();
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasSuppliers))]
+    private List<Supplier> _availableSuppliers = new();
+
     [ObservableProperty] private List<Supplier> _selectedSuppliers = new();
     [ObservableProperty] private string _suppliersInfo = string.Empty;
 
-    [ObservableProperty] private string _errorMessage = string.Empty;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasErrorMessage))]
+    private string _errorMessage = string.Empty;
+
     [ObservableProperty] private bool _isSaving;
     [ObservableProperty] private string _title = "Nuevo Producto";
 
@@ -71,14 +75,10 @@ public partial class AddProductState : ObservableObject
     public bool IsSupply => SelectedProductType == "Suministro";
     public bool IsSupplement => SelectedProductType == "Suplemento";
     public bool IsCosmetic => SelectedProductType == "Cosmético";
-    public bool IsEditing => _editingProduct != null;
-    public bool HasBatches => _batches.Count > 0;
+    private bool IsEditing => _editingProduct != null;
+    public bool HasBatches => Batches.Count > 0;
     public bool HasSuppliers => SelectedSuppliers.Count > 0;
-
-    public AddProductState(InventoryService inventoryService)
-    {
-        _inventoryService = inventoryService;
-    }
+    public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public void PrepareForAdd()
     {
@@ -92,7 +92,7 @@ public partial class AddProductState : ObservableObject
         _editingProduct = product;
         Title = "Editar Producto";
         Reset();
-        
+
         Name = product.Name;
         Code = product.Code;
         Price = product.Price.ToString("F2");
@@ -181,11 +181,11 @@ public partial class AddProductState : ObservableObject
 
             if (IsEditing && _editingProduct != null)
             {
-                _inventoryService.UpdateProduct(product);
+                inventoryService.UpdateProduct(product);
             }
             else
             {
-                _inventoryService.AddProduct(product);
+                inventoryService.AddProduct(product);
             }
 
             Reset();
@@ -224,19 +224,37 @@ public partial class AddProductState : ObservableObject
         product.Location = string.IsNullOrWhiteSpace(Location) ? null : Location;
         product.Laboratory = string.IsNullOrWhiteSpace(Laboratory) ? null : Laboratory;
         product.Subcategory = string.IsNullOrWhiteSpace(Subcategory) ? null : Subcategory;
-        
+
         product.Ingredients = Ingredients.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries)
             .Select(x => x.Trim())
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList();
-        
+
         product.Tags = Tags.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries)
             .Select(x => x.Trim())
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList();
 
+        if (EnableBatches)
+        {
+            product.Batches.Clear();
+
+            foreach (var batch in Batches)
+            {
+                product.Batches.Add(new Batch(
+                    product.Code,
+                    batch.LotCode,
+                    batch.Quantity,
+                    batch.ExpDate,
+                    batch.MfgDate)
+                {
+                    UnitCost = batch.UnitCost
+                });
+            }
+        }
+
         if (!IsEditing || _editingProduct == null) return;
-        
+
         product.Code = _editingProduct.Code;
         product.CreatedAt = _editingProduct.CreatedAt;
     }
@@ -282,6 +300,8 @@ public partial class AddProductState : ObservableObject
     {
         try
         {
+            ErrorMessage = string.Empty;
+
             if (string.IsNullOrWhiteSpace(BatchLotCode))
             {
                 ErrorMessage = "Número de lote es requerido";
@@ -305,7 +325,7 @@ public partial class AddProductState : ObservableObject
                 ErrorMessage = "Fecha de expiración inválida";
                 return;
             }
-            
+
             var mfgDate = BatchManufacturingDate.Value;
             var expDate = BatchExpirationDate.Value;
 
@@ -321,14 +341,22 @@ public partial class AddProductState : ObservableObject
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(BatchUnitCost) &&
+                (!decimal.TryParse(BatchUnitCost, out var parsedUnitCost) || parsedUnitCost < 0))
+            {
+                ErrorMessage = "Costo unitario inválido";
+                return;
+            }
+
             var unitCost = string.IsNullOrWhiteSpace(BatchUnitCost) ? 0m : decimal.Parse(BatchUnitCost);
 
-            var newBatch = (BatchLotCode, qty, mfgDate, expDate, unitCost);
-            _batches.Add(newBatch);
-            
+            var newBatch = (BatchLotCode.Trim(), qty, mfgDate, expDate, unitCost);
+            Batches.Add(newBatch);
+
+            OnPropertyChanged(nameof(HasBatches));
+
             UpdateBatchesInfo();
             ClearBatchForm();
-            ErrorMessage = string.Empty;
         }
         catch (Exception ex)
         {
@@ -338,9 +366,10 @@ public partial class AddProductState : ObservableObject
 
     public void RemoveBatch(int index)
     {
-        if (index >= 0 && index < _batches.Count)
+        if (index >= 0 && index < Batches.Count)
         {
-            _batches.RemoveAt(index);
+            Batches.RemoveAt(index);
+            OnPropertyChanged(nameof(HasBatches));
             UpdateBatchesInfo();
         }
     }
@@ -365,16 +394,16 @@ public partial class AddProductState : ObservableObject
 
     private void UpdateBatchesInfo()
     {
-        if (_batches.Count == 0)
+        if (Batches.Count == 0)
         {
             BatchesInfo = string.Empty;
             return;
         }
 
-        var batchList = string.Join("\n", _batches.Select((b, i) => 
+        var batchList = string.Join("\n", Batches.Select((b, i) =>
             $"Lote {i + 1}: {b.LotCode} - {b.Quantity} unidades (Exp: {b.ExpDate:yyyy-MM-dd})"));
-        
-        BatchesInfo = $"Lotes agregados ({_batches.Count}):\n{batchList}";
+
+        BatchesInfo = $"Lotes agregados ({Batches.Count}):\n{batchList}";
     }
 
     public void SetAvailableSuppliers(List<Supplier> suppliers)
@@ -392,6 +421,7 @@ public partial class AddProductState : ObservableObject
         {
             SelectedSuppliers.Add(supplier);
         }
+
         UpdateSuppliersInfo();
     }
 
@@ -411,7 +441,8 @@ public partial class AddProductState : ObservableObject
     {
         Name = Code = Price = Stock = MinimumStock = Barcode = Location = Laboratory = string.Empty;
         Subcategory = Ingredients = Tags = string.Empty;
-        ActivePrinciple = Concentration = Presentation = Brand = Type = Size = Material = RecommendedDosage = string.Empty;
+        ActivePrinciple =
+            Concentration = Presentation = Brand = Type = Size = Material = RecommendedDosage = string.Empty;
         RequiresPrescription = IsControlled = IsSterile = Hypoallergenic = false;
         SelectedProductType = "Medicamento";
         SelectedFormat = SupplementFormat.Capsule;
@@ -421,7 +452,8 @@ public partial class AddProductState : ObservableObject
         EnableBatches = false;
         EnableSuppliers = false;
         ClearBatchForm();
-        _batches.Clear();
+        Batches.Clear();
+        OnPropertyChanged(nameof(HasBatches));
         SelectedSuppliers.Clear();
         UpdateBatchesInfo();
         UpdateSuppliersInfo();
