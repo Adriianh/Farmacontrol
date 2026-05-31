@@ -7,7 +7,7 @@ using Farmacontrol.Model;
 
 namespace Farmacontrol.Desktop.States;
 
-public partial class AddProductState(InventoryService inventoryService) : ObservableObject
+public partial class ProductState(InventoryService inventoryService) : ObservableObject
 {
     private Product? _editingProduct;
 

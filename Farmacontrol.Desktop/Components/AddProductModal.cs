@@ -22,7 +22,7 @@ public static class AddProductModal
     private static readonly SolidColorBrush ErrorBorder = SolidColorBrush.Parse("#DC2626");
     private static readonly SolidColorBrush ErrorText = SolidColorBrush.Parse("#FCA5A5");
 
-    public static Control Build(AddProductState state, Action onCancel, Action onSave)
+    public static Control Build(ProductState state, Action onCancel, Action onSave)
     {
         var closeButton = new Button()
             .Content("✕")
@@ -207,7 +207,7 @@ public static class AddProductModal
     private static TextBlock BuildLabel(string text) =>
         new TextBlock().Text(text).FontSize(12).FontWeight(FontWeight.SemiBold).Foreground(TextMuted);
 
-    private static Control BuildErrorPanel(AddProductState state) =>
+    private static Control BuildErrorPanel(ProductState state) =>
         new Border()
             .Background(ErrorBackground)
             .BorderBrush(ErrorBorder)
@@ -233,7 +233,7 @@ public static class AddProductModal
                     )
             );
 
-    private static Control BuildMedicinePanel(AddProductState state) =>
+    private static Control BuildMedicinePanel(ProductState state) =>
         new StackPanel().Spacing(12)
             .Children(
                 BuildFormRow("Principio Activo", new TextBox().Text(state, x => x.ActivePrinciple, BindingMode.TwoWay)),
@@ -248,7 +248,7 @@ public static class AddProductModal
             )
             .IsVisible(state, x => x.IsMedicine);
 
-    private static Control BuildSupplyPanel(AddProductState state) =>
+    private static Control BuildSupplyPanel(ProductState state) =>
         new StackPanel().Spacing(12)
             .Children(
                 BuildFormRow("Marca", new TextBox().Text(state, x => x.Brand, BindingMode.TwoWay)),
@@ -260,7 +260,7 @@ public static class AddProductModal
             )
             .IsVisible(state, x => x.IsSupply);
 
-    private static Control BuildSupplementPanel(AddProductState state) =>
+    private static Control BuildSupplementPanel(ProductState state) =>
         new StackPanel().Spacing(12)
             .Children(
                 BuildFormRow("Principio Activo", new TextBox().Text(state, x => x.ActivePrinciple, BindingMode.TwoWay)),
@@ -279,7 +279,7 @@ public static class AddProductModal
             )
             .IsVisible(state, x => x.IsSupplement);
 
-    private static Control BuildCosmeticPanel(AddProductState state) =>
+    private static Control BuildCosmeticPanel(ProductState state) =>
         new StackPanel().Spacing(12)
             .Children(
                 BuildFormRow("Marca", new TextBox().Text(state, x => x.Brand, BindingMode.TwoWay)),
@@ -290,7 +290,7 @@ public static class AddProductModal
             )
             .IsVisible(state, x => x.IsCosmetic);
 
-    private static Control BuildBatchesPanel(AddProductState state)
+    private static Control BuildBatchesPanel(ProductState state)
     {
         var addBatchButton = new Button()
             .Content("Agregar Lote")
@@ -380,7 +380,7 @@ public static class AddProductModal
             .IsVisible(state, x => x.EnableBatches);
     }
 
-    private static Control BuildSuppliersPanel(AddProductState state) =>
+    private static Control BuildSuppliersPanel(ProductState state) =>
         new StackPanel().Spacing(12)
             .Children(
                 BuildLabel("Proveedores Disponibles"),
