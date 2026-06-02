@@ -30,15 +30,18 @@ public partial class InventoryState : ObservableObject
 
     [ObservableProperty]
     private Product? _selectedProduct;
+    
+    [ObservableProperty]
+    private bool _isEditingProduct;
 
-    public AddProductState AddProductForm { get; }
+    public ProductState ProductForm { get; }
 
     public string SortIcon => AscendingOrder ? "🔼 Asc" : "🔽 Desc";
 
     public InventoryState(InventoryService inventoryService)
     {
         _inventoryService = inventoryService;
-        AddProductForm = new AddProductState(inventoryService);
+        ProductForm = new ProductState(inventoryService);
         LoadProducts();
     }
 
@@ -55,13 +58,18 @@ public partial class InventoryState : ObservableObject
 
     public void PrepareAddProduct()
     {
-        AddProductForm.PrepareForAdd();
+        ProductForm.PrepareForAdd();
+        IsEditingProduct = false;
         IsAddModalOpen = true;
     }
 
     public void PrepareEditProduct(Product product)
     {
-        AddProductForm.PrepareForEdit(product);
+        var freshProduct = _inventoryService.GetProductForEdit(product.Code);
+        if (freshProduct == null) return;
+        
+        ProductForm.PrepareForEdit(freshProduct);
+        IsEditingProduct = true;
         IsAddModalOpen = true;
     }
 
@@ -81,6 +89,12 @@ public partial class InventoryState : ObservableObject
     {
         IsBatchesModalOpen = false;
         SelectedProduct = null;
+    }
+    
+    public void CloseAddModal()
+    {
+        IsAddModalOpen = false;
+        IsEditingProduct = false;
     }
 
     public IEnumerable<Product> FilteredProducts

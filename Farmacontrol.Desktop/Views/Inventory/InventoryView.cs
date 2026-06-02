@@ -62,24 +62,29 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                                 BuildProductList(state).Row(2)
                             )
                     ),
-
                 AddProductModal.Build(
-                    state.AddProductForm,
-                    onCancel: () => state.IsAddModalOpen = false,
-                    onSave: () => {
-                        state.AddProductForm.SaveProduct();
-                        if (!string.IsNullOrEmpty(state.AddProductForm.ErrorMessage)) return;
-                        
-                        state.IsAddModalOpen = false;
+                    state.ProductForm,
+                    onCancel: state.CloseAddModal,
+                    onSave: () =>
+                    {
+                        state.ProductForm.SaveProduct();
+                        if (!string.IsNullOrEmpty(state.ProductForm.ErrorMessage)) return;
+
+                        state.CloseAddModal();
                         state.LoadProducts();
                     }
                 ).IsVisible(state, x => x.IsAddModalOpen),
-                
-                BatchesModal.Build(
-                    state.SelectedProduct?.Name ?? string.Empty,
-                    state.SelectedProduct?.Batches ?? new List<Batch>(),
-                    onClose: () => state.CloseBatchesModal()
-                ).IsVisible(state, x => x.IsBatchesModalOpen)
+                state.SelectedProduct is null
+                    ? new Grid().IsVisible(state, x => x.IsBatchesModalOpen)
+                    : BatchesModal.Build(
+                        state.SelectedProduct.Name,
+                        state.IsEditingProduct
+                            ? state.ProductForm.Batches.Select(b =>
+                                new Batch(state.SelectedProduct.Code, b.LotCode, b.Quantity, b.ExpDate, b.MfgDate)
+                                    { UnitCost = b.UnitCost }).ToList()
+                            : state.SelectedProduct.Batches.ToList(),
+                        onClose: state.CloseBatchesModal
+                    ).IsVisible(state, x => x.IsBatchesModalOpen)
             );
 
     private Control BuildHeader(InventoryState state)
@@ -102,11 +107,8 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                 }
             }
         );
-        
-        addButton.Click += (_, _) =>
-        {
-            state.PrepareAddProduct();
-        };
+
+        addButton.Click += (_, _) => { state.PrepareAddProduct(); };
 
         return new Grid().Cols("*, Auto")
             .Children(
@@ -355,10 +357,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             }
         );
 
-        button.Click += (_, _) =>
-        {
-            state.ShowBatchesModal(product);
-        };
+        button.Click += (_, _) => { state.ShowBatchesModal(product); };
 
         return button;
     }

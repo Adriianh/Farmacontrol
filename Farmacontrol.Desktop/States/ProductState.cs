@@ -10,6 +10,7 @@ namespace Farmacontrol.Desktop.States;
 public partial class ProductState(InventoryService inventoryService) : ObservableObject
 {
     private Product? _editingProduct;
+    private List<Batch> _originalBatches = [];
 
     public List<string> ProductTypes { get; } = ["Medicamento", "Suministro", "Suplemento", "Cosmético"];
 
@@ -90,6 +91,7 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
     public void PrepareForEdit(Product product)
     {
         _editingProduct = product;
+        _originalBatches = new List<Batch>(product.Batches);
         Title = "Editar Producto";
         Reset();
 
@@ -104,6 +106,22 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
         Subcategory = product.Subcategory ?? string.Empty;
         Ingredients = string.Join(", ", product.Ingredients);
         Tags = string.Join(", ", product.Tags);
+
+        EnableBatches = product.Batches.Count > 0;
+
+        foreach (var batch in product.Batches)
+        {
+            Batches.Add((
+                batch.LotCode,
+                batch.Quantity,
+                batch.ManufacturingDate,
+                batch.ExpirationDate,
+                batch.UnitCost
+            ));
+        }
+
+        OnPropertyChanged(nameof(HasBatches));
+        UpdateBatchesInfo();
 
         switch (product)
         {
@@ -175,9 +193,28 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
                 return;
             }
 
-            Product product = CreateProductInstance();
+            Product product;
+
+            if (IsEditing && _editingProduct != null)
+            {
+                product = _editingProduct;
+            }
+            else
+            {
+                product = CreateProductInstance();
+            }
+
             PopulateCommonFields(product);
             PopulateTypeSpecificFields(product);
+
+            if (EnableSuppliers)
+            {
+                product.Suppliers.Clear();
+                foreach (var supplier in SelectedSuppliers)
+                {
+                    product.Suppliers.Add(supplier);
+                }
+            }
 
             if (IsEditing && _editingProduct != null)
             {
@@ -215,10 +252,13 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
 
     private void PopulateCommonFields(Product product)
     {
-        product.Code = Code;
+        if (!IsEditing)
+        {
+            product.Code = Code;
+        }
+
         product.Name = Name;
         product.Price = decimal.Parse(Price);
-        product.Stock = int.Parse(Stock);
         product.MinimumStock = int.Parse(MinimumStock);
         product.Barcode = string.IsNullOrWhiteSpace(Barcode) ? null : Barcode;
         product.Location = string.IsNullOrWhiteSpace(Location) ? null : Location;
@@ -237,26 +277,56 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
 
         if (EnableBatches)
         {
-            product.Batches.Clear();
+            var processedBatches = new List<Batch>();
 
-            foreach (var batch in Batches)
+            foreach (var formBatch in Batches)
             {
-                product.Batches.Add(new Batch(
-                    product.Code,
-                    batch.LotCode,
-                    batch.Quantity,
-                    batch.ExpDate,
-                    batch.MfgDate)
+                var existingBatch = _originalBatches.FirstOrDefault(b =>
+                    b.LotCode == formBatch.LotCode &&
+                    b.ManufacturingDate == formBatch.MfgDate);
+
+                if (existingBatch != null)
                 {
-                    UnitCost = batch.UnitCost
-                });
+                    existingBatch.Quantity = formBatch.Quantity;
+                    existingBatch.ExpirationDate = formBatch.ExpDate;
+                    existingBatch.UnitCost = formBatch.UnitCost;
+                    processedBatches.Add(existingBatch);
+                }
+                else
+                {
+                    processedBatches.Add(new Batch(
+                        product.Code,
+                        formBatch.LotCode,
+                        formBatch.Quantity,
+                        formBatch.ExpDate,
+                        formBatch.MfgDate)
+                    {
+                        UnitCost = formBatch.UnitCost
+                    });
+                }
+            }
+
+            product.Batches.Clear();
+            foreach (var batch in processedBatches)
+            {
+                product.Batches.Add(batch);
+            }
+
+            product.Stock = Batches.Sum(b => b.Quantity);
+        }
+        else
+        {
+            product.Stock = int.Parse(Stock);
+
+            if (IsEditing && _editingProduct != null)
+            {
+                product.Batches.Clear();
+                foreach (var batch in _editingProduct.Batches)
+                {
+                    product.Batches.Add(batch);
+                }
             }
         }
-
-        if (!IsEditing || _editingProduct == null) return;
-
-        product.Code = _editingProduct.Code;
-        product.CreatedAt = _editingProduct.CreatedAt;
     }
 
     private void PopulateTypeSpecificFields(Product product)
@@ -453,6 +523,7 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
         EnableSuppliers = false;
         ClearBatchForm();
         Batches.Clear();
+        _originalBatches.Clear();
         OnPropertyChanged(nameof(HasBatches));
         SelectedSuppliers.Clear();
         UpdateBatchesInfo();
