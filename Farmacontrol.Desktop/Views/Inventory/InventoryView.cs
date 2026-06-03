@@ -62,7 +62,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                                 BuildProductList(state).Row(2)
                             )
                     ),
-                AddProductModal.Build(
+                ProductModal.Build(
                     state.ProductForm,
                     onCancel: state.CloseAddModal,
                     onSave: () =>
@@ -276,11 +276,11 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             .CornerRadius(12)
             .Margin(0, 0, 0, 12)
             .Padding(20, 16)
-            .BorderBrush(BorderColor)
-            .BorderThickness(1)
+            .BorderBrush(GetAlertBorderColor(state, product))
+            .BorderThickness(2)
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Child(
-                new Grid().Cols("Auto, *, 120, 120, Auto")
+                new Grid().Cols("Auto, Auto, *, 120, 120, Auto")
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
                     .Children(
                         new TextBlock()
@@ -288,10 +288,11 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                             .FontSize(22)
                             .Margin(0, 0, 16, 0)
                             .VerticalAlignment(VerticalAlignment.Center),
-                        BuildProductInfo(product).Col(1),
-                        BuildStockColumn(product, state).Col(2),
-                        BuildPriceColumn(product).Col(3),
-                        BuildActionButtons(product, state).Col(4)
+                        BuildAlertColumn(product, state).Col(1),
+                        BuildProductInfo(product).Col(2),
+                        BuildStockColumn(product, state).Col(3),
+                        BuildPriceColumn(product).Col(4),
+                        BuildActionButtons(product, state).Col(5)
                     )
             );
 
@@ -416,5 +417,62 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             .VerticalAlignment(VerticalAlignment.Center)
             .Margin(16, 0, 0, 0)
             .Children(editButton, deleteButton);
+    }
+
+    private SolidColorBrush GetAlertBorderColor(InventoryState state, Product product)
+    {
+        try
+        {
+            var alertStatus = state.GetProductAlertStatus(product);
+            return alertStatus switch
+            {
+                "EXPIRED" => SolidColorBrush.Parse("#DC2626"),
+                "EXPIRING" => SolidColorBrush.Parse("#F59E0B"),
+                "LOWSTOCK" => SolidColorBrush.Parse("#F59E0B"),
+                _ => BorderColor
+            };
+        }
+        catch
+        {
+            return BorderColor;
+        }
+    }
+
+    private Control BuildAlertColumn(Product product, InventoryState state)
+    {
+        try
+        {
+            var alertStatus = state.GetProductAlertStatus(product);
+            
+            var (icon, color, label) = alertStatus switch
+            {
+                "EXPIRED" => ("⛔", DangerRed, "EXP"),
+                "EXPIRING" => ("⚠️", SolidColorBrush.Parse("#F59E0B"), "VENCE"),
+                "LOWSTOCK" => ("📉", SolidColorBrush.Parse("#F59E0B"), "BAJO"),
+                _ => ("✓", AccentGreen, "OK")
+            };
+
+            return new StackPanel()
+                .VerticalAlignment(VerticalAlignment.Center)
+                .HorizontalAlignment(HorizontalAlignment.Center)
+                .Margin(0, 0, 12, 0)
+                .Children(
+                    new TextBlock()
+                        .Text(icon)
+                        .FontSize(20)
+                        .HorizontalAlignment(HorizontalAlignment.Center),
+                    new TextBlock()
+                        .Text(label)
+                        .FontSize(9)
+                        .FontWeight(FontWeight.Bold)
+                        .Foreground(color)
+                        .HorizontalAlignment(HorizontalAlignment.Center)
+                        .Margin(0, 4, 0, 0)
+                );
+        }
+        catch
+        {
+            return new TextBlock().Text("?").FontSize(20);
+        }
     }
 }

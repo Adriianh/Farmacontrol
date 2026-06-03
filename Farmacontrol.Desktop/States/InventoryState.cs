@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Farmacontrol.Core.Interface;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
+using System.Collections.ObjectModel;
 
 namespace Farmacontrol.Desktop.States;
 
@@ -9,9 +11,9 @@ public partial class InventoryState : ObservableObject
     private readonly InventoryService _inventoryService;
     private List<Product> _baseProducts = [];
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FilteredProducts))]
-    public partial string SearchText { get; set; } = string.Empty;
+    [ObservableProperty] private string _searchText = string.Empty;
+
+    [ObservableProperty] private ObservableCollection<Product> _filteredProducts = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProducts))]
@@ -19,20 +21,16 @@ public partial class InventoryState : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProducts))]
-    [NotifyPropertyChangedFor(nameof(SortIcon)) ]
+    [NotifyPropertyChangedFor(nameof(SortIcon))]
     public partial bool AscendingOrder { get; private set; } = true;
 
-    [ObservableProperty]
-    private bool _isAddModalOpen;
+    [ObservableProperty] private bool _isAddModalOpen;
 
-    [ObservableProperty]
-    private bool _isBatchesModalOpen;
+    [ObservableProperty] private bool _isBatchesModalOpen;
 
-    [ObservableProperty]
-    private Product? _selectedProduct;
-    
-    [ObservableProperty]
-    private bool _isEditingProduct;
+    [ObservableProperty] private Product? _selectedProduct;
+
+    [ObservableProperty] private bool _isEditingProduct;
 
     public ProductState ProductForm { get; }
 
@@ -45,10 +43,55 @@ public partial class InventoryState : ObservableObject
         LoadProducts();
     }
 
+    partial void OnSearchTextChanged(string value)
+    {
+        UpdateFilteredProducts();
+    }
+
+    partial void OnSortCriterionIndexChanged(int value)
+    {
+        UpdateFilteredProducts();
+    }
+
+    partial void OnAscendingOrderChanged(bool value)
+    {
+        UpdateFilteredProducts();
+    }
+
+    private void UpdateFilteredProducts()
+    {
+        IEnumerable<Product> result = _baseProducts;
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var query = SearchText.ToLower().Trim();
+            result = result.Where(p =>
+                p.Name.ToLower().Contains(query) ||
+                p.Code.ToLower().Contains(query) ||
+                p.Tags.Any(t => t.ToLower().Contains(query)) ||
+                p.Ingredients.Any(i => i.ToLower().Contains(query))
+            );
+        }
+
+        result = SortCriterionIndex switch
+        {
+            1 => AscendingOrder ? result.OrderBy(p => p.Stock) : result.OrderByDescending(p => p.Stock),
+            2 => AscendingOrder ? result.OrderBy(p => p.Price) : result.OrderByDescending(p => p.Price),
+            _ => AscendingOrder ? result.OrderBy(p => p.Name) : result.OrderByDescending(p => p.Name)
+        };
+
+        var newList = result.ToList();
+        FilteredProducts.Clear();
+        foreach (var product in newList)
+        {
+            FilteredProducts.Add(product);
+        }
+    }
+
     public void LoadProducts()
     {
         _baseProducts = _inventoryService.GetProducts.Where(p => p.IsActive).ToList();
-        OnPropertyChanged(nameof(FilteredProducts));
+        UpdateFilteredProducts();
     }
 
     public void ToggleSortDirection()
@@ -67,7 +110,7 @@ public partial class InventoryState : ObservableObject
     {
         var freshProduct = _inventoryService.GetProductForEdit(product.Code);
         if (freshProduct == null) return;
-        
+
         ProductForm.PrepareForEdit(freshProduct);
         IsEditingProduct = true;
         IsAddModalOpen = true;
@@ -90,35 +133,60 @@ public partial class InventoryState : ObservableObject
         IsBatchesModalOpen = false;
         SelectedProduct = null;
     }
-    
+
     public void CloseAddModal()
     {
         IsAddModalOpen = false;
         IsEditingProduct = false;
     }
 
-    public IEnumerable<Product> FilteredProducts
+    public string GetProductAlertStatus(Product? product)
     {
-        get
+        switch (product)
         {
-            IEnumerable<Product> result = _baseProducts;
+            case null:
+                return "NORMAL";
+            case IExpirable expirable:
+                try
+                {
+                    if (expirable.IsExpired())
+                        return "EXPIRED";
 
-            if (!string.IsNullOrWhiteSpace(SearchText))
-            {
-                var query = SearchText.ToLower().Trim();
-                result = result.Where(p =>
-                    p.Name.ToLower().Contains(query) ||
-                    p.Code.ToLower().Contains(query));
-            }
+                    var daysUntilExpiry = expirable.ExpiresIn();
+                    if (daysUntilExpiry is > 0 and <= 30)
+                        return "EXPIRING";
+                }
+                catch
+                {
+                    // ignored
+                }
 
-            result = SortCriterionIndex switch
-            {
-                1 => AscendingOrder ? result.OrderBy(p => p.Stock) : result.OrderByDescending(p => p.Stock),
-                2 => AscendingOrder ? result.OrderBy(p => p.Price) : result.OrderByDescending(p => p.Price),
-                _ => AscendingOrder ? result.OrderBy(p => p.Name) : result.OrderByDescending(p => p.Name)
-            };
-
-            return result.ToList();
+                break;
         }
+
+        if (product.Batches.Count <= 0) return product.IsStockLow() ? "LOWSTOCK" : "NORMAL";
+        try
+        {
+            var expiredBatches = product.Batches.Where(b => b.ExpirationDate < DateTime.Today).ToList();
+            if (expiredBatches.Any())
+                return "EXPIRED";
+
+            var expiringBatches = product.Batches.Where(b =>
+                b.ExpirationDate >= DateTime.Today &&
+                (b.ExpirationDate - DateTime.Today).Days <= 30).ToList();
+            if (expiringBatches.Any())
+                return "EXPIRING";
+        }
+        catch
+        {
+            // ignored
+        }
+
+        return product.IsStockLow() ? "LOWSTOCK" : "NORMAL";
+    }
+
+    public bool HasProductAlerts(Product product)
+    {
+        return GetProductAlertStatus(product) != "NORMAL";
     }
 }
