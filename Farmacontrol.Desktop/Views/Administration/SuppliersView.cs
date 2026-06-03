@@ -68,11 +68,12 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
                         }
                     )
                     .Child(
-                        new Grid().Rows("Auto, Auto, *")
+                        new Grid().Rows("Auto, Auto, Auto, *") 
                             .Children(
                                 BuildHeader(state).Row(0).Margin(20),
                                 BuildSearchBar(state).Row(1),
-                                BuildSupplierList(state).Row(2)
+                                BuildErrorPanel(state).Row(2),
+                                BuildSupplierList(state).Row(3)
                             )
                     ),
                 SupplierModal.Build(
@@ -162,10 +163,14 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
 
         var removeButton = new Button().Content("🗑️").Background(DangerRed).Foreground(Brushes.White).Padding(10)
             .CornerRadius(6);
-        removeButton.Click += (_, _) => state.DeleteSupplier(supplier);
+        removeButton.Click += (_, e) =>
+        {
+            e.Handled = true;
+            state.DeleteSupplier(supplier);
+        };;
 
         return new Border()
-            .Background(BackgroundSecondary) // Asegura que la tarjeta base sea sólida
+            .Background(BackgroundSecondary)
             .CornerRadius(12)
             .Margin(0, 0, 0, 12)
             .BorderBrush(BorderColor)
@@ -174,9 +179,8 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
             .Child(
                 new Expander()
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
-                    .Padding(0) // Limpiamos paddings por defecto del Expander para controlar el diseño interno
+                    .Padding(0)
                     .Header(
-                        // Encapsulamos la cabecera dentro de un Border con un padding interno cómodo
                         new Border()
                             .Padding(16, 12)
                             .Child(
@@ -236,13 +240,12 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
                             )
                     )
                     .Content(
-                        // Contenido desplegable: El panel oscuro profundo (BackgroundPrimary)
                         new Border()
                             .Background(
-                                BackgroundPrimary) // Contraste oscuro perfecto para resaltar las etiquetas internas
+                                BackgroundPrimary)
                             .BorderBrush(BorderColor)
-                            .BorderThickness(0, 1, 0, 0) // Añadimos una línea sutil divisoria arriba del contenido
-                            .CornerRadius(0, 0, 12, 12) // Redondeamos únicamente las esquinas inferiores
+                            .BorderThickness(0, 1, 0, 0)
+                            .CornerRadius(0, 0, 12, 12)
                             .Padding(16, 16)
                             .Child(
                                 BuildSupplierProductsSummary(supplier)
@@ -306,4 +309,34 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
             .Padding(6, 3)
             .Margin(0, 0, 6, 4)
             .Child(new TextBlock().Text(text).FontSize(11).Foreground(SolidColorBrush.Parse("#9CA3AF")));
+    
+    private static Control BuildErrorPanel(SupplierState state) =>
+        new Border()
+            .Background(SolidColorBrush.Parse("#7F1D1D"))
+            .BorderBrush(SolidColorBrush.Parse("#DC2626"))
+            .BorderThickness(1)
+            .CornerRadius(8)
+            .Padding(16, 12)
+            .Margin(10, 0, 10, 16)
+            .IsVisible(state, x => x.HasErrorMessage)
+            .Child(
+                new Grid().Cols("Auto, *")
+                    .Children(
+                        new TextBlock()
+                            .Text("⚠️")
+                            .FontSize(18)
+                            .Foreground(SolidColorBrush.Parse("#FCA5A5"))
+                            .Margin(0, 0, 12, 0)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(0),
+                        new TextBlock()
+                            .Text(state, x => x.ErrorMessage)
+                            .Foreground(SolidColorBrush.Parse("#FCA5A5"))
+                            .FontSize(13)
+                            .FontWeight(FontWeight.Medium)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(1)
+                    )
+            );
 }

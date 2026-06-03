@@ -20,8 +20,10 @@ public partial class SupplierState : ObservableObject
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ModalTitle))]
     private bool _isEditing;
 
-    [ObservableProperty] private string _errorMessage = string.Empty;
-
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasErrorMessage))]
+    private string _errorMessage = string.Empty;
+    
     [ObservableProperty] private string _code = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _phoneNumber = string.Empty;
