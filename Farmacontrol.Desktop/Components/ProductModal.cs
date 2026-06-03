@@ -8,7 +8,7 @@ using Farmacontrol.Desktop.States;
 
 namespace Farmacontrol.Desktop.Components;
 
-public static class AddProductModal
+public static class ProductModal
 {
     private static readonly SolidColorBrush BackgroundTertiary = SolidColorBrush.Parse("#374151");
     private static readonly SolidColorBrush BackgroundHover = SolidColorBrush.Parse("#4B5563");
