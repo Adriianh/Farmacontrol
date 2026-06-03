@@ -3,6 +3,7 @@ using Avalonia.Styling;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Desktop.Components;
 using Farmacontrol.Desktop.States;
+using Farmacontrol.Model;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacontrol.Desktop.Views.Administration;
@@ -139,59 +140,124 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
         removeButton.Click += (_, _) => state.DeleteSupplier(supplier);
 
         return new Border()
-            .Background(BackgroundSecondary)
-            .CornerRadius(10)
-            .Margin(0, 0, 0, 10)
-            .Padding(16)
+            .Background(BackgroundPrimary)
+            .CornerRadius(12)
+            .Margin(0, 0, 0, 12)
             .BorderBrush(BorderColor)
             .BorderThickness(1)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Child(
-                new Grid().Cols("Auto, *, Auto, Auto")
-                    .Children(
-                        new Border()
-                            .Background(BackgroundTertiary)
-                            .CornerRadius(8)
-                            .Width(45).Height(45)
-                            .Margin(0, 0, 16, 0)
-                            .Child(
-                                new TextBlock()
-                                    .Text(supplier.IsActive ? "🏢" : "❌")
-                                    .FontSize(20)
-                                    .HorizontalAlignment(HorizontalAlignment.Center)
-                                    .VerticalAlignment(VerticalAlignment.Center)
-                            ).Col(0),
-                        new StackPanel().VerticalAlignment(VerticalAlignment.Center)
+                new Expander()
+                    .HorizontalAlignment(HorizontalAlignment.Stretch)
+                    .Header(
+                        new Grid().Cols("Auto, *, Auto, Auto")
+                            .HorizontalAlignment(HorizontalAlignment.Stretch)
                             .Children(
-                                new StackPanel().Orientation(Orientation.Horizontal).Spacing(8)
+                                new Border()
+                                    .CornerRadius(8)
+                                    .Width(45).Height(45)
+                                    .Margin(12, 12, 16, 12)
+                                    .Child(
+                                        new TextBlock()
+                                            .Text(supplier.IsActive ? "🏢" : "❌")
+                                            .FontSize(20)
+                                            .HorizontalAlignment(HorizontalAlignment.Center)
+                                            .VerticalAlignment(VerticalAlignment.Center)
+                                    ).Col(0),
+                                new StackPanel().VerticalAlignment(VerticalAlignment.Center)
                                     .Children(
-                                        new TextBlock().Text(supplier.Name).FontSize(16).FontWeight(FontWeight.SemiBold)
-                                            .Foreground(Brushes.White),
-                                        new Border().Background(supplier.IsActive ? AccentGreen : DangerRed)
-                                            .CornerRadius(4).Padding(6, 2)
-                                            .Child(new TextBlock().Text(supplier.IsActive ? "Activo" : "Inactivo")
-                                                .FontSize(10).Foreground(Brushes.White))
-                                    ),
-                                new WrapPanel().Orientation(Orientation.Horizontal).Margin(0, 4, 0, 0)
-                                    .Children(
-                                        BuildBadge($"Código: {supplier.Code}"),
-                                        string.IsNullOrEmpty(supplier.TaxId)
+                                        new StackPanel().Orientation(Orientation.Horizontal).Spacing(8)
+                                            .Children(
+                                                new TextBlock().Text(supplier.Name).FontSize(16)
+                                                    .FontWeight(FontWeight.SemiBold)
+                                                    .Foreground(Brushes.White),
+                                                new Border().Background(supplier.IsActive ? AccentGreen : DangerRed)
+                                                    .CornerRadius(4).Padding(6, 2)
+                                                    .Child(new TextBlock()
+                                                        .Text(supplier.IsActive ? "Activo" : "Inactivo")
+                                                        .FontSize(10).Foreground(Brushes.White))
+                                            ),
+                                        new WrapPanel().Orientation(Orientation.Horizontal).Margin(0, 4, 0, 0)
+                                            .Children(
+                                                BuildBadge($"Código: {supplier.Code}"),
+                                                string.IsNullOrEmpty(supplier.TaxId)
+                                                    ? new Panel()
+                                                    : BuildBadge($"NIT: {supplier.TaxId}"),
+                                                string.IsNullOrEmpty(supplier.ContactName)
+                                                    ? new Panel()
+                                                    : BuildBadge($"Contacto: {supplier.ContactName}"),
+                                                BuildBadge($"Entrega: {supplier.LeadTimeDays} días")
+                                            ),
+                                        new TextBlock().Text($"📞 {supplier.PhoneNumber}  |  ✉️ {supplier.Email}")
+                                            .FontSize(12)
+                                            .Foreground(TextMuted).Margin(0, 4, 0, 0),
+                                        string.IsNullOrEmpty(supplier.Address)
                                             ? new Panel()
-                                            : BuildBadge($"NIT: {supplier.TaxId}"),
-                                        string.IsNullOrEmpty(supplier.ContactName)
-                                            ? new Panel()
-                                            : BuildBadge($"Contacto: {supplier.ContactName}"),
-                                        BuildBadge($"Entrega: {supplier.LeadTimeDays} días")
-                                    ),
-                                new TextBlock().Text($"📞 {supplier.PhoneNumber}  |  ✉️ {supplier.Email}").FontSize(12)
-                                    .Foreground(TextMuted).Margin(0, 4, 0, 0),
-                                string.IsNullOrEmpty(supplier.Address)
-                                    ? new Panel()
-                                    : new TextBlock().Text($"📍 {supplier.Address}").FontSize(11).Foreground(TextSubtle)
-                                        .Margin(0, 2, 0, 0)
-                            ).Col(1),
-                        editButton.Col(2),
-                        removeButton.Col(3)
+                                            : new TextBlock().Text($"📍 {supplier.Address}").FontSize(11)
+                                                .Foreground(TextSubtle)
+                                                .Margin(0, 2, 0, 0)
+                                    ).Col(1),
+                                editButton.Col(2),
+                                removeButton.Col(3)
+                            )
                     )
+                    .Content(
+                        new Border()
+                            .Background(BackgroundPrimary)
+                            .CornerRadius(8)
+                            .Padding(16, 12)
+                            .Child(
+                                BuildSupplierProductsSummary(supplier)
+                            )
+                    )
+            );
+    }
+
+    private static Control BuildSupplierProductsSummary(Supplier supplier)
+    {
+        var products = supplier.Products?.ToList() ?? new List<Product>();
+
+        if (products.Count == 0)
+        {
+            return new TextBlock()
+                .Text("📦 Ningún producto asignado a este proveedor actualmente.")
+                .FontSize(12)
+                .FontStyle(FontStyle.Italic)
+                .Foreground(TextSubtle);
+        }
+
+        var productContainer = new WrapPanel().Orientation(Orientation.Horizontal);
+
+        foreach (var product in products)
+        {
+            var productBadge = new Border()
+                .Background(BackgroundTertiary)
+                .BorderBrush(BorderColor)
+                .BorderThickness(1)
+                .CornerRadius(6)
+                .Padding(8, 4)
+                .Margin(0, 0, 8, 6)
+                .Child(
+                    new StackPanel().Orientation(Orientation.Horizontal).Spacing(6)
+                        .Children(
+                            new TextBlock().Text("📦").FontSize(12),
+                            new TextBlock().Text($"{product.Name}").FontSize(12).FontWeight(FontWeight.SemiBold)
+                                .Foreground(Brushes.White),
+                            new TextBlock().Text($"({product.Code})").FontSize(11).Foreground(TextMuted)
+                        )
+                );
+
+            productContainer.Children.Add(productBadge);
+        }
+
+        return new StackPanel().Spacing(8)
+            .Children(
+                new TextBlock()
+                    .Text($"🛍️ Productos Surtidos ({products.Count})")
+                    .FontSize(12)
+                    .FontWeight(FontWeight.Bold)
+                    .Foreground(TextMuted),
+                productContainer
             );
     }
 

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Repository;
 using Farmacontrol.Core.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Desktop.States;
 
@@ -45,11 +46,14 @@ public partial class SupplierState : ObservableObject
 
     partial void OnSearchTextChanged(string value) => UpdateFilteredSuppliers();
 
-    public void LoadSuppliers()
+    private void LoadSuppliers()
     {
         try
         {
-            _baseSuppliers = _db.Suppliers.ToList();
+            _baseSuppliers = _db.Suppliers
+                .Include(s => s.Products) 
+                .ToList();
+            
             UpdateFilteredSuppliers();
         }
         catch (Exception ex)
@@ -57,7 +61,7 @@ public partial class SupplierState : ObservableObject
             ErrorMessage = $"Error al cargar proveedores: {ex.Message}";
         }
     }
-
+    
     private void UpdateFilteredSuppliers()
     {
         var filtered = _baseSuppliers.AsEnumerable();
