@@ -1,9 +1,14 @@
+using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
+using Avalonia.Styling;
 using Farmacontrol.Desktop.States;
 
 namespace Farmacontrol.Desktop.Components;
 
 public static class SupplierModal
 {
+    private static readonly SolidColorBrush BackgroundTertiary = SolidColorBrush.Parse("#374151");
+    private static readonly SolidColorBrush BackgroundHover = SolidColorBrush.Parse("#4B5563");
     private static readonly SolidColorBrush BackgroundOverlay = SolidColorBrush.Parse("#80000000");
     private static readonly SolidColorBrush BackgroundCard = SolidColorBrush.Parse("#1F2937");
     private static readonly SolidColorBrush BackgroundInput = SolidColorBrush.Parse("#374151");
@@ -35,6 +40,30 @@ public static class SupplierModal
                     .HorizontalAlignment(HorizontalAlignment.Center)
                     .VerticalAlignment(VerticalAlignment.Center)
                     .Padding(24)
+                    .Styles(
+                        new Style(x => x.OfType<TextBox>().Class(":pointerover").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<TextBox>().Class(":focus").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
+                                new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
+                            }
+                        },
+                        new Style(x => x.OfType<FlyoutPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.PaddingProperty, new Thickness(0)),
+                                new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0))
+                            }
+                        }
+                    )
                     .Child(
                         new Grid().Rows("Auto, Auto, *, Auto")
                             .Children(
