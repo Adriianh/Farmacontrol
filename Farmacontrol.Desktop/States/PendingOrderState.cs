@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Desktop.States;
 
@@ -28,6 +29,9 @@ public partial class PendingOrdersState : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowSuggestions))]
     [NotifyPropertyChangedFor(nameof(ShowEmpty))]
     private bool _isOrderGeneratedSuccessfully;
+    
+    [ObservableProperty] 
+    private ObservableCollection<Purchase> _pendingPurchases = new();
 
     public bool ShowEmpty => !IsOrderGeneratedSuccessfully && LowStockSuggestions.Count == 0;
     public bool ShowSuggestions => !IsOrderGeneratedSuccessfully && LowStockSuggestions.Count > 0;
@@ -37,6 +41,7 @@ public partial class PendingOrdersState : ObservableObject
     {
         _db = db;
         LoadDashboardData();
+        LoadPendingPurchases();
     }
 
     [RelayCommand]
@@ -111,20 +116,65 @@ public partial class PendingOrdersState : ObservableObject
 
             IsOrderGeneratedSuccessfully = true;
             LoadDashboardData();
+            LoadPendingPurchases();
         }
         catch (Exception ex)
         {
             ErrorMessage = $"❌ Error al guardar la orden en la base de datos: {ex.Message}";
         }
     }
+
+    private void LoadPendingPurchases()
+    {
+        var list = _db.Purchases
+            .Include(p => p.Details)
+            .Where(p => p.Status == PurchaseStatus.Pending)
+            .OrderByDescending(p => p.Date)
+            .ToList();
+        PendingPurchases = new ObservableCollection<Purchase>(list);
+    }
+    
+    public void CompletePurchase(Purchase purchase)
+    {
+        var fullPurchase = _db.Purchases
+            .Include(p => p.Details)
+            .FirstOrDefault(p => p.Id == purchase.Id);
+            
+        if (fullPurchase == null) return;
+        
+        foreach (var detail in fullPurchase.Details)
+        {
+            var product = _db.Products.FirstOrDefault(p => p.Code == detail.ProductCode);
+            if (product == null) continue;
+            
+            var previousStock = product.Stock;
+            product.Stock += detail.Quantity;
+            
+            var movement = new InventoryMovement {
+                ProductCode = product.Code,
+                Quantity = detail.Quantity,
+                Type = "Entrada por Compra",
+                Reason = $"Recepción de orden #{fullPurchase.InvoiceNumber}",
+                PreviousStock = previousStock,
+                NewStock = product.Stock
+            };
+            _db.InventoryMovements.Add(movement);
+        }
+    
+        fullPurchase.ConfirmReception();
+        _db.SaveChanges();
+        
+        LoadDashboardData();
+        LoadPendingPurchases();
+    }
 }
 
 public class ProductOrderSuggestion
 {
-    public required string ProductCode { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-    public int CurrentStock { get; set; }
-    public int MinStock { get; set; }
-    public int SuggestedQuantity { get; set; }
-    public bool IsSelected { get; set; }
+    public required string ProductCode { get; init; }
+    public string ProductName { get; init; } = string.Empty;
+    public int CurrentStock { get; init; }
+    public int MinStock { get; init; }
+    public int SuggestedQuantity { get; init; }
+    public bool IsSelected { get; init; }
 }
