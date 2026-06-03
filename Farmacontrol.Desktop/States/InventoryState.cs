@@ -3,6 +3,7 @@ using Farmacontrol.Core.Interface;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
 using System.Collections.ObjectModel;
+using Farmacontrol.Core.Repository;
 
 namespace Farmacontrol.Desktop.States;
 
@@ -36,10 +37,10 @@ public partial class InventoryState : ObservableObject
 
     public string SortIcon => AscendingOrder ? "🔼 Asc" : "🔽 Desc";
 
-    public InventoryState(InventoryService inventoryService)
+    public InventoryState(InventoryService inventoryService, AppDbContext db)
     {
         _inventoryService = inventoryService;
-        ProductForm = new ProductState(inventoryService);
+        ProductForm = new ProductState(inventoryService, db);
         LoadProducts();
     }
 

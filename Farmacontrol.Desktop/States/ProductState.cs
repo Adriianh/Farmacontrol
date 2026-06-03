@@ -2,13 +2,17 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.ProductEntity;
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
 
 namespace Farmacontrol.Desktop.States;
 
-public partial class ProductState(InventoryService inventoryService) : ObservableObject
+public partial class ProductState : ObservableObject
 {
+    private readonly InventoryService _inventoryService;
+    private readonly AppDbContext _db;
+
     private Product? _editingProduct;
     private List<Batch> _originalBatches = [];
 
@@ -81,6 +85,13 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
     public bool HasSuppliers => SelectedSuppliers.Count > 0;
     public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
 
+    public ProductState(InventoryService inventoryService, AppDbContext db)
+    {
+        _inventoryService = inventoryService;
+        _db = db;
+        LoadAvailableSuppliers();
+    }
+    
     public void PrepareForAdd()
     {
         _editingProduct = null;
@@ -218,11 +229,11 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
 
             if (IsEditing && _editingProduct != null)
             {
-                inventoryService.UpdateProduct(product);
+                _inventoryService.UpdateProduct(product);
             }
             else
             {
-                inventoryService.AddProduct(product);
+                _inventoryService.AddProduct(product);
             }
 
             Reset();
@@ -476,7 +487,7 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
         BatchesInfo = $"Lotes agregados ({Batches.Count}):\n{batchList}";
     }
 
-    public void SetAvailableSuppliers(List<Supplier> suppliers)
+    private void SetAvailableSuppliers(List<Supplier> suppliers)
     {
         AvailableSuppliers = suppliers;
     }
@@ -505,6 +516,15 @@ public partial class ProductState(InventoryService inventoryService) : Observabl
 
         var supplierList = string.Join(", ", SelectedSuppliers.Select(s => s.Name));
         SuppliersInfo = $"Proveedores: {supplierList}";
+    }
+    
+    private void LoadAvailableSuppliers()
+    {
+        var activeSuppliers = _db.Suppliers
+            .Where(s => s.IsActive)
+            .ToList();
+        
+        SetAvailableSuppliers(activeSuppliers);
     }
 
     private void Reset()
