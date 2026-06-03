@@ -84,8 +84,6 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                                             () => state.CurrentContent = new InventoryView()),
                                                         CreateSubButton("🔍 Buscar Producto",
                                                             () => state.CurrentContent = new SearchProductView()),
-                                                        CreateSubButton("⏳ Medicamentos Vencidos",
-                                                            () => state.CurrentContent = new ExpiredProductView()),
                                                         CreateSubButton("📝 Pedidos Pendientes",
                                                             () => state.CurrentContent = new PendingOrdersView())
                                                     ]),

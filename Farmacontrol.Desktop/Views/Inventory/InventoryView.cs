@@ -1,5 +1,6 @@
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data.Converters;
 using Avalonia.Styling;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Desktop.Components;
@@ -80,11 +81,12 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         }
                     )
                     .Child(
-                        new Grid().Rows("Auto, Auto, *")
+                        new Grid().Rows("Auto, Auto, Auto, *")
                             .Children(
                                 BuildHeader(state).Row(0).Margin(20),
                                 BuildSearchBar(state).Row(1),
-                                BuildProductList(state).Row(2)
+                                BuildFilterBadges(state).Row(2),
+                                BuildProductList(state).Row(3)
                             )
                     ),
                 ProductModal.Build(
@@ -99,7 +101,6 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         state.LoadProducts();
                     }
                 ).IsVisible(state, x => x.IsAddModalOpen),
-                
                 state.SelectedProduct is null
                     ? new Grid().IsVisible(state, x => x.IsBatchesModalOpen)
                     : BatchesModal.Build(
@@ -288,6 +289,53 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
         return button;
     }
 
+    private Control BuildFilterBadges(InventoryState state) =>
+        new StackPanel()
+            .Orientation(Orientation.Horizontal)
+            .Margin(10, 0, 10, 12)
+            .Spacing(8)
+            .Children(
+                BuildBadgeButton("Todos", InventoryState.ProductFilterCondition.All, state, Brushes.White,
+                    BackgroundTertiary),
+                BuildBadgeButton("⛔ Vencidos", InventoryState.ProductFilterCondition.Expired, state, DangerRed,
+                    SolidColorBrush.Parse("#451A1A")),
+                BuildBadgeButton("⚠️ Próximos a Vencer", InventoryState.ProductFilterCondition.Expiring, state,
+                    SolidColorBrush.Parse("#F59E0B"), SolidColorBrush.Parse("#45301A")),
+                BuildBadgeButton("📉 Stock Bajo", InventoryState.ProductFilterCondition.LowStock, state,
+                    SolidColorBrush.Parse("#38BDF8"), SolidColorBrush.Parse("#1A3045"))
+            );
+
+    private static Control BuildBadgeButton(string text, InventoryState.ProductFilterCondition condition,
+        InventoryState state, ISolidColorBrush textColor, SolidColorBrush activeBg)
+    {
+        var button = new Button()
+            .Content(text)
+            .FontSize(12)
+            .FontWeight(FontWeight.SemiBold)
+            .Padding(12, 6)
+            .CornerRadius(20);
+        
+        button.Bind(TemplatedControl.BackgroundProperty, new Binding
+        {
+            Source = state,
+            Path = nameof(state.CurrentFilterCondition),
+            Converter = new FuncValueConverter<InventoryState.ProductFilterCondition, IBrush>(val =>
+                val == condition ? activeBg : BackgroundTertiary)
+        });
+
+        button.Bind(TemplatedControl.ForegroundProperty, new Binding
+        {
+            Source = state,
+            Path = nameof(state.CurrentFilterCondition),
+            Converter = new FuncValueConverter<InventoryState.ProductFilterCondition, IBrush>(val =>
+                val == condition ? textColor : TextMuted)
+        });
+
+        button.Click += (_, _) => { state.CurrentFilterCondition = condition; };
+
+        return button;
+    }
+
     private Control BuildProductList(InventoryState state) =>
         new ListBox()
             .Background(Brushes.Transparent)
@@ -298,11 +346,11 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
 
     private Control BuildProductItem(Product? product, InventoryState state)
     {
-        if (product == null) 
+        if (product == null)
         {
-            return new ContentControl(); 
+            return new ContentControl();
         }
-        
+
         return new Border()
             .Background(BackgroundSecondary)
             .CornerRadius(12)
@@ -385,7 +433,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                 .Foreground(TextSubtle)
                 .Margin(0, 0, 0, 4)
         );
-        
+
         if (product == null)
         {
             return new TextBlock().Text("Cargando...");
@@ -468,6 +516,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         .Child(new TextBlock().Text(ingredient).FontSize(11).Foreground(Brushes.White))
                 );
             }
+
             ingredientsStack.Children.Add(ingredientsWrap);
             container.Children.Add(ingredientsStack);
         }
@@ -495,6 +544,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         .Child(new TextBlock().Text($"#{tag}").FontSize(11).Foreground(TextMuted))
                 );
             }
+
             tagsStack.Children.Add(tagsWrap);
             container.Children.Add(tagsStack);
         }
@@ -538,7 +588,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             {
                 var daysLeft = (batch.ExpirationDate - DateTime.Today).Days;
                 var isExpired = daysLeft < 0;
-                var isNearExpiry = daysLeft >= 0 && daysLeft <= 30;
+                var isNearExpiry = daysLeft is >= 0 and <= 30;
 
                 var statusColor = isExpired ? DangerRed :
                     isNearExpiry ? SolidColorBrush.Parse("#FBBF24") : TextMuted;

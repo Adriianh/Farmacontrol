@@ -11,10 +11,16 @@ public partial class InventoryState : ObservableObject
 {
     private readonly InventoryService _inventoryService;
     private List<Product> _baseProducts = [];
+    
+    public enum ProductFilterCondition { All, LowStock, Expiring, Expired }
 
     [ObservableProperty] private string _searchText = string.Empty;
 
     [ObservableProperty] private ObservableCollection<Product> _filteredProducts = [];
+    
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilteredProducts))]
+    private ProductFilterCondition _currentFilterCondition = ProductFilterCondition.All;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProducts))]
@@ -48,6 +54,11 @@ public partial class InventoryState : ObservableObject
     {
         UpdateFilteredProducts();
     }
+    
+    partial void OnCurrentFilterConditionChanged(ProductFilterCondition value)
+    {
+        UpdateFilteredProducts();
+    }
 
     partial void OnSortCriterionIndexChanged(int value)
     {
@@ -73,6 +84,14 @@ public partial class InventoryState : ObservableObject
                 p.Ingredients.Any(i => i.ToLower().Contains(query))
             );
         }
+        
+        result = CurrentFilterCondition switch
+        {
+            ProductFilterCondition.LowStock => result.Where(p => GetProductAlertStatus(p) == "LOWSTOCK"),
+            ProductFilterCondition.Expiring => result.Where(p => GetProductAlertStatus(p) == "EXPIRING"),
+            ProductFilterCondition.Expired => result.Where(p => GetProductAlertStatus(p) == "EXPIRED"),
+            _ => result
+        };
 
         result = SortCriterionIndex switch
         {
