@@ -38,9 +38,9 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
         ? $"🔍 Coincidencias encontradas ({SimilarProducts.Count})"
         : "⚠️ No se encontró ningún producto con ese criterio.";
 
-    public bool ShowEmpty        => !IsEditing && !HasSimilarResults && !HasSearched;
+    public bool ShowEmpty => !IsEditing && !HasSimilarResults && !HasSearched;
     public bool ShowSimilarResults => !IsEditing && (HasSimilarResults || HasSearched);
-    public bool ShowEditing      => IsEditing;
+    public bool ShowEditing => IsEditing;
 
     [RelayCommand]
     public void ExecuteSearch()
