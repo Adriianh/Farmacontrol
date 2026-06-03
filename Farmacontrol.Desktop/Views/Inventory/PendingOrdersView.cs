@@ -114,6 +114,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                                     .CornerRadius(12)
                                     .Content(BuildGenerateOrderSection(state)),
                                 new TabItem()
+                                    .CornerRadius(12)
                                     .Header(
                                         new StackPanel().Orientation(Orientation.Horizontal).Spacing(8)
                                             .Children(
@@ -122,10 +123,10 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                                                     .Background(SolidColorBrush.Parse("#EF4444"))
                                                     .CornerRadius(10)
                                                     .Padding(6, 2)
-                                                    .IsVisible(state, x => x.PendingPurchases.Count > 0)
+                                                    .IsVisible(state, x => x.HasPendingPurchases)
                                                     .Child(
                                                         new TextBlock()
-                                                            .Text(state, x => x.PendingPurchases.Count.ToString())
+                                                            .Text(state, x => x.PendingPurchasesCount)
                                                             .FontSize(11)
                                                             .FontWeight(FontWeight.Bold)
                                                             .Foreground(Brushes.White)
@@ -286,18 +287,20 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
 
     private Control BuildReceptionSection(PendingOrdersState state)
     {
+        var pendingPurchasesText = $"Hay {state.PendingPurchasesCount} pedido(s) pendiente(s) de recepción";
+        
         return new Grid().Rows("Auto, *")
             .Children(
                 new StackPanel().Row(0).Margin(0, 0, 0, 16)
                     .Children(
                         new TextBlock()
-                            .Text("🚚 Órdenes en Tránsito")
-                            .FontSize(16)
+                            .Text("Órdenes en Tránsito")
+                            .FontSize(24)
                             .FontWeight(FontWeight.Bold)
                             .Foreground(Brushes.White),
                         new TextBlock()
-                            .Text(state, x => $"Hay {x.PendingPurchases.Count} pedido(s) pendiente(s) de recepción")
-                            .FontSize(12)
+                            .Text(pendingPurchasesText)
+                            .FontSize(13)
                             .Foreground(TextMuted)
                             .Margin(0, 4, 0, 0)
                     ),
@@ -305,8 +308,8 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                     .Child(
                         new Grid()
                             .Children(
-                                BuildEmptyPendingPurchases().IsVisible(state, x => x.PendingPurchases.Count == 0),
-                                BuildPendingPurchasesList(state).IsVisible(state, x => x.PendingPurchases.Count > 0)
+                                BuildEmptyPendingPurchases().IsVisible(state, x => !x.HasPendingPurchases),
+                                BuildPendingPurchasesList(state).IsVisible(state, x => x.HasPendingPurchases)
                             )
                     )
             );

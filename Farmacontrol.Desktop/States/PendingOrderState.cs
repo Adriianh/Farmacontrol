@@ -29,13 +29,16 @@ public partial class PendingOrdersState : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowSuggestions))]
     [NotifyPropertyChangedFor(nameof(ShowEmpty))]
     private bool _isOrderGeneratedSuccessfully;
-    
-    [ObservableProperty] 
-    private ObservableCollection<Purchase> _pendingPurchases = new();
+
+    [ObservableProperty] private ObservableCollection<Purchase> _pendingPurchases = new();
 
     public bool ShowEmpty => !IsOrderGeneratedSuccessfully && LowStockSuggestions.Count == 0;
     public bool ShowSuggestions => !IsOrderGeneratedSuccessfully && LowStockSuggestions.Count > 0;
     public bool ShowSuccess => IsOrderGeneratedSuccessfully;
+    public bool HasPendingPurchases => PendingPurchases.Count > 0;
+
+    public string PendingPurchasesCount => PendingPurchases.Count.ToString();
+    
 
     public PendingOrdersState(AppDbContext db)
     {
@@ -84,7 +87,7 @@ public partial class PendingOrdersState : ObservableObject
         var itemsToOrder = LowStockSuggestions
             .Where(x => x is { IsSelected: true, SuggestedQuantity: > 0 })
             .ToList();
-        
+
         if (!itemsToOrder.Any())
         {
             ErrorMessage = "⚠️ Seleccione al menos un producto con una cantidad mayor a 0.";
@@ -133,24 +136,25 @@ public partial class PendingOrdersState : ObservableObject
             .ToList();
         PendingPurchases = new ObservableCollection<Purchase>(list);
     }
-    
+
     public void CompletePurchase(Purchase purchase)
     {
         var fullPurchase = _db.Purchases
             .Include(p => p.Details)
             .FirstOrDefault(p => p.Id == purchase.Id);
-            
+
         if (fullPurchase == null) return;
-        
+
         foreach (var detail in fullPurchase.Details)
         {
             var product = _db.Products.FirstOrDefault(p => p.Code == detail.ProductCode);
             if (product == null) continue;
-            
+
             var previousStock = product.Stock;
             product.Stock += detail.Quantity;
-            
-            var movement = new InventoryMovement {
+
+            var movement = new InventoryMovement
+            {
                 ProductCode = product.Code,
                 Quantity = detail.Quantity,
                 Type = "Entrada por Compra",
@@ -160,10 +164,10 @@ public partial class PendingOrdersState : ObservableObject
             };
             _db.InventoryMovements.Add(movement);
         }
-    
+
         fullPurchase.ConfirmReception();
         _db.SaveChanges();
-        
+
         LoadDashboardData();
         LoadPendingPurchases();
     }
