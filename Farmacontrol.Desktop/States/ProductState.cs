@@ -65,7 +65,7 @@ public partial class ProductState : ObservableObject
         _batches = new();
 
     [ObservableProperty] 
-    [NotifyPropertyChangedFor(nameof(HasSuppliers), nameof(NoSuppliersAvailable))]
+    [NotifyPropertyChangedFor(nameof(HasSuppliers), nameof(AnySupplierAvailable), nameof(NoSuppliersAvailable))]
     private List<Supplier> _availableSuppliers = new();
 
     [ObservableProperty] private List<Supplier> _selectedSuppliers = new();
@@ -84,7 +84,8 @@ public partial class ProductState : ObservableObject
     private bool IsEditing => _editingProduct != null;
     public bool HasBatches => Batches.Count > 0;
     public bool HasSuppliers => SelectedSuppliers.Count > 0;
-    public bool NoSuppliersAvailable => !HasSuppliers;
+    public bool AnySupplierAvailable => AvailableSuppliers is { Count: > 0 };
+    public bool NoSuppliersAvailable => !AnySupplierAvailable;
     public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
 
 
@@ -100,6 +101,7 @@ public partial class ProductState : ObservableObject
         _editingProduct = null;
         Title = "Nuevo Producto";
         Reset();
+        LoadAvailableSuppliers();
     }
 
     public void PrepareForEdit(Product product)
@@ -108,6 +110,7 @@ public partial class ProductState : ObservableObject
         _originalBatches = new List<Batch>(product.Batches);
         Title = "Editar Producto";
         Reset();
+        LoadAvailableSuppliers();
 
         Name = product.Name;
         Code = product.Code;
@@ -490,11 +493,6 @@ public partial class ProductState : ObservableObject
         BatchesInfo = $"Lotes agregados ({Batches.Count}):\n{batchList}";
     }
 
-    private void SetAvailableSuppliers(List<Supplier> suppliers)
-    {
-        AvailableSuppliers = suppliers;
-    }
-
     public void ToggleSupplier(Supplier supplier)
     {
         if (SelectedSuppliers.Contains(supplier))
@@ -527,7 +525,10 @@ public partial class ProductState : ObservableObject
             .Where(s => s.IsActive)
             .ToList();
         
-        SetAvailableSuppliers(activeSuppliers);
+        AvailableSuppliers = activeSuppliers;
+    
+        OnPropertyChanged(nameof(AnySupplierAvailable));
+        OnPropertyChanged(nameof(NoSuppliersAvailable));
     }
 
     private void Reset()

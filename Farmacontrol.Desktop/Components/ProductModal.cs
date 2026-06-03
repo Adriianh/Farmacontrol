@@ -400,7 +400,7 @@ public static class ProductModal
                             cb.IsCheckedChanged += (_, _) => state.ToggleSupplier(supplier);
                             return cb;
                         }))
-                    .IsVisible(state, x => x.HasSuppliers), 
+                    .IsVisible(state, x => x.AnySupplierAvailable), 
                 
                 new Button()
                     .Content("⚠️ No hay proveedores activos. Registrar uno nuevo")
