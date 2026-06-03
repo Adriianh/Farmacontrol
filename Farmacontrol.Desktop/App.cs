@@ -1,11 +1,4 @@
-using System;
-using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Markup.Declarative;
 using Avalonia.Styling;
-using Avalonia.Themes.Fluent;
 using Farmacontrol.Core.DependencyInjection;
 using Farmacontrol.Core.Repository;
 using Farmacontrol.Desktop.States;
@@ -33,6 +26,7 @@ public static class Program
         .AddFarmacontrolCore()
         .AddTransient<InventoryState>()
         .AddTransient<SupplierState>()
+        .AddTransient<SearchProductState>()
         .BuildServiceProvider();
 
     private static async Task ApplyMigrationsAsync(IServiceProvider serviceProvider)
