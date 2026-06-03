@@ -1,9 +1,9 @@
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Styling;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Desktop.Components;
 using Farmacontrol.Desktop.States;
-using Farmacontrol.Model;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacontrol.Desktop.Views.Administration;
@@ -40,6 +40,31 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
                                 new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
                                 new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
                             }
+                        },
+                        new Style(x => x.OfType<Expander>())
+                        {
+                            Setters =
+                            {
+                                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
+                                new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
+                            }
+                        },
+                        new Style(x => x.OfType<Expander>().Template().OfType<ToggleButton>())
+                        {
+                            Setters = { new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent) }
+                        },
+                        new Style(x =>
+                            x.OfType<Expander>().Template().OfType<ToggleButton>().Class(":pointerover").Template()
+                                .OfType<Border>())
+                        {
+                            Setters = { new Setter(Border.BackgroundProperty, Brushes.Transparent) }
+                        },
+                        new Style(x =>
+                            x.OfType<Expander>().Template().OfType<ToggleButton>().Class(":checked").Template()
+                                .OfType<Border>())
+                        {
+                            Setters = { new Setter(Border.BackgroundProperty, Brushes.Transparent) }
                         }
                     )
                     .Child(
@@ -140,7 +165,7 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
         removeButton.Click += (_, _) => state.DeleteSupplier(supplier);
 
         return new Border()
-            .Background(BackgroundPrimary)
+            .Background(BackgroundSecondary) // Asegura que la tarjeta base sea sólida
             .CornerRadius(12)
             .Margin(0, 0, 0, 12)
             .BorderBrush(BorderColor)
@@ -149,63 +174,76 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
             .Child(
                 new Expander()
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
+                    .Padding(0) // Limpiamos paddings por defecto del Expander para controlar el diseño interno
                     .Header(
-                        new Grid().Cols("Auto, *, Auto, Auto")
-                            .HorizontalAlignment(HorizontalAlignment.Stretch)
-                            .Children(
-                                new Border()
-                                    .CornerRadius(8)
-                                    .Width(45).Height(45)
-                                    .Margin(12, 12, 16, 12)
-                                    .Child(
-                                        new TextBlock()
-                                            .Text(supplier.IsActive ? "🏢" : "❌")
-                                            .FontSize(20)
-                                            .HorizontalAlignment(HorizontalAlignment.Center)
-                                            .VerticalAlignment(VerticalAlignment.Center)
-                                    ).Col(0),
-                                new StackPanel().VerticalAlignment(VerticalAlignment.Center)
+                        // Encapsulamos la cabecera dentro de un Border con un padding interno cómodo
+                        new Border()
+                            .Padding(16, 12)
+                            .Child(
+                                new Grid().Cols("Auto, *, Auto, Auto")
+                                    .HorizontalAlignment(HorizontalAlignment.Stretch)
                                     .Children(
-                                        new StackPanel().Orientation(Orientation.Horizontal).Spacing(8)
+                                        new Border()
+                                            .Background(BackgroundTertiary)
+                                            .CornerRadius(8)
+                                            .Width(45).Height(45)
+                                            .Margin(0, 0, 16, 0)
+                                            .Child(
+                                                new TextBlock()
+                                                    .Text(supplier.IsActive ? "🏢" : "❌")
+                                                    .FontSize(20)
+                                                    .HorizontalAlignment(HorizontalAlignment.Center)
+                                                    .VerticalAlignment(VerticalAlignment.Center)
+                                            ).Col(0),
+                                        new StackPanel().VerticalAlignment(VerticalAlignment.Center)
                                             .Children(
-                                                new TextBlock().Text(supplier.Name).FontSize(16)
-                                                    .FontWeight(FontWeight.SemiBold)
-                                                    .Foreground(Brushes.White),
-                                                new Border().Background(supplier.IsActive ? AccentGreen : DangerRed)
-                                                    .CornerRadius(4).Padding(6, 2)
-                                                    .Child(new TextBlock()
-                                                        .Text(supplier.IsActive ? "Activo" : "Inactivo")
-                                                        .FontSize(10).Foreground(Brushes.White))
-                                            ),
-                                        new WrapPanel().Orientation(Orientation.Horizontal).Margin(0, 4, 0, 0)
-                                            .Children(
-                                                BuildBadge($"Código: {supplier.Code}"),
-                                                string.IsNullOrEmpty(supplier.TaxId)
+                                                new StackPanel().Orientation(Orientation.Horizontal).Spacing(8)
+                                                    .Children(
+                                                        new TextBlock().Text(supplier.Name).FontSize(16)
+                                                            .FontWeight(FontWeight.SemiBold)
+                                                            .Foreground(Brushes.White),
+                                                        new Border()
+                                                            .Background(supplier.IsActive ? AccentGreen : DangerRed)
+                                                            .CornerRadius(4).Padding(6, 2)
+                                                            .Child(new TextBlock()
+                                                                .Text(supplier.IsActive ? "Activo" : "Inactivo")
+                                                                .FontSize(10).Foreground(Brushes.White))
+                                                    ),
+                                                new WrapPanel().Orientation(Orientation.Horizontal).Margin(0, 4, 0, 0)
+                                                    .Children(
+                                                        BuildBadge($"Código: {supplier.Code}"),
+                                                        string.IsNullOrEmpty(supplier.TaxId)
+                                                            ? new Panel()
+                                                            : BuildBadge($"NIT: {supplier.TaxId}"),
+                                                        string.IsNullOrEmpty(supplier.ContactName)
+                                                            ? new Panel()
+                                                            : BuildBadge($"Contacto: {supplier.ContactName}"),
+                                                        BuildBadge($"Entrega: {supplier.LeadTimeDays} días")
+                                                    ),
+                                                new TextBlock()
+                                                    .Text($"📞 {supplier.PhoneNumber}  |  ✉️ {supplier.Email}")
+                                                    .FontSize(12)
+                                                    .Foreground(TextMuted).Margin(0, 4, 0, 0),
+                                                string.IsNullOrEmpty(supplier.Address)
                                                     ? new Panel()
-                                                    : BuildBadge($"NIT: {supplier.TaxId}"),
-                                                string.IsNullOrEmpty(supplier.ContactName)
-                                                    ? new Panel()
-                                                    : BuildBadge($"Contacto: {supplier.ContactName}"),
-                                                BuildBadge($"Entrega: {supplier.LeadTimeDays} días")
-                                            ),
-                                        new TextBlock().Text($"📞 {supplier.PhoneNumber}  |  ✉️ {supplier.Email}")
-                                            .FontSize(12)
-                                            .Foreground(TextMuted).Margin(0, 4, 0, 0),
-                                        string.IsNullOrEmpty(supplier.Address)
-                                            ? new Panel()
-                                            : new TextBlock().Text($"📍 {supplier.Address}").FontSize(11)
-                                                .Foreground(TextSubtle)
-                                                .Margin(0, 2, 0, 0)
-                                    ).Col(1),
-                                editButton.Col(2),
-                                removeButton.Col(3)
+                                                    : new TextBlock().Text($"📍 {supplier.Address}").FontSize(11)
+                                                        .Foreground(TextSubtle)
+                                                        .Margin(0, 2, 0, 0)
+                                            ).Col(1),
+                                        editButton.Col(2),
+                                        removeButton.Col(3)
+                                    )
                             )
                     )
                     .Content(
+                        // Contenido desplegable: El panel oscuro profundo (BackgroundPrimary)
                         new Border()
-                            .Background(BackgroundPrimary)
-                            .CornerRadius(8)
-                            .Padding(16, 12)
+                            .Background(
+                                BackgroundPrimary) // Contraste oscuro perfecto para resaltar las etiquetas internas
+                            .BorderBrush(BorderColor)
+                            .BorderThickness(0, 1, 0, 0) // Añadimos una línea sutil divisoria arriba del contenido
+                            .CornerRadius(0, 0, 12, 12) // Redondeamos únicamente las esquinas inferiores
+                            .Padding(16, 16)
                             .Child(
                                 BuildSupplierProductsSummary(supplier)
                             )
@@ -215,7 +253,7 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
 
     private static Control BuildSupplierProductsSummary(Supplier supplier)
     {
-        var products = supplier.Products?.ToList() ?? new List<Product>();
+        var products = supplier.Products.ToList();
 
         if (products.Count == 0)
         {
