@@ -27,6 +27,7 @@ public static class Program
         .AddTransient<InventoryState>()
         .AddTransient<SupplierState>()
         .AddTransient<SearchProductState>()
+        .AddTransient<PendingOrdersState>()
         .AddSingleton<ProductState>()
         .BuildServiceProvider();
 
