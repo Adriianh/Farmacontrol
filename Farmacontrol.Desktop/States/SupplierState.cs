@@ -16,9 +16,10 @@ public partial class SupplierState : ObservableObject
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private ObservableCollection<Supplier> _filteredSuppliers = [];
     [ObservableProperty] private bool _isModalOpen;
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ModalTitle))]
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ModalTitle))]
     private bool _isEditing;
+
     [ObservableProperty] private string _errorMessage = string.Empty;
 
     [ObservableProperty] private string _code = string.Empty;
@@ -33,7 +34,7 @@ public partial class SupplierState : ObservableObject
     [ObservableProperty] private bool _isActive = true;
 
     private Supplier? _editingSupplier;
-    
+
     public string ModalTitle => IsEditing ? "✏️ Editar Proveedor" : "🏢 Nuevo Proveedor";
     public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
 
@@ -51,9 +52,9 @@ public partial class SupplierState : ObservableObject
         try
         {
             _baseSuppliers = _db.Suppliers
-                .Include(s => s.Products) 
+                .Include(s => s.Products)
                 .ToList();
-            
+
             UpdateFilteredSuppliers();
         }
         catch (Exception ex)
@@ -61,7 +62,7 @@ public partial class SupplierState : ObservableObject
             ErrorMessage = $"Error al cargar proveedores: {ex.Message}";
         }
     }
-    
+
     private void UpdateFilteredSuppliers()
     {
         var filtered = _baseSuppliers.AsEnumerable();
@@ -69,8 +70,8 @@ public partial class SupplierState : ObservableObject
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var search = SearchText.ToLower();
-            filtered = filtered.Where(s => 
-                s.Name.ToLower().Contains(search) || 
+            filtered = filtered.Where(s =>
+                s.Name.ToLower().Contains(search) ||
                 s.Code.ToLower().Contains(search) ||
                 (s.ContactName != null && s.ContactName.ToLower().Contains(search)));
         }
@@ -107,7 +108,7 @@ public partial class SupplierState : ObservableObject
 
     public void SaveSupplier()
     {
-        if (string.IsNullOrWhiteSpace(Code) || string.IsNullOrWhiteSpace(Name) || 
+        if (string.IsNullOrWhiteSpace(Code) || string.IsNullOrWhiteSpace(Name) ||
             string.IsNullOrWhiteSpace(PhoneNumber) || string.IsNullOrWhiteSpace(Email))
         {
             ErrorMessage = "Los campos Código, Nombre, Teléfono y Correo son obligatorios.";
@@ -144,8 +145,8 @@ public partial class SupplierState : ObservableObject
                     return;
                 }
 
-                var newSupplier = new Supplier(Code, Name, PhoneNumber, Email, days, 
-                    string.IsNullOrWhiteSpace(ContactName) ? null : ContactName, 
+                var newSupplier = new Supplier(Code, Name, PhoneNumber, Email, days,
+                    string.IsNullOrWhiteSpace(ContactName) ? null : ContactName,
                     string.IsNullOrWhiteSpace(Address) ? null : Address)
                 {
                     TaxId = string.IsNullOrWhiteSpace(TaxId) ? null : TaxId,
@@ -170,13 +171,27 @@ public partial class SupplierState : ObservableObject
     {
         try
         {
+            ErrorMessage = string.Empty;
+
+            if (supplier.Products.Count > 0)
+            {
+                var productCount = supplier.Products.Count;
+                var productWord = productCount == 1 ? "producto" : "productos";
+
+                ErrorMessage = $"⚠️ No se puede eliminar '{supplier.Name}'. " +
+                               $"Tiene {productCount} {productWord} bajo su distribución. " +
+                               "Desasigne el proveedor de esos productos en el inventario antes de continuar.";
+                return;
+            }
+
             _db.Suppliers.Remove(supplier);
             _db.SaveChanges();
+
             LoadSuppliers();
         }
-        catch
+        catch (Exception ex)
         {
-            ErrorMessage = $"No se puede eliminar el proveedor. Verifique que no esté asignado a productos.";
+            ErrorMessage = $"Error inesperado al intentar eliminar el proveedor: {ex.Message}";
         }
     }
 
