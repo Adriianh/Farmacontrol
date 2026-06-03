@@ -12,11 +12,35 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
     public ProductState ProductForm { get; } = productForm;
 
     [ObservableProperty] private string _searchQuery = string.Empty;
-    [ObservableProperty] private bool _hasSearched;
-    [ObservableProperty] private bool _isEditing;
 
-    [ObservableProperty] private ObservableCollection<Product> _similarProducts = new();
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSimilarResults))]
+    [NotifyPropertyChangedFor(nameof(ShowEmpty))]
+    [NotifyPropertyChangedFor(nameof(ShowSimilarResults))]
+    [NotifyPropertyChangedFor(nameof(ShowEditing))]
+    private bool _isEditing;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmpty))]
+    [NotifyPropertyChangedFor(nameof(ShowSimilarResults))]
+    private bool _hasSearched;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSimilarResults))]
+    [NotifyPropertyChangedFor(nameof(SimilarResultsLabel))]
+    [NotifyPropertyChangedFor(nameof(ShowEmpty))]
+    [NotifyPropertyChangedFor(nameof(ShowSimilarResults))]
+    private ObservableCollection<Product> _similarProducts = new();
+
     public bool HasSimilarResults => SimilarProducts.Count > 0;
+
+    public string SimilarResultsLabel => HasSimilarResults
+        ? $"🔍 Coincidencias encontradas ({SimilarProducts.Count})"
+        : "⚠️ No se encontró ningún producto con ese criterio.";
+
+    public bool ShowEmpty        => !IsEditing && !HasSimilarResults && !HasSearched;
+    public bool ShowSimilarResults => !IsEditing && (HasSimilarResults || HasSearched);
+    public bool ShowEditing      => IsEditing;
 
     [RelayCommand]
     public void ExecuteSearch()
@@ -25,14 +49,12 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
 
         HasSearched = true;
         IsEditing = false;
-        SimilarProducts.Clear();
+        SimilarProducts = new ObservableCollection<Product>();
 
         var queryStr = SearchQuery.Trim();
 
         var exactMatch = db.Products
-            .AsQueryable()
             .Include(p => p.Batches)
-            .Include(p => p.Suppliers)
             .FirstOrDefault(p => p.Code == queryStr || p.Barcode == queryStr);
 
         if (exactMatch != null)
@@ -42,27 +64,57 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
         }
 
         var matches = db.Products
-            .AsQueryable()
             .Include(p => p.Batches)
-            .Where(p => EF.Functions.Like(p.Name, $"%{queryStr}%"))
+            .Where(p => p.Name.Contains(queryStr))
+            .Take(10)
             .ToList();
 
         if (matches.Count == 1)
         {
             SetupInlineForm(matches[0]);
+            return;
         }
-        else if (matches.Count > 1)
+
+        if (matches.Count > 1)
         {
             SimilarProducts = new ObservableCollection<Product>(matches);
+            return;
         }
+
+        var words = queryStr
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(w => w.Length > 2)
+            .ToList();
+
+        if (words.Count == 0) return;
+
+        var seen = new HashSet<string>();
+        var wordMatches = new List<Product>();
+
+        foreach (var word in words)
+        {
+            var wordResults = db.Products
+                .Include(p => p.Batches)
+                .Where(p => p.Name.Contains(word))
+                .Take(10)
+                .ToList();
+
+            foreach (var product in wordResults)
+            {
+                if (seen.Add(product.Code))
+                    wordMatches.Add(product);
+            }
+
+            if (wordMatches.Count >= 10) break;
+        }
+
+        SimilarProducts = new ObservableCollection<Product>(wordMatches.Take(10));
     }
-    
+
     public void SetupInlineForm(Product product)
     {
-        SimilarProducts.Clear();
-        
+        SimilarProducts = new ObservableCollection<Product>();
         ProductForm.PrepareForEdit(product);
-        
         IsEditing = true;
     }
 
@@ -71,16 +123,17 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
         IsEditing = false;
         HasSearched = false;
         SearchQuery = string.Empty;
+        SimilarProducts = new ObservableCollection<Product>();
     }
 
     public void SaveInlineChanges()
     {
         ProductForm.SaveProduct();
-        
         if (!string.IsNullOrEmpty(ProductForm.ErrorMessage)) return;
 
         IsEditing = false;
         HasSearched = false;
         SearchQuery = string.Empty;
+        SimilarProducts = new ObservableCollection<Product>();
     }
 }
