@@ -189,7 +189,7 @@ public class SuppliersView() : ViewBase<SupplierState>(Program.ServiceProvider.G
                                     : new TextBlock().Text($"📍 {supplier.Address}").FontSize(11).Foreground(TextSubtle)
                                         .Margin(0, 2, 0, 0)
                             ).Col(1),
-                        editButton.Col(3),
+                        editButton.Col(2),
                         removeButton.Col(3)
                     )
             );
