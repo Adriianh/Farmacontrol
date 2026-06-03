@@ -27,6 +27,7 @@ public static class Program
         .AddTransient<InventoryState>()
         .AddTransient<SupplierState>()
         .AddTransient<SearchProductState>()
+        .AddSingleton<ProductState>()
         .BuildServiceProvider();
 
     private static async Task ApplyMigrationsAsync(IServiceProvider serviceProvider)
