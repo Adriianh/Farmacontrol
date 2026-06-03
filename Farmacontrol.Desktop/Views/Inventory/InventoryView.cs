@@ -52,6 +52,31 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                                 new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
                                 new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(0))
                             }
+                        },
+                        new Style(x => x.OfType<Expander>())
+                        {
+                            Setters =
+                            {
+                                new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                                new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
+                                new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
+                            }
+                        },
+                        new Style(x => x.OfType<Expander>().Template().OfType<ToggleButton>())
+                        {
+                            Setters = { new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent) }
+                        },
+                        new Style(x =>
+                            x.OfType<Expander>().Template().OfType<ToggleButton>().Class(":pointerover").Template()
+                                .OfType<Border>())
+                        {
+                            Setters = { new Setter(Border.BackgroundProperty, Brushes.Transparent) }
+                        },
+                        new Style(x =>
+                            x.OfType<Expander>().Template().OfType<ToggleButton>().Class(":checked").Template()
+                                .OfType<Border>())
+                        {
+                            Setters = { new Setter(Border.BackgroundProperty, Brushes.Transparent) }
                         }
                     )
                     .Child(
@@ -90,7 +115,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
     private Control BuildHeader(InventoryState state)
     {
         var addButton = new Button()
-            .Content("➕ Agregar Medicamento")
+            .Content("➕ Agregar Producto")
             .Background(AccentBlue)
             .Foreground(Brushes.White)
             .FontWeight(FontWeight.SemiBold)
@@ -270,31 +295,57 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .ItemTemplate<Product>(product => BuildProductItem(product, state));
 
-    private Control BuildProductItem(Product product, InventoryState state) =>
-        new Border()
+    private Control BuildProductItem(Product? product, InventoryState state)
+    {
+        if (product == null) 
+        {
+            return new ContentControl(); 
+        }
+        
+        return new Border()
             .Background(BackgroundSecondary)
             .CornerRadius(12)
             .Margin(0, 0, 0, 12)
-            .Padding(20, 16)
             .BorderBrush(GetAlertBorderColor(state, product))
             .BorderThickness(2)
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Child(
-                new Grid().Cols("Auto, Auto, *, 120, 120, Auto")
+                new Expander()
                     .HorizontalAlignment(HorizontalAlignment.Stretch)
-                    .Children(
-                        new TextBlock()
-                            .Text("📦")
-                            .FontSize(22)
-                            .Margin(0, 0, 16, 0)
-                            .VerticalAlignment(VerticalAlignment.Center),
-                        BuildAlertColumn(product, state).Col(1),
-                        BuildProductInfo(product).Col(2),
-                        BuildStockColumn(product, state).Col(3),
-                        BuildPriceColumn(product).Col(4),
-                        BuildActionButtons(product, state).Col(5)
+                    .Header(
+                        new Grid().Cols("Auto, Auto, *, 120, 120, Auto")
+                            .HorizontalAlignment(HorizontalAlignment.Stretch)
+                            .Margin(0, 4)
+                            .Children(
+                                new TextBlock()
+                                    .Text("📦")
+                                    .FontSize(22)
+                                    .Margin(0, 0, 16, 0)
+                                    .VerticalAlignment(VerticalAlignment.Center),
+                                BuildAlertColumn(product, state).Col(1),
+                                BuildProductInfo(product).Col(2),
+                                BuildStockColumn(product, state).Col(3),
+                                BuildPriceColumn(product).Col(4),
+                                BuildActionButtons(product, state).Col(5)
+                            )
+                    )
+                    .Content(
+                        new Border()
+                            .Background(BackgroundPrimary)
+                            .CornerRadius(12)
+                            .Child(
+                                new StackPanel()
+                                    .Spacing(12)
+                                    .Margin(16, 12, 16, 16)
+                                    .Children(
+                                        BuildTechnicalDetails(product),
+                                        BuildIngredientsAndTags(product),
+                                        BuildProductBatchesSummary(product)
+                                    )
+                            )
                     )
             );
+    }
 
     private Control BuildProductInfo(Product product) =>
         new StackPanel().VerticalAlignment(VerticalAlignment.Center)
@@ -318,6 +369,220 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                             .Foreground(TextSubtle)
                     )
             );
+
+    private Control BuildTechnicalDetails(Product? product)
+    {
+        var mainContainer = new StackPanel()
+            .Margin(10, 10, 10, 4)
+            .Spacing(6);
+
+        mainContainer.Children.Add(
+            new TextBlock()
+                .Text("ESPECIFICACIONES TÉCNICAS")
+                .FontSize(11)
+                .FontWeight(FontWeight.Bold)
+                .Foreground(TextSubtle)
+                .Margin(0, 0, 0, 4)
+        );
+        
+        if (product == null)
+        {
+            return new TextBlock().Text("Cargando...");
+        }
+
+        var description = product.GetDescription();
+
+        if (!string.IsNullOrEmpty(description))
+        {
+            var parts = description.Split([", "], StringSplitOptions.RemoveEmptyEntries);
+            var wrapPanel = new WrapPanel().Orientation(Orientation.Horizontal);
+
+            foreach (var part in parts)
+            {
+                var subParts = part.Split([": "], 2, StringSplitOptions.None);
+                var label = subParts.Length > 0 ? subParts[0] : part;
+                var val = subParts.Length > 1 ? subParts[1] : "";
+
+                if (label.Contains("Fecha de Expiración") && val.Contains("9999")) continue;
+
+                var itemBorder = new Border()
+                    .Background(BackgroundSecondary)
+                    .CornerRadius(6)
+                    .Padding(8, 4)
+                    .Margin(0, 0, 8, 8)
+                    .BorderBrush(BorderColor)
+                    .BorderThickness(1)
+                    .Child(
+                        new StackPanel().Orientation(Orientation.Horizontal)
+                            .Children(
+                                new TextBlock().Text($"{label}: ").FontSize(12).FontWeight(FontWeight.SemiBold)
+                                    .Foreground(TextMuted),
+                                new TextBlock().Text(val).FontSize(12).Foreground(Brushes.White)
+                            )
+                    );
+
+                wrapPanel.Children.Add(itemBorder);
+            }
+
+            mainContainer.Children.Add(wrapPanel);
+        }
+        else
+        {
+            mainContainer.Children.Add(
+                new TextBlock().Text("No hay especificaciones disponibles.").FontSize(12).Foreground(TextMuted)
+            );
+        }
+
+        return mainContainer;
+    }
+
+    private Control BuildIngredientsAndTags(Product product)
+    {
+        var container = new StackPanel()
+            .Margin(10, 4, 10, 10)
+            .Spacing(10);
+
+        if (product.Ingredients is { Count: > 0 })
+        {
+            var ingredientsStack = new StackPanel().Spacing(4);
+            ingredientsStack.Children.Add(
+                new TextBlock()
+                    .Text("INGREDIENTES / PRINCIPIOS ACTIVOS")
+                    .FontSize(11)
+                    .FontWeight(FontWeight.Bold)
+                    .Foreground(TextSubtle)
+            );
+
+            var ingredientsWrap = new WrapPanel().Orientation(Orientation.Horizontal);
+            foreach (var ingredient in product.Ingredients)
+            {
+                ingredientsWrap.Children.Add(
+                    new Border()
+                        .Background(BackgroundSecondary)
+                        .BorderBrush(AccentBlue)
+                        .BorderThickness(1)
+                        .CornerRadius(4)
+                        .Padding(6, 3)
+                        .Margin(0, 0, 6, 6)
+                        .Child(new TextBlock().Text(ingredient).FontSize(11).Foreground(Brushes.White))
+                );
+            }
+            ingredientsStack.Children.Add(ingredientsWrap);
+            container.Children.Add(ingredientsStack);
+        }
+
+        if (product.Tags is { Count: > 0 })
+        {
+            var tagsStack = new StackPanel().Spacing(4);
+            tagsStack.Children.Add(
+                new TextBlock()
+                    .Text("ETIQUETAS")
+                    .FontSize(11)
+                    .FontWeight(FontWeight.Bold)
+                    .Foreground(TextSubtle)
+            );
+
+            var tagsWrap = new WrapPanel().Orientation(Orientation.Horizontal);
+            foreach (var tag in product.Tags)
+            {
+                tagsWrap.Children.Add(
+                    new Border()
+                        .Background(BackgroundTertiary)
+                        .CornerRadius(4)
+                        .Padding(6, 3)
+                        .Margin(0, 0, 6, 6)
+                        .Child(new TextBlock().Text($"#{tag}").FontSize(11).Foreground(TextMuted))
+                );
+            }
+            tagsStack.Children.Add(tagsWrap);
+            container.Children.Add(tagsStack);
+        }
+
+        return container;
+    }
+
+    private Control BuildProductBatchesSummary(Product product)
+    {
+        var batchesStack = new StackPanel()
+            .Margin(10, 10, 10, 10)
+            .Spacing(6);
+
+        batchesStack.Children.Add(
+            new TextBlock()
+                .Text("DISPONIBILIDAD DE LOTES ACTIVOS (FEFO)")
+                .FontSize(11)
+                .FontWeight(FontWeight.Bold)
+                .Foreground(TextSubtle)
+                .Margin(0, 4, 0, 2)
+        );
+
+        var activeBatches = product.Batches
+            .Where(b => b.Quantity > 0)
+            .OrderBy(b => b.ExpirationDate)
+            .ToList();
+
+        if (activeBatches.Count == 0)
+        {
+            batchesStack.Children.Add(
+                new TextBlock()
+                    .Text("⚠ No hay lotes físicos cargados en el sistema con existencias disponibles.")
+                    .FontSize(12)
+                    .Foreground(DangerRed)
+                    .Margin(0, 2, 0, 0)
+            );
+        }
+        else
+        {
+            foreach (var batch in activeBatches)
+            {
+                var daysLeft = (batch.ExpirationDate - DateTime.Today).Days;
+                var isExpired = daysLeft < 0;
+                var isNearExpiry = daysLeft >= 0 && daysLeft <= 30;
+
+                var statusColor = isExpired ? DangerRed :
+                    isNearExpiry ? SolidColorBrush.Parse("#FBBF24") : TextMuted;
+
+                var alertIndicator = isExpired ? " ⛔ VENCIDO" :
+                    isNearExpiry ? $" ⚠️ Vence en {daysLeft} días" : "";
+
+                var batchRow = new Grid()
+                    .Cols("Auto, *, Auto")
+                    .Margin(0, 2)
+                    .Children(
+                        new TextBlock()
+                            .Text($"🟢 Lote: {batch.LotCode}")
+                            .FontSize(13)
+                            .Foreground(Brushes.White)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(0),
+                        new TextBlock()
+                            .Text($"Vence: {batch.ExpirationDate:dd/MM/yyyy}{alertIndicator}")
+                            .FontSize(12)
+                            .Foreground(statusColor)
+                            .HorizontalAlignment(HorizontalAlignment.Center)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(1),
+                        new TextBlock()
+                            .Text($"{batch.Quantity} uds")
+                            .FontSize(13)
+                            .FontWeight(FontWeight.Bold)
+                            .Foreground(AccentBlue)
+                            .HorizontalAlignment(HorizontalAlignment.Right)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(2)
+                    );
+
+                batchesStack.Children.Add(batchRow);
+            }
+        }
+
+        return new Border()
+            .BorderBrush(BorderColor)
+            .BorderThickness(0, 1, 0, 0)
+            .Margin(0, 8, 0, 0)
+            .Padding(0, 8, 0, 0)
+            .Child(batchesStack);
+    }
 
     private Control BuildStockColumn(Product product, InventoryState state)
     {
@@ -358,7 +623,11 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             }
         );
 
-        button.Click += (_, _) => { state.ShowBatchesModal(product); };
+        button.Click += (_, e) =>
+        {
+            e.Handled = true;
+            state.ShowBatchesModal(product);
+        };
 
         return button;
     }
@@ -409,8 +678,17 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
             .Padding(8)
             .CornerRadius(6);
 
-        editButton.Click += (_, _) => state.PrepareEditProduct(product);
-        deleteButton.Click += (_, _) => state.DeleteProduct(product);
+        editButton.Click += (_, e) =>
+        {
+            e.Handled = true;
+            state.PrepareEditProduct(product);
+        };
+
+        deleteButton.Click += (_, e) =>
+        {
+            e.Handled = true;
+            state.DeleteProduct(product);
+        };
 
         return new StackPanel()
             .Orientation(Orientation.Horizontal)
@@ -443,7 +721,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
         try
         {
             var alertStatus = state.GetProductAlertStatus(product);
-            
+
             var (icon, color, label) = alertStatus switch
             {
                 "EXPIRED" => ("⛔", DangerRed, "EXP"),
