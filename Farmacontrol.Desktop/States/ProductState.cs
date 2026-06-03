@@ -64,7 +64,8 @@ public partial class ProductState : ObservableObject
     private ObservableCollection<(string LotCode, int Quantity, DateTime MfgDate, DateTime ExpDate, decimal UnitCost)>
         _batches = new();
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasSuppliers))]
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(HasSuppliers), nameof(NoSuppliersAvailable))]
     private List<Supplier> _availableSuppliers = new();
 
     [ObservableProperty] private List<Supplier> _selectedSuppliers = new();
@@ -83,7 +84,9 @@ public partial class ProductState : ObservableObject
     private bool IsEditing => _editingProduct != null;
     public bool HasBatches => Batches.Count > 0;
     public bool HasSuppliers => SelectedSuppliers.Count > 0;
+    public bool NoSuppliersAvailable => !HasSuppliers;
     public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
+
 
     public ProductState(InventoryService inventoryService, AppDbContext db)
     {
