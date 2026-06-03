@@ -15,7 +15,9 @@ public partial class SupplierState : ObservableObject
     [ObservableProperty] private string _searchText = string.Empty;
     [ObservableProperty] private ObservableCollection<Supplier> _filteredSuppliers = [];
     [ObservableProperty] private bool _isModalOpen;
-    [ObservableProperty] private bool _isEditing;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ModalTitle))]
+    private bool _isEditing;
     [ObservableProperty] private string _errorMessage = string.Empty;
 
     [ObservableProperty] private string _code = string.Empty;
@@ -30,6 +32,9 @@ public partial class SupplierState : ObservableObject
     [ObservableProperty] private bool _isActive = true;
 
     private Supplier? _editingSupplier;
+    
+    public string ModalTitle => IsEditing ? "✏️ Editar Proveedor" : "🏢 Nuevo Proveedor";
+    public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public SupplierState(InventoryService inventoryService, AppDbContext db)
     {

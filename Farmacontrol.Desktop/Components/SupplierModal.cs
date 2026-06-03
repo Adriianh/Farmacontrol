@@ -42,7 +42,7 @@ public static class SupplierModal
                                     .Children(
                                         new TextBlock()
                                             .Text(state,
-                                                x => x.IsEditing ? "✏️ Editar Proveedor" : "🏢 Nuevo Proveedor")
+                                                x => x.ModalTitle)
                                             .FontSize(20)
                                             .FontWeight(FontWeight.Bold)
                                             .Foreground(Brushes.White),
@@ -121,7 +121,7 @@ public static class SupplierModal
             .CornerRadius(6)
             .Padding(12, 10)
             .Margin(0, 0, 0, 14)
-            .IsVisible(state, x => !string.IsNullOrEmpty(x.ErrorMessage))
+            .IsVisible(state, x => x.HasErrorMessage)
             .Child(
                 new TextBlock()
                     .Text(state, x => x.ErrorMessage)
