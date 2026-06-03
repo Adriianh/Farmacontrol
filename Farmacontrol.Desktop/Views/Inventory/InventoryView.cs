@@ -99,6 +99,7 @@ public class InventoryView() : ViewBase<InventoryState>(Program.ServiceProvider.
                         state.LoadProducts();
                     }
                 ).IsVisible(state, x => x.IsAddModalOpen),
+                
                 state.SelectedProduct is null
                     ? new Grid().IsVisible(state, x => x.IsBatchesModalOpen)
                     : BatchesModal.Build(

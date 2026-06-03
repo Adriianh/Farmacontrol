@@ -1,12 +1,7 @@
-using System;
 using System.Linq.Expressions;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
-using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
-using Avalonia.Layout;
-using Avalonia.Markup.Declarative;
-using Avalonia.Media;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Farmacontrol.Desktop.Views.Administration;
