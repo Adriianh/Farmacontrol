@@ -4,10 +4,12 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls.Presenters;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Farmacontrol.Desktop.States;
 using Farmacontrol.Desktop.Views.Administration;
 using Farmacontrol.Desktop.Views.Alerts;
 using Farmacontrol.Desktop.Views.Inventory;
 using Farmacontrol.Desktop.Views.Sales;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacontrol.Desktop.Views;
 
@@ -24,8 +26,11 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
     private static readonly SolidColorBrush HeaderTitleColor = SolidColorBrush.Parse("#0F172A");
     private static readonly SolidColorBrush AccentColor = SolidColorBrush.Parse("#3B82F6");
 
-    protected override object Build(State state) =>
-        new Grid().Cols("Auto, *")
+    protected override object Build(State state)
+    {
+        var orderState = Program.ServiceProvider.GetRequiredService<PendingOrdersState>();
+
+        return new Grid().Cols("Auto, *")
             .Background(BackgroundColor)
             .Children(
                 new Border().RowSpan(2)
@@ -85,7 +90,8 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                                         CreateSubButton("🔍 Buscar Producto",
                                                             () => state.CurrentContent = new SearchProductView()),
                                                         CreateSubButton("📝 Pedidos Pendientes",
-                                                            () => state.CurrentContent = new PendingOrdersView())
+                                                            () => state.CurrentContent =
+                                                                new PendingOrdersView(orderState))
                                                     ]),
                                                 CreateMenuGroup(state, x => x.AlertsExpanded, x => x.AlertsArrow,
                                                     "Alerts", "⚠️ Alertas y Avisos", [
@@ -150,6 +156,7 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                             )
                     )
             );
+    }
 
     private Control CreateMenuGroup(
         State state,
@@ -264,10 +271,10 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
         public double SidebarWidth => SidebarExpanded ? 240 : 0;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(SalesExpanded)),    NotifyPropertyChangedFor(nameof(SalesArrow))]
-        [NotifyPropertyChangedFor(nameof(InventoryExpanded)),NotifyPropertyChangedFor(nameof(InventoryArrow))]
-        [NotifyPropertyChangedFor(nameof(AlertsExpanded)),   NotifyPropertyChangedFor(nameof(AlertsArrow))]
-        [NotifyPropertyChangedFor(nameof(AdminExpanded)),    NotifyPropertyChangedFor(nameof(AdminArrow))]
+        [NotifyPropertyChangedFor(nameof(SalesExpanded)), NotifyPropertyChangedFor(nameof(SalesArrow))]
+        [NotifyPropertyChangedFor(nameof(InventoryExpanded)), NotifyPropertyChangedFor(nameof(InventoryArrow))]
+        [NotifyPropertyChangedFor(nameof(AlertsExpanded)), NotifyPropertyChangedFor(nameof(AlertsArrow))]
+        [NotifyPropertyChangedFor(nameof(AdminExpanded)), NotifyPropertyChangedFor(nameof(AdminArrow))]
         public partial string ExpandedCategory { get; set; } = "Inventory";
 
         public bool SalesExpanded => ExpandedCategory == "Sales";

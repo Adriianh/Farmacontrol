@@ -1,6 +1,165 @@
+using Avalonia.Controls.Templates;
+using Farmacontrol.Desktop.States;
+
 namespace Farmacontrol.Desktop.Views.Inventory;
 
-public class PendingOrdersView
+public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<PendingOrdersState>(state)
 {
-    
+    private static readonly SolidColorBrush BackgroundPrimary = SolidColorBrush.Parse("#111827");
+    private static readonly SolidColorBrush BackgroundSecondary = SolidColorBrush.Parse("#1F2937");
+    private static readonly SolidColorBrush TextMuted = SolidColorBrush.Parse("#9CA3AF");
+    private static readonly SolidColorBrush AccentBlue = SolidColorBrush.Parse("#2563EB");
+    private static readonly SolidColorBrush AccentGreen = SolidColorBrush.Parse("#10B981");
+    private static readonly SolidColorBrush BorderColor = SolidColorBrush.Parse("#374151");
+    private static readonly SolidColorBrush WarningYellow = SolidColorBrush.Parse("#F59E0B");
+
+    protected override object Build(PendingOrdersState state) =>
+        new Grid()
+            .Children(
+                new Border()
+                    .Background(BackgroundPrimary)
+                    .CornerRadius(12)
+                    .Padding(20)
+                    .Child(
+                        new Grid().Rows("Auto, *")
+                            .Children(
+                                BuildHeader().Row(0),
+                                new Panel().Row(1).Children(
+                                    BuildEmptyState().IsVisible(state, x => x.ShowEmpty),
+                                    BuildMainWorkspace(state).IsVisible(state, x => x.ShowSuggestions),
+                                    BuildSuccessState().IsVisible(state, x => x.ShowSuccess)
+                                )
+                            )
+                    )
+            );
+
+    private Control BuildHeader() =>
+        new StackPanel().Margin(0, 0, 0, 20)
+            .Children(
+                new TextBlock().Text("Pedidos Pendientes y Reabastecimiento").FontSize(24).FontWeight(FontWeight.Bold)
+                    .Foreground(Brushes.White),
+                new TextBlock()
+                    .Text(
+                        "El sistema detecta automáticamente los productos agotados o debajo del stock mínimo de seguridad")
+                    .FontSize(13).Foreground(TextMuted)
+            );
+
+    private Control BuildMainWorkspace(PendingOrdersState state) =>
+        new Grid().Cols("*, 320")
+            .Children(
+                BuildSuggestionsTable(state).Col(0),
+                BuildOrderPanel(state).Col(1).Margin(16, 0, 0, 0)
+            );
+
+    private Control BuildSuggestionsTable(PendingOrdersState state) =>
+        new Grid().Rows("Auto, *")
+            .Children(
+                new TextBlock().Text("⚠️ Productos que requieren atención urgente").FontSize(14)
+                    .FontWeight(FontWeight.SemiBold).Foreground(WarningYellow).Row(0).Margin(0, 0, 0, 10),
+                new ScrollViewer().Row(1)
+                    .Content(
+                        new ItemsControl()
+                            .ItemsSource(state, x => x.LowStockSuggestions)
+                            .ItemTemplate(
+                                new FuncDataTemplate<ProductOrderSuggestion>((item, _) =>
+                                    new Border().Background(BackgroundSecondary).CornerRadius(8).Padding(12)
+                                        .Margin(0, 0, 0, 8).BorderBrush(BorderColor).BorderThickness(1)
+                                        .Child(
+                                            new Grid().Cols("Auto, *, Auto, Auto")
+                                                .Children(
+                                                    new CheckBox().IsChecked(item.IsSelected)
+                                                        .VerticalAlignment(VerticalAlignment.Center).Col(0)
+                                                        .Margin(0, 0, 12, 0),
+                                                    new StackPanel().Col(1).VerticalAlignment(VerticalAlignment.Center)
+                                                        .Children(
+                                                            new TextBlock().Text(item.ProductName).FontSize(14)
+                                                                .FontWeight(FontWeight.Bold).Foreground(Brushes.White),
+                                                            new TextBlock()
+                                                                .Text(
+                                                                    $"Stock Actual: {item.CurrentStock} u. | Mínimo Requerido: {item.MinStock} u.")
+                                                                .FontSize(11).Foreground(TextMuted).Margin(0, 2, 0, 0)
+                                                        ),
+                                                    new Border().Background(SolidColorBrush.Parse("#78350F"))
+                                                        .CornerRadius(4).Padding(6, 4).Margin(0, 0, 16, 0).Col(2)
+                                                        .VerticalAlignment(VerticalAlignment.Center)
+                                                        .Child(new TextBlock().Text("Bajo Mínimo").FontSize(10)
+                                                            .FontWeight(FontWeight.Bold).Foreground(WarningYellow)),
+                                                    new StackPanel().Orientation(Orientation.Horizontal).Col(3)
+                                                        .VerticalAlignment(VerticalAlignment.Center)
+                                                        .Children(
+                                                            new TextBlock().Text("Pedir: ").FontSize(12)
+                                                                .Foreground(TextMuted)
+                                                                .VerticalAlignment(VerticalAlignment.Center)
+                                                                .Margin(0, 0, 4, 0),
+                                                            new TextBox().Text(item.SuggestedQuantity.ToString())
+                                                                .Width(60).Padding(6, 4).Background(BackgroundPrimary)
+                                                                .Foreground(Brushes.White).BorderBrush(BorderColor)
+                                                                .CornerRadius(4)
+                                                        )
+                                                )
+                                        )
+                                ))
+                    )
+            );
+
+    private Control BuildOrderPanel(PendingOrdersState state)
+    {
+        var supplierCombo = new ComboBox()
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Background(BackgroundSecondary)
+            .BorderBrush(BorderColor)
+            .PlaceholderText("Seleccione Proveedor...")
+            .ItemsSource(state, x => x.Suppliers)
+            .SelectedItem(state, x => x.SelectedSupplier, BindingMode.TwoWay);
+
+        var generateOrderButton = new Button()
+            .Content("📦 Generar Orden de Compra")
+            .Background(AccentBlue)
+            .Foreground(Brushes.White)
+            .FontWeight(FontWeight.SemiBold)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .HorizontalContentAlignment(HorizontalAlignment.Center)
+            .Padding(0, 12)
+            .CornerRadius(6);
+        generateOrderButton.Click += (_, _) => state.GeneratePurchaseOrder();
+
+        return new Border().Background(BackgroundSecondary).CornerRadius(10).Padding(16)
+            .BorderBrush(BorderColor).BorderThickness(1)
+            .Child(
+                new Grid().Rows("Auto, Auto, *, Auto")
+                    .Children(
+                        new TextBlock().Text("Resumen del Nuevo Pedido").FontSize(15).FontWeight(FontWeight.Bold)
+                            .Foreground(Brushes.White).Row(0).Margin(0, 0, 0, 14),
+                        new StackPanel().Spacing(6).Row(1).Margin(0, 0, 0, 16)
+                            .Children(
+                                new TextBlock().Text("Destinatario (Proveedor)").FontSize(11).Foreground(TextMuted),
+                                supplierCombo
+                            ),
+                        new Border().Background(SolidColorBrush.Parse("#7F1D1D")).CornerRadius(6).Padding(10).Row(2)
+                            .IsVisible(state, x => x.HasErrorMessage)
+                            .Child(new TextBlock().Text(state, x => x.ErrorMessage)
+                                .Foreground(SolidColorBrush.Parse("#FCA5A5")).FontSize(11)
+                                .TextWrapping(TextWrapping.Wrap)),
+                        generateOrderButton.Row(3)
+                    )
+            );
+    }
+
+    private static Control BuildEmptyState() =>
+        new StackPanel().VerticalAlignment(VerticalAlignment.Center)
+            .HorizontalAlignment(HorizontalAlignment.Center).Spacing(10).Children(
+                new TextBlock().Text("✨").FontSize(48).HorizontalAlignment(HorizontalAlignment.Center),
+                new TextBlock().Text("¡Inventario al día!").FontSize(16).FontWeight(FontWeight.Bold)
+                    .Foreground(AccentGreen).HorizontalAlignment(HorizontalAlignment.Center),
+                new TextBlock().Text("No se detectaron productos por debajo del stock mínimo de seguridad.")
+                    .FontSize(13).Foreground(TextMuted));
+
+    private static Control BuildSuccessState() =>
+        new StackPanel().VerticalAlignment(VerticalAlignment.Center)
+            .HorizontalAlignment(HorizontalAlignment.Center).Spacing(10).Children(
+                new TextBlock().Text("✅").FontSize(48).HorizontalAlignment(HorizontalAlignment.Center),
+                new TextBlock().Text("¡Orden de compra generada exitosamente!").FontSize(16).FontWeight(FontWeight.Bold)
+                    .Foreground(AccentGreen).HorizontalAlignment(HorizontalAlignment.Center),
+                new TextBlock().Text("El registro quedó asentado y los productos se quitaron de la lista de alertas.")
+                    .FontSize(13).Foreground(TextMuted));
 }
