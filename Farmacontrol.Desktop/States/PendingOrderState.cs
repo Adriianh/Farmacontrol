@@ -40,16 +40,16 @@ public partial class PendingOrdersState : ObservableObject
     }
 
     [RelayCommand]
-    public void LoadDashboardData()
+    private void LoadDashboardData()
     {
         ErrorMessage = string.Empty;
 
-        var supplierList = _db.Suppliers.AsQueryable().ToList();
+        var supplierList = _db.Suppliers.AsQueryable().Where(s => s.IsActive).ToList();
         Suppliers = new ObservableCollection<Supplier>(supplierList);
 
         var lowStockProducts = _db.Products
             .AsEnumerable()
-            .Where(p => p.Stock <= p.MinimumStock)
+            .Where(p => p.IsActive && p.Stock <= p.MinimumStock)
             .Select(p => new ProductOrderSuggestion
             {
                 ProductCode = p.Code,
@@ -76,7 +76,10 @@ public partial class PendingOrdersState : ObservableObject
             return;
         }
 
-        var itemsToOrder = LowStockSuggestions.Where(x => x is { IsSelected: true, SuggestedQuantity: > 0 }).ToList();
+        var itemsToOrder = LowStockSuggestions
+            .Where(x => x is { IsSelected: true, SuggestedQuantity: > 0 })
+            .ToList();
+        
         if (!itemsToOrder.Any())
         {
             ErrorMessage = "⚠️ Seleccione al menos un producto con una cantidad mayor a 0.";
@@ -85,7 +88,7 @@ public partial class PendingOrdersState : ObservableObject
 
         try
         {
-            string orderReference = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
+            var orderReference = $"ORD-{DateTime.Now:yyyyMMddHHmmss}";
             var newPurchase = new Purchase(SelectedSupplier.Code, orderReference);
 
             foreach (var item in itemsToOrder)

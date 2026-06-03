@@ -1,4 +1,8 @@
+using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Styling;
+using Farmacontrol.Core.Model;
 using Farmacontrol.Desktop.States;
 
 namespace Farmacontrol.Desktop.Views.Inventory;
@@ -7,6 +11,8 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
 {
     private static readonly SolidColorBrush BackgroundPrimary = SolidColorBrush.Parse("#111827");
     private static readonly SolidColorBrush BackgroundSecondary = SolidColorBrush.Parse("#1F2937");
+    private static readonly SolidColorBrush BackgroundTertiary = SolidColorBrush.Parse("#374151");
+    private static readonly SolidColorBrush BackgroundHover = SolidColorBrush.Parse("#4B5563");
     private static readonly SolidColorBrush TextMuted = SolidColorBrush.Parse("#9CA3AF");
     private static readonly SolidColorBrush AccentBlue = SolidColorBrush.Parse("#2563EB");
     private static readonly SolidColorBrush AccentGreen = SolidColorBrush.Parse("#10B981");
@@ -20,6 +26,40 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                     .Background(BackgroundPrimary)
                     .CornerRadius(12)
                     .Padding(20)
+                    .Styles(
+                        new Style(x => x.OfType<TextBox>().Class(":pointerover").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<TextBox>().Class(":focus").Template().OfType<Border>())
+                            { Setters = { new Setter(Border.BackgroundProperty, BackgroundTertiary) } },
+                        new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
+                        {
+                            Setters =
+                            {
+                                new Setter(ContentPresenter.BackgroundProperty, BackgroundHover),
+                                new Setter(ContentPresenter.ForegroundProperty, Brushes.White)
+                            }
+                        },
+                        new Style(x => x.OfType<ComboBox>().Template().OfType<Border>())
+                        {
+                            Setters =
+                            {
+                                new Setter(Border.BackgroundProperty, BackgroundSecondary),
+                                new Setter(Border.BorderBrushProperty, BorderColor)
+                            }
+                        },
+                        new Style(x => x.OfType<ComboBoxItem>().Template().OfType<ContentPresenter>())
+                        {
+                            Setters = { new Setter(ContentPresenter.BackgroundProperty, BackgroundSecondary) }
+                        },
+                        new Style(x => x.OfType<ComboBoxItem>().Class(":pointerover").Template().OfType<ContentPresenter>())
+                        {
+                            Setters = { new Setter(ContentPresenter.BackgroundProperty, BackgroundTertiary) }
+                        },
+                        new Style(x => x.OfType<ComboBoxItem>().Class(":selected").Template().OfType<ContentPresenter>())
+                        {
+                            Setters = { new Setter(ContentPresenter.BackgroundProperty, AccentBlue) }
+                        }
+                    )
                     .Child(
                         new Grid().Rows("Auto, *")
                             .Children(
@@ -108,9 +148,11 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Background(BackgroundSecondary)
             .BorderBrush(BorderColor)
+            .Foreground(Brushes.White)
             .PlaceholderText("Seleccione Proveedor...")
             .ItemsSource(state, x => x.Suppliers)
-            .SelectedItem(state, x => x.SelectedSupplier, BindingMode.TwoWay);
+            .SelectedItem(state, x => x.SelectedSupplier, BindingMode.TwoWay)
+            .ItemTemplate<Supplier>(s => new TextBlock().Text(s?.Name ?? string.Empty).Foreground(Brushes.White));
 
         var generateOrderButton = new Button()
             .Content("📦 Generar Orden de Compra")
