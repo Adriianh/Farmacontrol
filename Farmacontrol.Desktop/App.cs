@@ -32,6 +32,7 @@ public static class Program
     private static ServiceProvider ConfigureServices() => new ServiceCollection()
         .AddFarmacontrolCore()
         .AddTransient<InventoryState>()
+        .AddTransient<SupplierState>()
         .BuildServiceProvider();
 
     private static async Task ApplyMigrationsAsync(IServiceProvider serviceProvider)
