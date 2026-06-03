@@ -399,6 +399,13 @@ public partial class ProductState : ObservableObject
                 ErrorMessage = "Número de lote es requerido";
                 return;
             }
+            
+            var lotCodeTrimmed = BatchLotCode.Trim();
+            if (Batches.Any(b => b.LotCode.Equals(lotCodeTrimmed, StringComparison.OrdinalIgnoreCase)))
+            {
+                ErrorMessage = $"El lote '{lotCodeTrimmed}' ya ha sido agregado a la lista.";
+                return;
+            }
 
             if (!int.TryParse(BatchQuantity, out var qty) || qty <= 0)
             {
@@ -442,11 +449,12 @@ public partial class ProductState : ObservableObject
 
             var unitCost = string.IsNullOrWhiteSpace(BatchUnitCost) ? 0m : decimal.Parse(BatchUnitCost);
 
-            var newBatch = (BatchLotCode.Trim(), qty, mfgDate, expDate, unitCost);
+            var newBatch = (lotCodeTrimmed, qty, mfgDate, expDate, unitCost);
             Batches.Add(newBatch);
 
             OnPropertyChanged(nameof(HasBatches));
 
+            RecalculateStockFromBatches();
             UpdateBatchesInfo();
             ClearBatchForm();
         }
@@ -458,14 +466,14 @@ public partial class ProductState : ObservableObject
 
     public void RemoveBatch(int index)
     {
-        if (index >= 0 && index < Batches.Count)
-        {
-            Batches.RemoveAt(index);
-            OnPropertyChanged(nameof(HasBatches));
-            UpdateBatchesInfo();
-        }
+        if (index < 0 || index >= Batches.Count) return;
+        
+        Batches.RemoveAt(index);
+        OnPropertyChanged(nameof(HasBatches));
+        
+        RecalculateStockFromBatches();
+        UpdateBatchesInfo();
     }
-
     public void ToggleBatchForm()
     {
         ShowBatchForm = !ShowBatchForm;
@@ -496,6 +504,34 @@ public partial class ProductState : ObservableObject
             $"Lote {i + 1}: {b.LotCode} - {b.Quantity} unidades (Exp: {b.ExpDate:yyyy-MM-dd})"));
 
         BatchesInfo = $"Lotes agregados ({Batches.Count}):\n{batchList}";
+    }
+    
+    private void RecalculateStockFromBatches()
+    {
+        if (EnableBatches)
+        {
+            var totalStock = Batches.Sum(b => b.Quantity);
+            Stock = totalStock.ToString();
+        }
+    }
+
+    partial void OnEnableBatchesChanged(bool value)
+    {
+        if (value)
+        {
+            RecalculateStockFromBatches();
+        }
+        else
+        {
+            if (!IsEditing)
+            {
+                Stock = string.Empty;
+            }
+            else if (_editingProduct != null)
+            {
+                Stock = _editingProduct.Stock.ToString();
+            }
+        }
     }
 
     public void ToggleSupplier(Supplier supplier)

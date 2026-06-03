@@ -113,8 +113,9 @@ public static class ProductModal
                                                                     BindingMode.TwoWay))
                                                             .Col(0).Margin(0, 0, 6, 0),
                                                         BuildFormRow("Stock Inicial *",
-                                                                new TextBox().Text(state, x => x.Stock,
-                                                                    BindingMode.TwoWay))
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Stock, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => !x.EnableBatches))
                                                             .Col(1).Margin(6, 0, 0, 0)
                                                     ),
                                                 new Grid().Cols("*, *")
