@@ -389,19 +389,19 @@ public static class ProductModal
                     .ItemTemplate(
                         new FuncDataTemplate<Supplier>((supplier, _) =>
                         {
-                            var isChecked = state.SelectedSuppliers.Contains(supplier);
-                        
+                            var initiallyChecked = state.SelectedSuppliers.Any(s => s.Code == supplier.Code);
+
                             var cb = new CheckBox()
                                 .Content(supplier.Name)
                                 .Foreground(Brushes.White)
-                                .IsChecked(isChecked)
+                                .IsChecked(initiallyChecked)
                                 .Margin(0, 2);
-                            
-                            cb.IsCheckedChanged += (_, _) => state.ToggleSupplier(supplier);
+
+                            cb.Click += (_, _) => state.ToggleSupplier(supplier);
+
                             return cb;
                         }))
-                    .IsVisible(state, x => x.AnySupplierAvailable), 
-                
+                    .IsVisible(state, x => x.AnySupplierAvailable),
                 new Button()
                     .Content("⚠️ No hay proveedores activos. Registrar uno nuevo")
                     .Background(AccentBlue)
@@ -410,7 +410,6 @@ public static class ProductModal
                     .Padding(12, 6)
                     .CornerRadius(6)
                     .IsVisible(state, x => x.NoSuppliersAvailable),
-                
                 new TextBlock()
                     .Text(state, x => x.SuppliersInfo)
                     .Foreground(Brushes.White)
@@ -418,7 +417,7 @@ public static class ProductModal
                     .IsVisible(state, x => x.HasSuppliers)
             )
             .IsVisible(state, x => x.EnableSuppliers);
-    
+
     private static Control BuildActionButtons(Action onCancel, Action onSave)
     {
         var cancelButton = new Button()

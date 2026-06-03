@@ -139,6 +139,11 @@ public partial class ProductState : ObservableObject
 
         OnPropertyChanged(nameof(HasBatches));
         UpdateBatchesInfo();
+        
+        EnableSuppliers = product.Suppliers.Count > 0;
+        SelectedSuppliers = [..product.Suppliers];
+        UpdateSuppliersInfo();
+        OnPropertyChanged(nameof(HasSuppliers));
 
         switch (product)
         {
@@ -495,9 +500,10 @@ public partial class ProductState : ObservableObject
 
     public void ToggleSupplier(Supplier supplier)
     {
-        if (SelectedSuppliers.Contains(supplier))
+        var existing = SelectedSuppliers.FirstOrDefault(s => s.Code == supplier.Code);
+        if (existing != null)
         {
-            SelectedSuppliers.Remove(supplier);
+            SelectedSuppliers.Remove(existing);
         }
         else
         {
@@ -505,8 +511,8 @@ public partial class ProductState : ObservableObject
         }
 
         UpdateSuppliersInfo();
+        OnPropertyChanged(nameof(HasSuppliers));
     }
-
     private void UpdateSuppliersInfo()
     {
         if (SelectedSuppliers.Count == 0)
