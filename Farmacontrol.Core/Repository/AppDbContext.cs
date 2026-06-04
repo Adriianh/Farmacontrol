@@ -19,6 +19,7 @@ namespace Farmacontrol.Core.Repository
         public DbSet<Batch> Batches { get; set; }
         public DbSet<Purchase> Purchases { get; set; }
         public DbSet<PurchaseDetail> PurchaseDetails { get; set; }
+        public DbSet<ReceivedBatch> ReceivedBatches { get; set; }
         public DbSet<Prescription> Prescriptions { get; set; }
         public DbSet<InventoryMovement> InventoryMovements { get; set; }
 
@@ -33,7 +34,7 @@ namespace Farmacontrol.Core.Repository
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (optionsBuilder.IsConfigured) return;
-            
+
             var appDataPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Farmacontrol");
@@ -107,6 +108,24 @@ namespace Farmacontrol.Core.Repository
                 entity.HasKey(e => e.Id);
                 entity.HasOne(d => d.Product).WithMany().HasForeignKey(d => d.ProductCode)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ReceivedBatch>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.LotCode)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                entity.Property(r => r.Quantity)
+                    .IsRequired();
+                entity.Property(r => r.ExpirationDate)
+                    .IsRequired();
+                entity.HasOne(r => r.PurchaseDetail)
+                    .WithMany(p => p.ReceivedBatches)
+                    .HasForeignKey(r => r.PurchaseDetailId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => r.LotCode);
+                entity.HasIndex(r => r.ExpirationDate);
             });
 
             modelBuilder.Entity<Prescription>(entity =>
