@@ -32,14 +32,29 @@ public partial class PendingOrdersState : ObservableObject
 
     [ObservableProperty] private ObservableCollection<Purchase> _pendingPurchases = new();
 
+    [ObservableProperty] private bool _isReceivingOrder;
+
+    [ObservableProperty] private Purchase? _selectedPurchaseForReceiving;
+
+    [ObservableProperty] private ReceivePurchaseState? _receivePurchaseState;
+
     public bool ShowEmpty => !IsOrderGeneratedSuccessfully && LowStockSuggestions.Count == 0;
     public bool ShowSuggestions => !IsOrderGeneratedSuccessfully && LowStockSuggestions.Count > 0;
     public bool ShowSuccess => IsOrderGeneratedSuccessfully;
     public bool HasPendingPurchases => PendingPurchases.Count > 0;
 
     public string PendingPurchasesCount => PendingPurchases.Count.ToString();
+
+    public string PendingPurchasesSubtitle => PendingPurchases.Count == 1
+        ? "Hay 1 pedido pendiente de recepción"
+        : $"Hay {PendingPurchases.Count} pedidos pendientes de recepción";
+
     public bool HasSuppliers => Suppliers.Count > 0;
-    
+
+    public bool ShowEmptyPendingPurchases => !HasPendingPurchases && !IsReceivingOrder;
+    public bool ShowPendingPurchasesList => HasPendingPurchases && !IsReceivingOrder;
+
+    public Window? ParentWindow { get; set; }
 
     public PendingOrdersState(AppDbContext db)
     {
@@ -48,8 +63,14 @@ public partial class PendingOrdersState : ObservableObject
         LoadPendingPurchases();
     }
 
+    partial void OnIsReceivingOrderChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowEmptyPendingPurchases));
+        OnPropertyChanged(nameof(ShowPendingPurchasesList));
+    }
+
     [RelayCommand]
-    private void LoadDashboardData()
+    public void LoadDashboardData()
     {
         ErrorMessage = string.Empty;
 
@@ -128,7 +149,7 @@ public partial class PendingOrdersState : ObservableObject
         }
     }
 
-    private void LoadPendingPurchases()
+    public void LoadPendingPurchases()
     {
         var list = _db.Purchases
             .Include(p => p.Details)
@@ -136,40 +157,28 @@ public partial class PendingOrdersState : ObservableObject
             .OrderByDescending(p => p.Date)
             .ToList();
         PendingPurchases = new ObservableCollection<Purchase>(list);
+
+        OnPropertyChanged(nameof(HasPendingPurchases));
+        OnPropertyChanged(nameof(PendingPurchasesCount));
+        OnPropertyChanged(nameof(PendingPurchasesSubtitle));
+        OnPropertyChanged(nameof(ShowEmptyPendingPurchases));
+        OnPropertyChanged(nameof(ShowPendingPurchasesList));
     }
 
-    public void CompletePurchase(Purchase purchase)
+    [RelayCommand]
+    private void StartReceivingOrder(Purchase purchase)
     {
-        var fullPurchase = _db.Purchases
-            .Include(p => p.Details)
-            .FirstOrDefault(p => p.Id == purchase.Id);
+        SelectedPurchaseForReceiving = purchase;
+        ReceivePurchaseState = new ReceivePurchaseState(purchase, _db);
+        IsReceivingOrder = true;
+    }
 
-        if (fullPurchase == null) return;
-
-        foreach (var detail in fullPurchase.Details)
-        {
-            var product = _db.Products.FirstOrDefault(p => p.Code == detail.ProductCode);
-            if (product == null) continue;
-
-            var previousStock = product.Stock;
-            product.Stock += detail.Quantity;
-
-            var movement = new InventoryMovement
-            {
-                ProductCode = product.Code,
-                Quantity = detail.Quantity,
-                Type = "Entrada por Compra",
-                Reason = $"Recepción de orden #{fullPurchase.InvoiceNumber}",
-                PreviousStock = previousStock,
-                NewStock = product.Stock
-            };
-            _db.InventoryMovements.Add(movement);
-        }
-
-        fullPurchase.ConfirmReception();
-        _db.SaveChanges();
-
-        LoadDashboardData();
+    [RelayCommand]
+    private void BackToOrdersList()
+    {
+        IsReceivingOrder = false;
+        SelectedPurchaseForReceiving = null;
+        ReceivePurchaseState = null;
         LoadPendingPurchases();
     }
 }

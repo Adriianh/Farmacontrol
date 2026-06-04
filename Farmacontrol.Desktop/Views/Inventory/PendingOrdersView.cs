@@ -14,6 +14,8 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
     private static readonly SolidColorBrush BackgroundSecondary = SolidColorBrush.Parse("#1F2937");
     private static readonly SolidColorBrush BackgroundTertiary = SolidColorBrush.Parse("#374151");
     private static readonly SolidColorBrush BackgroundHover = SolidColorBrush.Parse("#4B5563");
+    private static readonly SolidColorBrush BackgroundInput = SolidColorBrush.Parse("#374151");
+    private static readonly SolidColorBrush BackgroundCard = SolidColorBrush.Parse("#1F2937");
     private static readonly SolidColorBrush TextMuted = SolidColorBrush.Parse("#9CA3AF");
     private static readonly SolidColorBrush AccentBlue = SolidColorBrush.Parse("#2563EB");
     private static readonly SolidColorBrush AccentGreen = SolidColorBrush.Parse("#10B981");
@@ -81,7 +83,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                                 new Setter(TemplatedControl.ForegroundProperty, Brushes.White)
                             }
                         },
-                        new Style(x => x.OfType<TabItem>().Class(":pointerover").Class(":selected"))
+                        new Style(x => x.OfType<TabItem>().Class(":pointerover"))
                         {
                             Setters =
                             {
@@ -240,9 +242,10 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .IsEnabled(state, x => x.HasSuppliers)
             .ItemTemplate(new FuncDataTemplate<Supplier>((s, _) =>
             {
-                var supplierName = s.Name;
+                var displayText = s?.Name ?? "Proveedor no disponible";
+
                 return new TextBlock()
-                    .Text(supplierName)
+                    .Text(displayText)
                     .Foreground(Brushes.White);
             }));
 
@@ -266,7 +269,6 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                     .Children(
                         new TextBlock().Text("Resumen del Nuevo Pedido").FontSize(15).FontWeight(FontWeight.Bold)
                             .Foreground(Brushes.White).Row(0).Margin(0, 0, 0, 14),
-
                         noSuppliersWarning.Row(1).Margin(0, 0, 0, 16),
                         new StackPanel().Spacing(6).Row(2).Margin(0, 0, 0, 16)
                             .IsVisible(state, x => x.HasSuppliers)
@@ -304,9 +306,11 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
 
     private Control BuildReceptionSection(PendingOrdersState state)
     {
-        var pendingPurchasesText = $"Hay {state.PendingPurchasesCount} pedido(s) pendiente(s) de recepción";
+        var emptyStateView = BuildEmptyPendingPurchases()
+            .IsVisible(state, x => x.ShowEmptyPendingPurchases);
 
-        return new Grid().Rows("Auto, *")
+        var ordersListView = new Grid().Rows("Auto, *")
+            .IsVisible(state, x => x.ShowPendingPurchasesList)
             .Children(
                 new StackPanel().Row(0).Margin(0, 0, 0, 16)
                     .Children(
@@ -316,19 +320,594 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                             .FontWeight(FontWeight.Bold)
                             .Foreground(Brushes.White),
                         new TextBlock()
-                            .Text(pendingPurchasesText)
+                            .Text(state, x => x.PendingPurchasesSubtitle)
                             .FontSize(13)
                             .Foreground(TextMuted)
                             .Margin(0, 4, 0, 0)
                     ),
-                new Border().Row(1)
-                    .Child(
-                        new Grid()
+                BuildPendingPurchasesList(state).Row(1)
+            );
+
+        var receiveOrderHost = new ContentControl()
+            .IsVisible(state, x => x.IsReceivingOrder);
+
+        state.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(state.ReceivePurchaseState))
+            {
+                receiveOrderHost.Content = state.ReceivePurchaseState != null
+                    ? BuildReceiveOrderView(state, state.ReceivePurchaseState)
+                    : null;
+            }
+        };
+
+        return new Panel()
+            .Children(
+                emptyStateView,
+                ordersListView,
+                receiveOrderHost
+            );
+    }
+
+    private Control BuildReceiveOrderView(PendingOrdersState state, ReceivePurchaseState receiveState) =>
+        new Grid().Rows("Auto, Auto, Auto, *")
+            .Children(
+                BuildReceiveHeader(state, receiveState).Row(0),
+                BuildPurchaseInfo(receiveState).Row(1),
+                BuildReceiveSummary(receiveState).Row(2),
+                new Grid().Cols("*, 340").Row(3)
+                    .Children(
+                        BuildProductsForReceiveList(receiveState).Col(0),
+                        new Grid().Rows("*, Auto").Col(1).Margin(16, 0, 0, 0)
                             .Children(
-                                BuildEmptyPendingPurchases().IsVisible(state, x => !x.HasPendingPurchases),
-                                BuildPendingPurchasesList(state).IsVisible(state, x => x.HasPendingPurchases)
+                                new ScrollViewer()
+                                    .Row(0)
+                                    .Content(BuildReceiveBatchPanel(receiveState)),
+                                BuildReceiveActions(state, receiveState).Row(1).Margin(0, 12, 0, 0)
                             )
                     )
+            );
+
+    private Control BuildReceiveHeader(PendingOrdersState state, ReceivePurchaseState receiveState)
+    {
+        var backButton = new Button()
+            .Content("← Volver a lista de pedidos")
+            .Background(Brushes.Transparent)
+            .Foreground(AccentBlue)
+            .FontSize(13)
+            .Cursor(new Cursor(StandardCursorType.Hand));
+        backButton.Click += (_, _) => state.BackToOrdersListCommand.Execute(null);
+
+        return new Grid().Cols("Auto, *")
+            .Margin(0, 0, 0, 16)
+            .Children(
+                backButton.Col(0),
+                new StackPanel().Col(1).HorizontalAlignment(HorizontalAlignment.Center)
+                    .Children(
+                        new TextBlock()
+                            .Text($"Recepción de Pedido: {receiveState.PurchaseInfo}")
+                            .FontSize(20)
+                            .FontWeight(FontWeight.Bold)
+                            .Foreground(Brushes.White)
+                            .HorizontalAlignment(HorizontalAlignment.Center),
+                        new TextBlock()
+                            .Text(receiveState, x => x.ProgressText)
+                            .FontSize(13)
+                            .Foreground(TextMuted)
+                            .HorizontalAlignment(HorizontalAlignment.Center)
+                            .Margin(0, 4, 0, 0)
+                    )
+            );
+    }
+
+    private Control BuildReceiveActions(PendingOrdersState pendingState, ReceivePurchaseState receiveState)
+    {
+        var cancelButton = new Button()
+            .Content("Cancelar")
+            .Background(Brushes.Transparent)
+            .Foreground(TextMuted)
+            .Padding(20, 10)
+            .CornerRadius(6)
+            .Cursor(new Cursor(StandardCursorType.Hand));
+        cancelButton.Click += (_, _) => pendingState.BackToOrdersListCommand.Execute(null);
+
+        var confirmButton = new Button()
+            .Content("✅ Confirmar Recepción")
+            .Background(AccentGreen)
+            .Foreground(Brushes.White)
+            .FontWeight(FontWeight.SemiBold)
+            .Padding(20, 10)
+            .CornerRadius(6)
+            .Cursor(new Cursor(StandardCursorType.Hand))
+            .IsEnabled(receiveState.CanComplete);
+
+        receiveState.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(receiveState.CanComplete))
+            {
+                confirmButton.IsEnabled = receiveState.CanComplete;
+            }
+        };
+
+        confirmButton.Click += (_, _) =>
+        {
+            receiveState.CompleteReception(() =>
+            {
+                pendingState.LoadDashboardData();
+                pendingState.LoadPendingPurchases();
+                pendingState.BackToOrdersListCommand.Execute(null);
+            });
+        };
+
+        return new StackPanel()
+            .Orientation(Orientation.Horizontal)
+            .Spacing(12)
+            .HorizontalAlignment(HorizontalAlignment.Right)
+            .Children(cancelButton, confirmButton);
+    }
+
+    private Control BuildPurchaseInfo(ReceivePurchaseState receiveState) =>
+        new Border()
+            .Background(BackgroundSecondary)
+            .CornerRadius(10)
+            .Padding(16)
+            .Margin(0, 0, 0, 16)
+            .Child(
+                new StackPanel()
+                    .Children(
+                        new TextBlock()
+                            .Text($"Proveedor: {receiveState.SupplierName}")
+                            .FontSize(14)
+                            .Foreground(Brushes.White),
+                        new TextBlock()
+                            .Text($"Fecha de generación: {receiveState.PurchaseDate:dd/MM/yyyy HH:mm}")
+                            .FontSize(12)
+                            .Foreground(TextMuted)
+                            .Margin(0, 4, 0, 0)
+                    )
+            );
+
+    private Control BuildReceiveSummary(ReceivePurchaseState receiveState) =>
+        new Border()
+            .Background(BackgroundSecondary)
+            .CornerRadius(10)
+            .Padding(16)
+            .Margin(0, 0, 0, 20)
+            .Child(
+                new Grid().Cols("*, *, *, *")
+                    .Children(
+                        BuildSummaryCard("📦", "Productos", receiveState.TotalProductsCount.ToString(), 0),
+                        BuildSummaryCard("✅", "Completados", receiveState.FullyReceivedCount.ToString(), 1),
+                        BuildSummaryCard("⏳", "Pendientes", receiveState.PendingCount.ToString(), 2),
+                        BuildSummaryCard("📊", "Progreso", receiveState.ProgressText, 3)
+                    )
+            );
+
+    private Control BuildSummaryCard(string icon, string label, string value, int column) =>
+        new StackPanel()
+            .HorizontalAlignment(HorizontalAlignment.Center)
+            .Col(column)
+            .Children(
+                new TextBlock().Text(icon).FontSize(24).HorizontalAlignment(HorizontalAlignment.Center),
+                new TextBlock().Text(label).FontSize(11).Foreground(TextMuted)
+                    .HorizontalAlignment(HorizontalAlignment.Center),
+                new TextBlock().Text(value).FontSize(16).FontWeight(FontWeight.Bold).Foreground(AccentGreen)
+                    .HorizontalAlignment(HorizontalAlignment.Center).Margin(0, 4, 0, 0)
+            );
+
+    private Control BuildProductsForReceiveList(ReceivePurchaseState receiveState) =>
+        new ScrollViewer()
+            .Content(
+                new ItemsControl()
+                    .ItemsSource(receiveState.ProductItems)
+                    .ItemTemplate(new FuncDataTemplate<PurchaseProductState>((item, _) =>
+                        BuildReceiveProductItem(item, receiveState)))
+            );
+
+    private Control BuildReceiveProductItem(PurchaseProductState item, ReceivePurchaseState receiveState)
+    {
+        var statusIcon = new TextBlock()
+            .FontSize(20)
+            .VerticalAlignment(VerticalAlignment.Center)
+            .Col(0)
+            .Margin(0, 0, 16, 0);
+
+        var progressBar = new ProgressBar()
+            .Width(80).Height(6).Col(2)
+            .Margin(0, 0, 16, 0)
+            .VerticalAlignment(VerticalAlignment.Center);
+
+        var progressBadge = new Border()
+            .CornerRadius(4).Padding(8, 4).Col(3).Margin(0, 0, 16, 0);
+        var progressBadgeText = new TextBlock()
+            .FontSize(11).FontWeight(FontWeight.Bold).Foreground(Brushes.White);
+        progressBadge.Child = progressBadgeText;
+
+        var selectBtn = new Button()
+            .Foreground(Brushes.White)
+            .Padding(12, 6).CornerRadius(6).FontSize(12)
+            .Cursor(new Cursor(StandardCursorType.Hand))
+            .Col(4);
+        selectBtn.Click += (_, _) => receiveState.SelectProductCommand.Execute(item);
+
+        void UpdateHeader()
+        {
+            var complete = item.IsComplete;
+            var pct = item.TotalQuantity > 0
+                ? (double)item.ReceivedQuantity / item.TotalQuantity * 100
+                : 0;
+
+            statusIcon.Text = complete ? "✅" : "📦";
+            progressBar.Value = pct;
+            progressBadge.Background = complete ? AccentGreen : WarningYellow;
+            progressBadgeText.Text = $"{item.ReceivedQuantity}/{item.TotalQuantity}";
+            selectBtn.Content = complete ? "✅ Ver" : "Seleccionar";
+            selectBtn.Background = complete ? AccentGreen
+                : receiveState.SelectedProduct == item ? AccentGreen : AccentBlue;
+        }
+
+        UpdateHeader();
+
+        item.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(item.IsComplete)
+                or nameof(item.ReceivedQuantity)
+                or nameof(item.PendingQuantity))
+                UpdateHeader();
+        };
+
+        receiveState.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(receiveState.SelectedProduct))
+                UpdateHeader();
+        };
+
+        var expander = new Expander()
+            .IsExpanded(true)
+            .Header(
+                new Grid().Cols("Auto, *, Auto, Auto, 100")
+                    .Margin(0, 8)
+                    .Children(
+                        statusIcon,
+                        new StackPanel().Col(1)
+                            .Children(
+                                new TextBlock()
+                                    .Text(item.ProductName)
+                                    .FontSize(14)
+                                    .FontWeight(FontWeight.SemiBold)
+                                    .Foreground(Brushes.White),
+                                new TextBlock()
+                                    .Text($"Código: {item.ProductCode}")
+                                    .FontSize(11)
+                                    .Foreground(TextMuted)
+                            ),
+                        progressBar,
+                        progressBadge,
+                        selectBtn
+                    )
+            )
+            .Content(BuildReceivedBatchesList(item, receiveState));
+
+        return new Border()
+            .Background(BackgroundSecondary)
+            .CornerRadius(10)
+            .Margin(0, 0, 0, 12)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .Styles(
+                new Style(x => x.OfType<Expander>())
+                {
+                    Setters =
+                    {
+                        new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent),
+                        new Setter(TemplatedControl.BorderBrushProperty, Brushes.Transparent),
+                        new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
+                    }
+                },
+                new Style(x => x.OfType<Expander>().Template().OfType<ToggleButton>())
+                {
+                    Setters = { new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent) }
+                },
+                new Style(x =>
+                    x.OfType<Expander>().Template().OfType<ToggleButton>().Class(":pointerover").Template()
+                        .OfType<Border>())
+                {
+                    Setters = { new Setter(Border.BackgroundProperty, Brushes.Transparent) }
+                },
+                new Style(x =>
+                    x.OfType<Expander>().Template().OfType<ToggleButton>().Class(":checked").Template()
+                        .OfType<Border>())
+                {
+                    Setters = { new Setter(Border.BackgroundProperty, Brushes.Transparent) }
+                }
+            )
+            .Child(expander);
+    }
+
+    private Control BuildReceivedBatchesList(PurchaseProductState item, ReceivePurchaseState receiveState)
+    {
+        var container = new StackPanel().Spacing(8).Margin(16, 12, 16, 8);
+
+        void Rebuild()
+        {
+            container.Children.Clear();
+            if (item.ReceivedBatches.Count == 0)
+            {
+                container.Children.Add(
+                    new TextBlock()
+                        .Text("📭 No hay lotes recibidos aún")
+                        .FontSize(12)
+                        .Foreground(TextMuted)
+                        .HorizontalAlignment(HorizontalAlignment.Center)
+                        .Margin(0, 8)
+                );
+            }
+            else
+            {
+                foreach (var batch in item.ReceivedBatches)
+                    container.Children.Add(BuildReceivedBatchItem(item, batch, receiveState));
+            }
+        }
+
+        Rebuild();
+        item.ReceivedBatches.CollectionChanged += (_, _) => Rebuild();
+
+        return container;
+    }
+
+    private Control BuildReceivedBatchItem(PurchaseProductState item, ReceivedBatchState batch,
+        ReceivePurchaseState receiveState)
+    {
+        Control statusBadge;
+
+        if (batch.IsManualStock)
+        {
+            statusBadge = new Border()
+                .Background(SolidColorBrush.Parse("#1D4ED8"))
+                .CornerRadius(4).Padding(6, 3).Col(2).Margin(0, 0, 12, 0)
+                .Child(new TextBlock().Text("MANUAL").FontSize(10).FontWeight(FontWeight.Bold)
+                    .Foreground(Brushes.White));
+        }
+        else
+        {
+            var daysUntilExpiry = (batch.ExpirationDate - DateTime.Today).Days;
+            var isExpired = daysUntilExpiry < 0;
+            var isExpiringSoon = daysUntilExpiry is <= 30 and >= 0;
+            var statusColor = isExpired ? SolidColorBrush.Parse("#EF4444") :
+                isExpiringSoon ? WarningYellow : AccentGreen;
+            var statusText = isExpired ? "VENCIDO" :
+                isExpiringSoon ? $"Vence en {daysUntilExpiry}d" : "Válido";
+            statusBadge = new Border()
+                .Background(statusColor)
+                .CornerRadius(4).Padding(6, 3).Col(2).Margin(0, 0, 12, 0)
+                .Child(new TextBlock().Text(statusText).FontSize(10).FontWeight(FontWeight.Bold)
+                    .Foreground(isExpiringSoon ? SolidColorBrush.Parse("#000000") : Brushes.White));
+        }
+
+        var removeButton = new Button()
+            .Content("🗑️")
+            .Background(Brushes.Transparent)
+            .Foreground(SolidColorBrush.Parse("#EF4444"))
+            .Padding(4)
+            .CornerRadius(4)
+            .Cursor(new Cursor(StandardCursorType.Hand));
+        removeButton.Click += (_, _) => receiveState.RemoveBatch(item, batch);
+
+        var batchLabel = batch.IsManualStock
+            ? "Stock Manual"
+            : $"Lote: {batch.LotCode}";
+
+        return new Border()
+            .Background(BackgroundCard)
+            .CornerRadius(8)
+            .Padding(12)
+            .Margin(0, 0, 0, 8)
+            .Child(
+                new Grid().Cols("Auto, *, Auto, Auto")
+                    .Children(
+                        new TextBlock().Text(batch.IsManualStock ? "📊" : "📋").FontSize(14).Col(0).Margin(0, 0, 12, 0),
+                        new StackPanel().Col(1)
+                            .Children(
+                                new TextBlock()
+                                    .Text(batchLabel)
+                                    .FontSize(12)
+                                    .FontWeight(FontWeight.SemiBold)
+                                    .Foreground(Brushes.White),
+                                new TextBlock()
+                                    .Text($"Cantidad: {batch.Quantity} unidades")
+                                    .FontSize(11)
+                                    .Foreground(TextMuted)
+                            ),
+                        statusBadge,
+                        removeButton.Col(3)
+                    )
+            );
+    }
+
+    private Control BuildReceiveBatchPanel(ReceivePurchaseState receiveState)
+    {
+        var quantityBox = new TextBox()
+            .PlaceholderText("Cantidad a recibir")
+            .Background(BackgroundInput).Foreground(Brushes.White)
+            .BorderBrush(BorderColor).CornerRadius(6).Padding(10, 8)
+            .Text(receiveState, x => x.Quantity, BindingMode.TwoWay);
+
+        var unitCostBox = new TextBox()
+            .PlaceholderText("Opcional")
+            .Background(BackgroundInput).Foreground(Brushes.White)
+            .BorderBrush(BorderColor).CornerRadius(6).Padding(10, 8)
+            .Text(receiveState, x => x.UnitCost, BindingMode.TwoWay);
+
+        var lotCodeBox = new TextBox()
+            .PlaceholderText("Ej: LOT-001")
+            .Background(BackgroundInput).Foreground(Brushes.White)
+            .BorderBrush(BorderColor).CornerRadius(6).Padding(10, 8)
+            .Text(receiveState, x => x.LotCode, BindingMode.TwoWay);
+
+        var expirationPicker = new DatePicker()
+            .Background(BackgroundInput).Foreground(Brushes.White)
+            .BorderBrush(BorderColor).CornerRadius(6).Padding(10, 8)
+            .HorizontalAlignment(HorizontalAlignment.Stretch);
+        expirationPicker.Bind(DatePicker.SelectedDateProperty,
+            new Binding(nameof(receiveState.ExpirationDate)) { Source = receiveState, Mode = BindingMode.TwoWay });
+
+        var manufacturingPicker = new DatePicker()
+            .Background(BackgroundInput).Foreground(Brushes.White)
+            .BorderBrush(BorderColor).CornerRadius(6).Padding(10, 8)
+            .HorizontalAlignment(HorizontalAlignment.Stretch);
+        manufacturingPicker.Bind(DatePicker.SelectedDateProperty,
+            new Binding(nameof(receiveState.ManufacturingDate)) { Source = receiveState, Mode = BindingMode.TwoWay });
+
+        var lotFields = new StackPanel().Spacing(0)
+            .IsVisible(receiveState, x => x.IsLotMode)
+            .Children(
+                CreateReceiveField("Número de Lote *", lotCodeBox),
+                CreateReceiveDatePickerField("Fecha de Expiración *", expirationPicker),
+                CreateReceiveDatePickerField("Fecha de Fabricación", manufacturingPicker)
+            );
+
+        var quantityWarningPanel = new Border()
+            .Background(SolidColorBrush.Parse("#78350F"))
+            .BorderBrush(SolidColorBrush.Parse("#F59E0B")).BorderThickness(1)
+            .CornerRadius(6).Padding(10, 8).Margin(0, 0, 0, 12)
+            .IsVisible(receiveState, x => x.HasQuantityWarning)
+            .Child(new TextBlock().Text(receiveState, x => x.QuantityWarning)
+                .Foreground(SolidColorBrush.Parse("#FDE68A")).FontSize(11).TextWrapping(TextWrapping.Wrap));
+
+        var errorPanel = new Border()
+            .Background(SolidColorBrush.Parse("#7F1D1D"))
+            .BorderBrush(SolidColorBrush.Parse("#DC2626")).BorderThickness(1)
+            .CornerRadius(6).Padding(10, 8).Margin(0, 0, 0, 12)
+            .IsVisible(receiveState, x => x.HasError)
+            .Child(new TextBlock().Text(receiveState, x => x.ErrorMessage)
+                .Foreground(SolidColorBrush.Parse("#FCA5A5")).FontSize(11).TextWrapping(TextWrapping.Wrap));
+
+        var productNameLabel = new TextBlock()
+            .FontSize(15).FontWeight(FontWeight.Bold).Foreground(Brushes.White)
+            .Margin(0, 0, 0, 12);
+
+        var modeBadge = new Border()
+            .CornerRadius(6).Padding(10, 6).Margin(0, 0, 0, 14);
+
+        void UpdateModeBadge()
+        {
+            if (receiveState.IsManualStockMode)
+            {
+                modeBadge.Background = SolidColorBrush.Parse("#1D4ED8");
+                ((TextBlock)modeBadge.Child!).Text = "📊 Modo: Stock Manual (sin lote)";
+            }
+            else
+            {
+                modeBadge.Background = SolidColorBrush.Parse("#065F46");
+                ((TextBlock)modeBadge.Child!).Text = "🏷️ Modo: Por Lote";
+            }
+        }
+
+        modeBadge.Child = new TextBlock().FontSize(11).FontWeight(FontWeight.SemiBold).Foreground(Brushes.White);
+        UpdateModeBadge();
+
+        var toggleModeBtn = new Button()
+            .Content(receiveState, x => x.IsManualModeTitle)
+            .Background(BackgroundTertiary)
+            .Foreground(TextMuted)
+            .FontSize(11)
+            .Padding(10, 6)
+            .CornerRadius(6)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .HorizontalContentAlignment(HorizontalAlignment.Center)
+            .Margin(0, 0, 0, 16)
+            .Cursor(new Cursor(StandardCursorType.Hand));
+        toggleModeBtn.Click += (_, _) =>
+        {
+            receiveState.ToggleReceiveModeCommand.Execute(null);
+            UpdateModeBadge();
+        };
+
+        var noSelectionPanel = new Border()
+            .Background(BackgroundSecondary).CornerRadius(10).Padding(16)
+            .Child(
+                new StackPanel().VerticalAlignment(VerticalAlignment.Center)
+                    .HorizontalAlignment(HorizontalAlignment.Center).Spacing(12)
+                    .Children(
+                        new TextBlock().Text("📦").FontSize(48).HorizontalAlignment(HorizontalAlignment.Center),
+                        new TextBlock().Text("Seleccione un producto").FontSize(16).FontWeight(FontWeight.Bold)
+                            .Foreground(Brushes.White).HorizontalAlignment(HorizontalAlignment.Center),
+                        new TextBlock().Text("Haga clic en 'Seleccionar' en el producto que desea recibir")
+                            .FontSize(12).Foreground(TextMuted).TextWrapping(TextWrapping.Wrap)
+                            .HorizontalAlignment(HorizontalAlignment.Center)
+                    )
+            );
+
+        var receivePanel = new Border()
+            .Background(BackgroundSecondary).CornerRadius(10).Padding(16)
+            .Child(
+                new StackPanel().Spacing(0)
+                    .Children(
+                        productNameLabel,
+                        modeBadge,
+                        toggleModeBtn,
+                        errorPanel,
+                        quantityWarningPanel,
+                        CreateReceiveField("Cantidad *", quantityBox),
+                        lotFields,
+                        CreateReceiveField("Costo Unitario", unitCostBox),
+                        new Button().Content("➕ Agregar")
+                            .Background(AccentBlue).Foreground(Brushes.White)
+                            .FontWeight(FontWeight.SemiBold).Padding(16, 10).CornerRadius(6)
+                            .Cursor(new Cursor(StandardCursorType.Hand))
+                            .HorizontalAlignment(HorizontalAlignment.Stretch)
+                            .HorizontalContentAlignment(HorizontalAlignment.Center)
+                            .Margin(0, 16, 0, 0)
+                            .With(btn => btn.Click += (_, _) => receiveState.AddBatchToSelectedCommand.Execute(null))
+                    )
+            );
+
+        void UpdatePanel()
+        {
+            var selected = receiveState.SelectedProduct;
+            var showForm = selected is { IsComplete: false };
+            noSelectionPanel.IsVisible = !showForm;
+            receivePanel.IsVisible = showForm;
+            productNameLabel.Text = selected != null ? $"Recibir: {selected.ProductName}" : string.Empty;
+        }
+
+        UpdatePanel();
+        receiveState.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(receiveState.SelectedProduct))
+                UpdatePanel();
+        };
+
+        return new Panel().Children(noSelectionPanel, receivePanel);
+    }
+
+    private Control CreateReceiveDatePickerField(string label, DatePicker datePicker)
+    {
+        datePicker.Background(BackgroundInput)
+            .Foreground(Brushes.White)
+            .BorderBrush(BorderColor)
+            .CornerRadius(6)
+            .Padding(10, 8)
+            .HorizontalAlignment(HorizontalAlignment.Stretch);
+
+        return new StackPanel().Spacing(6).Margin(0, 0, 0, 12)
+            .Children(
+                new TextBlock()
+                    .Text(label)
+                    .FontSize(11)
+                    .Foreground(TextMuted),
+                datePicker
+            );
+    }
+
+    private Control CreateReceiveField(string label, TextBox textBox)
+    {
+        return new StackPanel().Spacing(6).Margin(0, 0, 0, 12)
+            .Children(
+                new TextBlock()
+                    .Text(label)
+                    .FontSize(11)
+                    .Foreground(TextMuted),
+                textBox
             );
     }
 
@@ -417,7 +996,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                                                     .Margin(0, 4, 0, 0)
                                             ),
                                         new Button()
-                                            .Content("✅ Confirmar Recepción")
+                                            .Content("📦 Recibir Pedido")
                                             .Background(AccentGreen)
                                             .Foreground(Brushes.White)
                                             .FontWeight(FontWeight.SemiBold)
@@ -426,7 +1005,10 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                                             .Cursor(new Cursor(StandardCursorType.Hand))
                                             .VerticalAlignment(VerticalAlignment.Center)
                                             .Col(2)
-                                            .With(button => button.Click += (_, _) => state.CompletePurchase(purchase))
+                                            .With(button => button.Click += (_, _) =>
+                                            {
+                                                state.StartReceivingOrderCommand.Execute(purchase);
+                                            })
                                     )
                             )
                     ))
