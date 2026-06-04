@@ -112,6 +112,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
                                 new TabItem()
                                     .Header("📦 Generar Pedido")
                                     .CornerRadius(12)
+                                    .Margin(2, 0, 8, 0)
                                     .Content(BuildGenerateOrderSection(state)),
                                 new TabItem()
                                     .CornerRadius(12)
