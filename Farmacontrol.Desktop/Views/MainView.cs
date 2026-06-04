@@ -77,7 +77,7 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                                 CreateMenuGroup(state, x => x.SalesExpanded, x => x.SalesArrow,
                                                     "Sales", "📊 Ventas y Caja", [
                                                         CreateSubButton("💵 Registrar Venta",
-                                                            () => state.CurrentContent = new RegisterSaleView()),
+                                                            () => state.CurrentContent = new SaleView()),
                                                         CreateSubButton("❌ Anular Venta",
                                                             () => state.CurrentContent = new VoidSaleView()),
                                                         CreateSubButton("📈 Reporte de Ventas",
