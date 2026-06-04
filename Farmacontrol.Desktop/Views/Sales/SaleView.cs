@@ -83,7 +83,7 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
             .Children(
                 new StackPanel()
                     .Children(
-                        new TextBlock().Text("🛒 Punto de Venta").FontSize(24).FontWeight(FontWeight.Bold)
+                        new TextBlock().Text("Punto de Venta").FontSize(24).FontWeight(FontWeight.Bold)
                             .Foreground(Brushes.White),
                         new TextBlock()
                             .Text("Escanee o busque productos para agregar al carrito")
@@ -121,8 +121,6 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
         return new Grid().Rows("Auto, *")
             .Children(
                 new StackPanel().Spacing(8).Row(0).Margin(0, 0, 0, 12).Children(
-                    new TextBlock().Text("Catálogo de Productos").FontSize(16).FontWeight(FontWeight.Bold)
-                        .Foreground(Brushes.White),
                     searchBox
                 ),
                 new ScrollViewer().Row(1).Content(catalogGrid)
@@ -218,19 +216,19 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
         };
         card.PointerMoved += async (_, e) =>
         {
-            if (e.GetCurrentPoint(card).Properties.IsLeftButtonPressed && dragStartEvent != null)
-            {
-                var pos = e.GetPosition(card);
-                if (!isDragging && (Math.Abs(pos.X - dragStartPoint.X) > 3 || Math.Abs(pos.Y - dragStartPoint.Y) > 3))
-                {
-                    isDragging = true;
-                    _draggedProduct = product;
-                    var data = new DataTransfer();
-                    await DragDrop.DoDragDropAsync(dragStartEvent, data, DragDropEffects.Copy);
-                    _draggedProduct = null;
-                    dragStartEvent = null;
-                }
-            }
+            if (!e.GetCurrentPoint(card).Properties.IsLeftButtonPressed || dragStartEvent == null) return;
+            
+            var pos = e.GetPosition(card);
+            
+            if (isDragging ||
+                (!(Math.Abs(pos.X - dragStartPoint.X) > 3) && !(Math.Abs(pos.Y - dragStartPoint.Y) > 3))) return;
+            
+            isDragging = true;
+            _draggedProduct = product;
+            var data = new DataTransfer();
+            await DragDrop.DoDragDropAsync(dragStartEvent, data, DragDropEffects.Copy);
+            _draggedProduct = null;
+            dragStartEvent = null;
         };
 
         card.PointerEntered += (_, _) => card.Background = BackgroundTertiary;
