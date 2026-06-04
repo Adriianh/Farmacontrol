@@ -10,6 +10,7 @@ namespace Farmacontrol.Desktop.States;
 public partial class InventoryState : ObservableObject
 {
     private readonly InventoryService _inventoryService;
+    private readonly AppDbContext _db;
     private List<Product> _baseProducts = [];
     
     public enum ProductFilterCondition { All, LowStock, Expiring, Expired }
@@ -46,16 +47,12 @@ public partial class InventoryState : ObservableObject
     public InventoryState(InventoryService inventoryService, AppDbContext db)
     {
         _inventoryService = inventoryService;
+        _db = db;
         ProductForm = new ProductState(inventoryService, db);
         LoadProducts();
     }
 
     partial void OnSearchTextChanged(string value)
-    {
-        UpdateFilteredProducts();
-    }
-    
-    partial void OnCurrentFilterConditionChanged(ProductFilterCondition value)
     {
         UpdateFilteredProducts();
     }
@@ -208,5 +205,15 @@ public partial class InventoryState : ObservableObject
     public bool HasProductAlerts(Product product)
     {
         return GetProductAlertStatus(product) != "NORMAL";
+    }
+    
+    public bool IsProductCodeAvailable(string code, string? excludeCode = null)
+    {
+        return !_db.Products.Any(p => p.Code == code && p.IsActive && p.Code != excludeCode);
+    }
+
+    public Product? GetInactiveProductByCode(string code)
+    {
+        return _db.Products.FirstOrDefault(p => p.Code == code && !p.IsActive);
     }
 }

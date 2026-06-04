@@ -1,6 +1,7 @@
 using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
+using Avalonia.Input;
 using Avalonia.Styling;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.ProductEntity;
@@ -74,7 +75,7 @@ public static class ProductModal
                         }
                     )
                     .Child(
-                        new Grid().Rows("Auto, Auto, *, Auto")
+                        new Grid().Rows("Auto, Auto, Auto, *, Auto")
                             .Children(
                                 new Grid().Cols("*, Auto").Row(0)
                                     .Children(
@@ -87,7 +88,9 @@ public static class ProductModal
                                         closeButton
                                     ),
                                 BuildErrorPanel(state).Row(1),
-                                new ScrollViewer().Row(2).Margin(0, 16)
+                                BuildInactiveProductWarning(state).Row(2),
+                                new ScrollViewer().Row(3)
+                                    .Margin(0, 16)
                                     .Content(
                                         new StackPanel().Spacing(12)
                                             .Children(
@@ -99,54 +102,76 @@ public static class ProductModal
                                                     .BorderBrush(BorderColor)
                                                     .CornerRadius(6)
                                                     .ItemsSource(state.ProductTypes)
-                                                    .SelectedItem(state, x => x.SelectedProductType,
-                                                        BindingMode.TwoWay),
+                                                    .SelectedItem(state, x => x.SelectedProductType, BindingMode.TwoWay)
+                                                    .IsEnabled(state,
+                                                        x => x.IsFormEditable),
                                                 new Border().Height(1).Background(BorderColor).Margin(0, 4),
                                                 BuildFormRow("Nombre del Producto *",
-                                                    new TextBox().Text(state, x => x.Name, BindingMode.TwoWay)),
+                                                    new TextBox()
+                                                        .Text(state, x => x.Name, BindingMode.TwoWay)
+                                                        .IsEnabled(state,
+                                                            x => x.IsFormEditable)),
                                                 BuildFormRow("Código Único *",
-                                                    new TextBox().Text(state, x => x.Code, BindingMode.TwoWay)),
+                                                    new TextBox()
+                                                        .Text(state, x => x.Code, BindingMode.TwoWay)
+                                                        .IsEnabled(false)),
                                                 new Grid().Cols("*, *")
                                                     .Children(
                                                         BuildFormRow("Precio (Q) *",
-                                                                new TextBox().Text(state, x => x.Price,
-                                                                    BindingMode.TwoWay))
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Price, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
                                                             .Col(0).Margin(0, 0, 6, 0),
                                                         BuildFormRow("Stock Inicial *",
                                                                 new TextBox()
                                                                     .Text(state, x => x.Stock, BindingMode.TwoWay)
-                                                                    .IsEnabled(state, x => !x.EnableBatches))
+                                                                    .IsEnabled(state,
+                                                                        x => x
+                                                                            .IsStockEditable))
                                                             .Col(1).Margin(6, 0, 0, 0)
                                                     ),
                                                 new Grid().Cols("*, *")
                                                     .Children(
                                                         BuildFormRow("Stock Mínimo *",
-                                                            new TextBox().Text(state, x => x.MinimumStock,
-                                                                BindingMode.TwoWay)).Col(0).Margin(0, 0, 6, 0),
+                                                                new TextBox()
+                                                                    .Text(state, x => x.MinimumStock,
+                                                                        BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
+                                                            .Col(0).Margin(0, 0, 6, 0),
                                                         BuildFormRow("Código de Barras",
-                                                            new TextBox().Text(state, x => x.Barcode,
-                                                                BindingMode.TwoWay)).Col(1).Margin(6, 0, 0, 0)
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Barcode, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
+                                                            .Col(1).Margin(6, 0, 0, 0)
                                                     ),
                                                 new Grid().Cols("*, *")
                                                     .Children(
                                                         BuildFormRow("Ubicación",
-                                                            new TextBox().Text(state, x => x.Location,
-                                                                BindingMode.TwoWay)).Col(0).Margin(0, 0, 6, 0),
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Location, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
+                                                            .Col(0).Margin(0, 0, 6, 0),
                                                         BuildFormRow("Laboratorio",
-                                                            new TextBox().Text(state, x => x.Laboratory,
-                                                                BindingMode.TwoWay)).Col(1).Margin(6, 0, 0, 0)
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Laboratory, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
+                                                            .Col(1).Margin(6, 0, 0, 0)
                                                     ),
                                                 BuildFormRow("Subcategoría",
-                                                    new TextBox().Text(state, x => x.Subcategory, BindingMode.TwoWay)),
+                                                    new TextBox()
+                                                        .Text(state, x => x.Subcategory, BindingMode.TwoWay)
+                                                        .IsEnabled(state, x => x.IsFormEditable)),
                                                 new Grid().Cols("*, *")
                                                     .Children(
                                                         BuildFormRow("Ingredientes (separados por coma)",
-                                                                new TextBox().Text(state, x => x.Ingredients,
-                                                                    BindingMode.TwoWay))
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Ingredients, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
                                                             .Col(0).Margin(0, 0, 6, 0),
                                                         BuildFormRow("Tags (separados por coma)",
-                                                                new TextBox().Text(state, x => x.Tags,
-                                                                    BindingMode.TwoWay))
+                                                                new TextBox()
+                                                                    .Text(state, x => x.Tags, BindingMode.TwoWay)
+                                                                    .IsEnabled(state, x => x.IsFormEditable))
                                                             .Col(1).Margin(6, 0, 0, 0)
                                                     ),
                                                 new Border().Height(1).Background(BorderColor).Margin(0, 4),
@@ -157,18 +182,23 @@ public static class ProductModal
                                                 new Border().Height(1).Background(BorderColor).Margin(0, 4),
                                                 new StackPanel().Spacing(12)
                                                     .Children(
-                                                        new CheckBox().Content("Añadir Lotes").Foreground(Brushes.White)
-                                                            .IsChecked(state, x => x.EnableBatches, BindingMode.TwoWay),
+                                                        new CheckBox()
+                                                            .Content("Añadir Lotes")
+                                                            .Foreground(Brushes.White)
+                                                            .IsChecked(state, x => x.EnableBatches, BindingMode.TwoWay)
+                                                            .IsEnabled(state, x => x.IsBatchManagementEditable),
                                                         BuildBatchesPanel(state),
-                                                        new CheckBox().Content("Asignar Proveedores")
+                                                        new CheckBox()
+                                                            .Content("Asignar Proveedores")
                                                             .Foreground(Brushes.White)
                                                             .IsChecked(state, x => x.EnableSuppliers,
-                                                                BindingMode.TwoWay),
+                                                                BindingMode.TwoWay)
+                                                            .IsEnabled(state, x => x.IsSupplierManagementEditable),
                                                         BuildSuppliersPanel(state)
                                                     )
                                             )
                                     ),
-                                BuildActionButtons(onCancel, onSave).Row(3)
+                                BuildActionButtons(onCancel, onSave, state).Row(4)
                             )
                     )
             );
@@ -419,7 +449,7 @@ public static class ProductModal
             )
             .IsVisible(state, x => x.EnableSuppliers);
 
-    private static Control BuildActionButtons(Action onCancel, Action onSave)
+    private static Control BuildActionButtons(Action onCancel, Action onSave, ProductState state)
     {
         var cancelButton = new Button()
             .Content("Cancelar")
@@ -430,18 +460,98 @@ public static class ProductModal
             .Margin(0, 0, 8, 0);
 
         var saveButton = new Button()
-            .Content("Guardar Producto")
-            .Background(AccentBlue)
+            .Content(state.ShowInactiveWarning ? "Reactivar Producto" : "Guardar Producto")
+            .Background(state.ShowInactiveWarning ? SolidColorBrush.Parse("#10B981") : AccentBlue)
             .Foreground(Brushes.White)
             .FontWeight(FontWeight.SemiBold)
             .Padding(16, 10)
             .CornerRadius(6)
             .Col(2);
 
-        cancelButton.Click += (_, _) => onCancel();
-        saveButton.Click += (_, _) => onSave();
+        cancelButton.Click += (_, _) =>
+        {
+            if (state.ShowInactiveWarning)
+                state.CancelInactiveEdit();
+            else
+                onCancel();
+        };
+
+        saveButton.Click += (_, _) =>
+        {
+            if (state.ShowInactiveWarning)
+                state.ReactivateProduct();
+            else
+                onSave();
+        };
 
         return new Grid().Cols("*, Auto, Auto")
             .Children(cancelButton, saveButton);
+    }
+
+    private static Control BuildInactiveProductWarning(ProductState state)
+    {
+        return new Border()
+            .Background(SolidColorBrush.Parse("#7F1D1D"))
+            .BorderBrush(SolidColorBrush.Parse("#EF4444"))
+            .BorderThickness(1)
+            .CornerRadius(8)
+            .Padding(12, 10)
+            .Margin(0, 0, 0, 12)
+            .IsVisible(state, x => x.ShowInactiveWarning)
+            .Child(
+                new Grid().Cols("Auto, *, Auto")
+                    .Children(
+                        new Border()
+                            .Background(SolidColorBrush.Parse("#DC2626"))
+                            .CornerRadius(20)
+                            .Width(32)
+                            .Height(32)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(0)
+                            .Child(
+                                new TextBlock()
+                                    .Text("⚠️")
+                                    .FontSize(16)
+                                    .HorizontalAlignment(HorizontalAlignment.Center)
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                            ),
+                        new TextBlock()
+                            .Text(state, x => x.InactiveProductWarning)
+                            .Foreground(SolidColorBrush.Parse("#FCA5A5"))
+                            .FontSize(12)
+                            .TextWrapping(TextWrapping.Wrap)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(1)
+                            .Margin(12, 0),
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                            .Spacing(8)
+                            .Col(2)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Children(
+                                new Button()
+                                    .Content("Cancelar")
+                                    .Background(Brushes.Transparent)
+                                    .Foreground(SolidColorBrush.Parse("#FCA5A5"))
+                                    .BorderBrush(SolidColorBrush.Parse("#DC2626"))
+                                    .BorderThickness(1)
+                                    .CornerRadius(4)
+                                    .Padding(10, 4)
+                                    .FontSize(11)
+                                    .Cursor(new Cursor(StandardCursorType.Hand))
+                                    .With(btn => btn.Click += (_, _) => state.CancelInactiveEdit()),
+                                new Button()
+                                    .Content("Reactivar")
+                                    .Background(SolidColorBrush.Parse("#10B981"))
+                                    .Foreground(Brushes.White)
+                                    .FontWeight(FontWeight.SemiBold)
+                                    .CornerRadius(4)
+                                    .Padding(10, 4)
+                                    .FontSize(11)
+                                    .Cursor(new Cursor(StandardCursorType.Hand))
+                                    .With(btn => btn.Click += (_, _) => state.ReactivateProduct())
+                            )
+                    )
+            );
     }
 }

@@ -64,7 +64,7 @@ public partial class ProductState : ObservableObject
     private ObservableCollection<(string LotCode, int Quantity, DateTime MfgDate, DateTime ExpDate, decimal UnitCost)>
         _batches = new();
 
-    [ObservableProperty] 
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSuppliers), nameof(AnySupplierAvailable), nameof(NoSuppliersAvailable))]
     private List<Supplier> _availableSuppliers = new();
 
@@ -77,6 +77,15 @@ public partial class ProductState : ObservableObject
     [ObservableProperty] private bool _isSaving;
     [ObservableProperty] private string _title = "Nuevo Producto";
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowInactiveWarning))]
+    [NotifyPropertyChangedFor(nameof(ShowReactivateButton))]
+    private bool _isEditingInactiveProduct;
+
+    [ObservableProperty] private Product? _inactiveProductToReactivate;
+
+    [ObservableProperty] private string _inactiveProductWarning = string.Empty;
+
     public bool IsMedicine => SelectedProductType == "Medicamento";
     public bool IsSupply => SelectedProductType == "Suministro";
     public bool IsSupplement => SelectedProductType == "Suplemento";
@@ -87,7 +96,12 @@ public partial class ProductState : ObservableObject
     public bool AnySupplierAvailable => AvailableSuppliers is { Count: > 0 };
     public bool NoSuppliersAvailable => !AnySupplierAvailable;
     public bool HasErrorMessage => !string.IsNullOrWhiteSpace(ErrorMessage);
-
+    public bool ShowInactiveWarning => IsEditingInactiveProduct && InactiveProductToReactivate != null;
+    public bool ShowReactivateButton => IsEditingInactiveProduct && InactiveProductToReactivate != null;
+    public bool IsStockEditable => !EnableBatches && !ShowInactiveWarning;
+    public bool IsFormEditable => !ShowInactiveWarning;
+    public bool IsBatchManagementEditable => !ShowInactiveWarning;
+    public bool IsSupplierManagementEditable => !ShowInactiveWarning;
 
     public ProductState(InventoryService inventoryService, AppDbContext db)
     {
@@ -95,7 +109,17 @@ public partial class ProductState : ObservableObject
         _db = db;
         LoadAvailableSuppliers();
     }
-    
+
+    partial void OnInactiveProductWarningChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsFormEditable));
+        OnPropertyChanged(nameof(IsStockEditable));
+        OnPropertyChanged(nameof(IsBatchManagementEditable));
+        OnPropertyChanged(nameof(IsSupplierManagementEditable));
+        OnPropertyChanged(nameof(ShowInactiveWarning));
+        OnPropertyChanged(nameof(ShowReactivateButton));
+    }
+
     public void PrepareForAdd()
     {
         _editingProduct = null;
@@ -139,7 +163,7 @@ public partial class ProductState : ObservableObject
 
         OnPropertyChanged(nameof(HasBatches));
         UpdateBatchesInfo();
-        
+
         EnableSuppliers = product.Suppliers.Count > 0;
         SelectedSuppliers = [..product.Suppliers];
         UpdateSuppliersInfo();
@@ -186,6 +210,12 @@ public partial class ProductState : ObservableObject
 
     public void SaveProduct()
     {
+        if (IsEditingInactiveProduct && InactiveProductToReactivate != null)
+        {
+            ReactivateProduct();
+            return;
+        }
+
         try
         {
             ErrorMessage = string.Empty;
@@ -195,6 +225,17 @@ public partial class ProductState : ObservableObject
             {
                 ErrorMessage = "Nombre y Código son requeridos";
                 return;
+            }
+
+            if (!IsEditing)
+            {
+                var existingActive = _db.Products.FirstOrDefault(p => p.Code == Code && p.IsActive);
+                if (existingActive != null)
+                {
+                    ErrorMessage =
+                        $"Ya existe un producto activo con el código '{Code}'. Utilice otro código o edite el existente.";
+                    return;
+                }
             }
 
             if (!decimal.TryParse(Price, out var price) || price < 0)
@@ -399,7 +440,7 @@ public partial class ProductState : ObservableObject
                 ErrorMessage = "Número de lote es requerido";
                 return;
             }
-            
+
             var lotCodeTrimmed = BatchLotCode.Trim();
             if (Batches.Any(b => b.LotCode.Equals(lotCodeTrimmed, StringComparison.OrdinalIgnoreCase)))
             {
@@ -467,13 +508,14 @@ public partial class ProductState : ObservableObject
     public void RemoveBatch(int index)
     {
         if (index < 0 || index >= Batches.Count) return;
-        
+
         Batches.RemoveAt(index);
         OnPropertyChanged(nameof(HasBatches));
-        
+
         RecalculateStockFromBatches();
         UpdateBatchesInfo();
     }
+
     public void ToggleBatchForm()
     {
         ShowBatchForm = !ShowBatchForm;
@@ -505,7 +547,7 @@ public partial class ProductState : ObservableObject
 
         BatchesInfo = $"Lotes agregados ({Batches.Count}):\n{batchList}";
     }
-    
+
     private void RecalculateStockFromBatches()
     {
         if (EnableBatches)
@@ -532,6 +574,8 @@ public partial class ProductState : ObservableObject
                 Stock = _editingProduct.Stock.ToString();
             }
         }
+
+        OnPropertyChanged(nameof(IsStockEditable));
     }
 
     public void ToggleSupplier(Supplier supplier)
@@ -549,6 +593,7 @@ public partial class ProductState : ObservableObject
         UpdateSuppliersInfo();
         OnPropertyChanged(nameof(HasSuppliers));
     }
+
     private void UpdateSuppliersInfo()
     {
         if (SelectedSuppliers.Count == 0)
@@ -560,17 +605,130 @@ public partial class ProductState : ObservableObject
         var supplierList = string.Join(", ", SelectedSuppliers.Select(s => s.Name));
         SuppliersInfo = $"Proveedores: {supplierList}";
     }
-    
+
     private void LoadAvailableSuppliers()
     {
         var activeSuppliers = _db.Suppliers
             .Where(s => s.IsActive)
             .ToList();
-        
+
         AvailableSuppliers = activeSuppliers;
-    
+
         OnPropertyChanged(nameof(AnySupplierAvailable));
         OnPropertyChanged(nameof(NoSuppliersAvailable));
+    }
+
+    public void SetInactiveProductWarning(Product inactiveProduct)
+    {
+        Reset();
+
+        IsEditingInactiveProduct = true;
+        InactiveProductToReactivate = inactiveProduct;
+        InactiveProductWarning =
+            $"⚠️ El producto '{inactiveProduct.Name}' (Código: {inactiveProduct.Code}) está actualmente INACTIVO. ¿Desea reactivarlo?";
+
+        LoadInactiveProductData(inactiveProduct);
+
+        OnPropertyChanged(nameof(ShowInactiveWarning));
+    }
+
+    private void LoadInactiveProductData(Product product)
+    {
+        Name = product.Name;
+        Code = product.Code;
+        Price = product.Price.ToString("F2");
+        Stock = product.Stock.ToString();
+        MinimumStock = product.MinimumStock.ToString();
+        Barcode = product.Barcode ?? string.Empty;
+        Location = product.Location ?? string.Empty;
+        Laboratory = product.Laboratory ?? string.Empty;
+        Subcategory = product.Subcategory ?? string.Empty;
+        Ingredients = string.Join(", ", product.Ingredients);
+        Tags = string.Join(", ", product.Tags);
+
+        IsReactivateMode = true;
+
+        LoadTypeSpecificData(product);
+    }
+
+    private void LoadTypeSpecificData(Product product)
+    {
+        switch (product)
+        {
+            case Medicine medicine:
+                SelectedProductType = "Medicamento";
+                ActivePrinciple = medicine.ActivePrinciple;
+                Concentration = medicine.Concentration ?? string.Empty;
+                Presentation = medicine.Presentation ?? string.Empty;
+                RequiresPrescription = medicine.RequiresPrescription;
+                IsControlled = medicine.IsControlled;
+                break;
+            case Supply supply:
+                SelectedProductType = "Suministro";
+                Brand = supply.Brand;
+                Type = supply.Type;
+                Size = supply.Size ?? string.Empty;
+                Material = supply.Material ?? string.Empty;
+                IsSterile = supply.IsSterile;
+                break;
+            case Supplement supplement:
+                SelectedProductType = "Suplemento";
+                ActivePrinciple = supplement.ActivePrinciple;
+                Type = supplement.Type;
+                SelectedFormat = supplement.Format;
+                Concentration = supplement.Concentration ?? string.Empty;
+                RecommendedDosage = supplement.RecommendedDosage ?? string.Empty;
+                break;
+            case Cosmetic cosmetic:
+                SelectedProductType = "Cosmético";
+                Brand = cosmetic.Brand;
+                Type = cosmetic.Type;
+                Presentation = cosmetic.Presentation ?? string.Empty;
+                Hypoallergenic = cosmetic.Hypoallergenic;
+                break;
+        }
+    }
+
+    [ObservableProperty] private bool _isReactivateMode;
+
+    public void ReactivateProduct()
+    {
+        if (InactiveProductToReactivate == null) return;
+
+        try
+        {
+            ErrorMessage = string.Empty;
+
+            InactiveProductToReactivate.IsActive = true;
+            InactiveProductToReactivate.UpdatedAt = DateTime.Now;
+
+            PopulateCommonFields(InactiveProductToReactivate);
+            PopulateTypeSpecificFields(InactiveProductToReactivate);
+
+            _db.Products.Update(InactiveProductToReactivate);
+            _db.SaveChanges();
+
+            ClearInactiveState();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error al reactivar producto: {ex.Message}";
+        }
+    }
+
+    public void CancelInactiveEdit()
+    {
+        ClearInactiveState();
+        Reset();
+    }
+
+    private void ClearInactiveState()
+    {
+        IsEditingInactiveProduct = false;
+        IsReactivateMode = false;
+        InactiveProductToReactivate = null;
+        InactiveProductWarning = string.Empty;
+        OnPropertyChanged(nameof(ShowInactiveWarning));
     }
 
     private void Reset()

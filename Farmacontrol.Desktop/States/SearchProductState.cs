@@ -55,7 +55,7 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
 
         var exactMatch = db.Products
             .Include(p => p.Batches)
-            .FirstOrDefault(p => p.Code == queryStr || p.Barcode == queryStr);
+            .FirstOrDefault(p => (p.Code == queryStr || p.Barcode == queryStr) && p.IsActive);
 
         if (exactMatch != null)
         {
@@ -63,9 +63,21 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
             return;
         }
 
+        var inactiveMatch = db.Products
+            .Include(p => p.Batches)
+            .FirstOrDefault(p => (p.Code == queryStr || p.Barcode == queryStr) && !p.IsActive);
+
+        if (inactiveMatch != null)
+        {
+            SimilarProducts = [];
+            ProductForm.SetInactiveProductWarning(inactiveMatch);
+            IsEditing = true;
+            return;
+        }
+
         var matches = db.Products
             .Include(p => p.Batches)
-            .Where(p => p.Name.Contains(queryStr))
+            .Where(p => p.Name.Contains(queryStr) && p.IsActive)
             .Take(10)
             .ToList();
 
@@ -95,7 +107,7 @@ public partial class SearchProductState(AppDbContext db, ProductState productFor
         {
             var wordResults = db.Products
                 .Include(p => p.Batches)
-                .Where(p => p.Name.Contains(word))
+                .Where(p => p.Name.Contains(word) && p.IsActive)
                 .Take(10)
                 .ToList();
 

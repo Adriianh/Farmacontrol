@@ -106,7 +106,6 @@ public class SearchProductView()
                                     e.Handled = true;
                                 };
                             }),
-                    
                         new Button()
                             .Content("🔍")
                             .Background(AccentBlue)
@@ -120,7 +119,7 @@ public class SearchProductView()
                     )
             );
     }
-    
+
     private Control BuildResultContainer(SearchProductState state)
     {
         var emptyState = BuildEmptyState()
@@ -195,21 +194,21 @@ public class SearchProductView()
             .FontWeight(FontWeight.SemiBold).Padding(16, 10).CornerRadius(6);
         saveButton.Click += (_, _) => state.SaveInlineChanges();
 
-        return new Grid().Rows("Auto, *")
+        return new Grid().Rows("Auto, Auto, *")
             .Children(
-                new Grid().Cols("*, Auto, Auto").Row(0).Margin(0, 0, 0, 12)
-                    .Children(
-                        new StackPanel().VerticalAlignment(VerticalAlignment.Center)
-                            .Children(
-                                new TextBlock().Text("📝 Editando Producto").FontSize(13)
-                                    .Foreground(AccentGreen).FontWeight(FontWeight.SemiBold),
-                                new TextBlock().Text(form, x => x.Name).FontSize(18)
-                                    .FontWeight(FontWeight.Bold).Foreground(Brushes.White)
-                            ),
-                        cancelButton.Col(1).Margin(0, 0, 8, 0),
-                        saveButton.Col(2)
-                    ),
-                new ScrollViewer().Row(1)
+                new Grid().Cols("*, Auto, Auto").Row(0).Margin(0, 0, 0, 12).Children(
+                    new StackPanel().VerticalAlignment(VerticalAlignment.Center)
+                        .Children(
+                            new TextBlock().Text("📝 Editando Producto").FontSize(13)
+                                .Foreground(AccentGreen).FontWeight(FontWeight.SemiBold),
+                            new TextBlock().Text(form, x => x.Name).FontSize(18)
+                                .FontWeight(FontWeight.Bold).Foreground(Brushes.White)
+                        ),
+                    cancelButton.Col(1).Margin(0, 0, 8, 0),
+                    saveButton.Col(2)
+                ),
+                BuildInactiveProductWarning(form).Row(1).IsVisible(form, x => x.ShowInactiveWarning),
+                new ScrollViewer().Row(2)
                     .Content(
                         new StackPanel().Spacing(16)
                             .Children(
@@ -221,12 +220,14 @@ public class SearchProductView()
                                         .BorderBrush(BorderColor).CornerRadius(6)
                                         .ItemsSource(form.ProductTypes)
                                         .SelectedItem(form, x => x.SelectedProductType, BindingMode.TwoWay)
+                                        .IsEnabled(!form.ShowInactiveWarning)
                                 ),
                                 BuildSection("Datos Generales",
                                     new StackPanel().Spacing(12).Children(
                                         new Grid().Cols("*, *").Children(
                                             BuildFormRow("Nombre Comercial *",
-                                                    new TextBox().Text(form, x => x.Name, BindingMode.TwoWay))
+                                                    new TextBox().Text(form, x => x.Name, BindingMode.TwoWay)
+                                                        .IsEnabled(!form.ShowInactiveWarning))
                                                 .Col(0).Margin(0, 0, 6, 0),
                                             BuildFormRow("Código Único *",
                                                     new TextBox().Text(form, x => x.Code, BindingMode.TwoWay)
@@ -511,4 +512,76 @@ public class SearchProductView()
                     .FontSize(14).Foreground(TextMuted)
                     .HorizontalAlignment(HorizontalAlignment.Center)
             );
+
+    private Control BuildInactiveProductWarning(ProductState state)
+    {
+        return new Border()
+            .Background(SolidColorBrush.Parse("#7F1D1D"))
+            .BorderBrush(SolidColorBrush.Parse("#EF4444"))
+            .BorderThickness(1)
+            .CornerRadius(8)
+            .Padding(16, 12)
+            .Margin(0, 0, 0, 16)
+            .Child(
+                new Grid().Cols("Auto, *, Auto")
+                    .Children(
+                        new Border()
+                            .Background(SolidColorBrush.Parse("#DC2626"))
+                            .CornerRadius(20)
+                            .Width(36)
+                            .Height(36)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Col(0)
+                            .Child(
+                                new TextBlock()
+                                    .Text("⚠️")
+                                    .FontSize(18)
+                                    .HorizontalAlignment(HorizontalAlignment.Center)
+                                    .VerticalAlignment(VerticalAlignment.Center)
+                            ),
+                        new StackPanel()
+                            .Col(1)
+                            .Margin(12, 0)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Children(
+                                new TextBlock()
+                                    .Text("Producto Inactivo")
+                                    .FontSize(14)
+                                    .FontWeight(FontWeight.Bold)
+                                    .Foreground(SolidColorBrush.Parse("#FCA5A5")),
+                                new TextBlock()
+                                    .Text(state, x => x.InactiveProductWarning)
+                                    .Foreground(SolidColorBrush.Parse("#FED7AA"))
+                                    .FontSize(12)
+                                    .TextWrapping(TextWrapping.Wrap)
+                            ),
+                        new StackPanel()
+                            .Orientation(Orientation.Horizontal)
+                            .Spacing(8)
+                            .Col(2)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Children(
+                                new Button()
+                                    .Content("Cancelar")
+                                    .Background(Brushes.Transparent)
+                                    .Foreground(SolidColorBrush.Parse("#FCA5A5"))
+                                    .BorderBrush(SolidColorBrush.Parse("#DC2626"))
+                                    .BorderThickness(1)
+                                    .CornerRadius(6)
+                                    .Padding(12, 6)
+                                    .Cursor(new Cursor(StandardCursorType.Hand))
+                                    .With(btn => btn.Click += (_, _) => state.CancelInactiveEdit()),
+                                new Button()
+                                    .Content("🔄 Reactivar Producto")
+                                    .Background(SolidColorBrush.Parse("#10B981"))
+                                    .Foreground(Brushes.White)
+                                    .FontWeight(FontWeight.SemiBold)
+                                    .CornerRadius(6)
+                                    .Padding(12, 6)
+                                    .Cursor(new Cursor(StandardCursorType.Hand))
+                                    .With(btn => btn.Click += (_, _) => state.ReactivateProduct())
+                            )
+                    )
+            );
+    }
 }
