@@ -221,6 +221,14 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
 
     private Control BuildOrderPanel(PendingOrdersState state)
     {
+        var noSuppliersWarning = new TextBlock()
+            .Text(
+                "⚠️ No hay proveedores activos registrados. Por favor, registre al menos un proveedor antes de generar órdenes.")
+            .Foreground(SolidColorBrush.Parse("#FCA5A5"))
+            .FontSize(12)
+            .TextWrapping(TextWrapping.Wrap)
+            .IsVisible(state, x => x.Suppliers.Count == 0);
+
         var supplierCombo = new ComboBox()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .Background(BackgroundSecondary)
@@ -229,11 +237,14 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .PlaceholderText("Seleccione Proveedor...")
             .ItemsSource(state, x => x.Suppliers)
             .SelectedItem(state, x => x.SelectedSupplier, BindingMode.TwoWay)
+            .IsEnabled(state, x => x.Suppliers.Count > 0)
             .ItemTemplate(new FuncDataTemplate<Supplier>((s, _) =>
-                new TextBlock()
-                    .Text(s.Name)
-                    .Foreground(Brushes.White)
-            ));
+            {
+                var supplierName = s.Name;
+                return new TextBlock()
+                    .Text(supplierName)
+                    .Foreground(Brushes.White);
+            }));
 
         var generateOrderButton = new Button()
             .Content("📦 Generar Orden de Compra")
@@ -243,27 +254,32 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .HorizontalContentAlignment(HorizontalAlignment.Center)
             .Padding(0, 12)
-            .CornerRadius(6);
+            .CornerRadius(6)
+            .IsEnabled(state, x => x.Suppliers.Count > 0);
+
         generateOrderButton.Click += (_, _) => state.GeneratePurchaseOrder();
 
         return new Border().Background(BackgroundSecondary).CornerRadius(10).Padding(16)
             .BorderBrush(BorderColor).BorderThickness(1)
             .Child(
-                new Grid().Rows("Auto, Auto, *, Auto")
+                new Grid().Rows("Auto, Auto, Auto, *, Auto")
                     .Children(
                         new TextBlock().Text("Resumen del Nuevo Pedido").FontSize(15).FontWeight(FontWeight.Bold)
                             .Foreground(Brushes.White).Row(0).Margin(0, 0, 0, 14),
-                        new StackPanel().Spacing(6).Row(1).Margin(0, 0, 0, 16)
+
+                        noSuppliersWarning.Row(1).Margin(0, 0, 0, 16),
+                        new StackPanel().Spacing(6).Row(2).Margin(0, 0, 0, 16)
+                            .IsVisible(state, x => x.Suppliers.Count > 0)
                             .Children(
                                 new TextBlock().Text("Destinatario (Proveedor)").FontSize(11).Foreground(TextMuted),
                                 supplierCombo
                             ),
-                        new Border().Background(SolidColorBrush.Parse("#7F1D1D")).CornerRadius(6).Padding(10).Row(2)
+                        new Border().Background(SolidColorBrush.Parse("#7F1D1D")).CornerRadius(6).Padding(10).Row(3)
                             .IsVisible(state, x => x.HasErrorMessage)
                             .Child(new TextBlock().Text(state, x => x.ErrorMessage)
                                 .Foreground(SolidColorBrush.Parse("#FCA5A5")).FontSize(11)
                                 .TextWrapping(TextWrapping.Wrap)),
-                        generateOrderButton.Row(3)
+                        generateOrderButton.Row(4)
                     )
             );
     }
@@ -289,7 +305,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
     private Control BuildReceptionSection(PendingOrdersState state)
     {
         var pendingPurchasesText = $"Hay {state.PendingPurchasesCount} pedido(s) pendiente(s) de recepción";
-        
+
         return new Grid().Rows("Auto, *")
             .Children(
                 new StackPanel().Row(0).Margin(0, 0, 0, 16)
