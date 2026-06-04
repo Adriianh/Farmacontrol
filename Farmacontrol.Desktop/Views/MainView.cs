@@ -76,6 +76,8 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                             .Children(
                                                 CreateMenuGroup(state, x => x.SalesExpanded, x => x.SalesArrow,
                                                     "Sales", "📊 Ventas y Caja", [
+                                                        CreateSubButton("🔍 Historial de Ventas",
+                                                            () => state.CurrentContent = new SalesHistoryView()),
                                                         CreateSubButton("💵 Registrar Venta",
                                                             () => state.CurrentContent = new SaleView()),
                                                         CreateSubButton("❌ Anular Venta",
