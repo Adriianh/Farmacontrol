@@ -1,6 +1,5 @@
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Repository;
-using Farmacontrol.Model;
 using Microsoft.EntityFrameworkCore;
 
 namespace Farmacontrol.Core.Services
@@ -65,7 +64,7 @@ namespace Farmacontrol.Core.Services
             }
         }
 
-        public void VoidSale(int saleCode)
+        public void VoidSale(int saleCode, string reason, string details)
         {
             using var transaction = _db.Database.BeginTransaction();
             try
@@ -73,34 +72,66 @@ namespace Farmacontrol.Core.Services
                 var sale = _db.Sales.Include(s => s.Details).FirstOrDefault(s => s.Code == saleCode);
                 if (sale == null || sale.IsVoided) return;
 
-                sale.VoidSale();
+                sale.VoidSale(reason, details);
 
-                foreach (var detail in sale.Details)
+                switch (reason)
                 {
-                    var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
-                    if (dbProduct != null)
+                    case "Devuelto al inventario":
                     {
-                        int previousStock = dbProduct.Stock;
-                        dbProduct.AddBatch("DEVOLUCION", detail.Quantity, DateTime.Today.AddYears(1));
-                        
-                        var movement = new InventoryMovement
+                        foreach (var detail in sale.Details)
                         {
-                            ProductCode = dbProduct.Code,
-                            Date = DateTime.Now,
-                            Type = "Entrada por devolución",
-                            Quantity = detail.Quantity,
-                            PreviousStock = previousStock,
-                            NewStock = dbProduct.Stock,
-                            Reason = "Anulación de venta",
-                            Reference = $"Venta #{sale.Code}"
-                        };
-                        _db.InventoryMovements.Add(movement);
+                            var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
+                            if (dbProduct != null)
+                            {
+                                int previousStock = dbProduct.Stock;
+                                dbProduct.AddBatch("DEVOLUCION", detail.Quantity, DateTime.Today.AddYears(1));
+                            
+                                var movement = new InventoryMovement
+                                {
+                                    ProductCode = dbProduct.Code,
+                                    Date = DateTime.Now,
+                                    Type = "Entrada",
+                                    Quantity = detail.Quantity,
+                                    PreviousStock = previousStock,
+                                    NewStock = dbProduct.Stock,
+                                    Reason = "Devolución por anulación de venta",
+                                    Reference = $"Venta #{sale.Code}"
+                                };
+                                _db.InventoryMovements.Add(movement);
+                            }
+                        }
+
+                        break;
+                    }
+                    case "Dado de baja":
+                    {
+                        foreach (var detail in sale.Details)
+                        {
+                            var dbProduct = _db.Products.Include(p => p.Batches).FirstOrDefault(p => p.Code == detail.ProductCode);
+                            if (dbProduct != null)
+                            {
+                                var movement = new InventoryMovement
+                                {
+                                    ProductCode = dbProduct.Code,
+                                    Date = DateTime.Now,
+                                    Type = "Merma",
+                                    Quantity = detail.Quantity,
+                                    PreviousStock = dbProduct.Stock,
+                                    NewStock = dbProduct.Stock,
+                                    Reason = $"Baja por anulación: {details}",
+                                    Reference = $"Venta #{sale.Code}"
+                                };
+                                _db.InventoryMovements.Add(movement);
+                            }
+                        }
+
+                        break;
                     }
                 }
 
                 _db.SaveChanges();
                 transaction.Commit();
-                _audit.Log("Anular Venta", $"Venta #{saleCode} ha sido anulada y el inventario restaurado.");
+                _audit.Log("Anular Venta", $"Venta #{saleCode} anulada. Razón: {reason}. Detalle: {details}");
             }
             catch (System.Exception)
             {
