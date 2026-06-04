@@ -79,22 +79,48 @@ public class SearchProductView()
 
     private Control BuildSearchBox(SearchProductState state)
     {
-        var searchTextBox = new TextBox()
-            .PlaceholderText("🔍 Busque por nombre, código único o código de barras...")
+        return new Border()
             .Background(BackgroundSecondary)
-            .Foreground(Brushes.White)
-            .BorderBrush(BorderColor)
-            .CornerRadius(8)
-            .Padding(14, 12)
-            .Text(state, x => x.SearchQuery, BindingMode.TwoWay);
-
-        searchTextBox.KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Enter) state.ExecuteSearch();
-        };
-        return searchTextBox;
+            .CornerRadius(10)
+            .Padding(16)
+            .Margin(10, 0, 10, 16)
+            .Child(
+                new Grid().Cols("*, Auto")
+                    .Children(
+                        new TextBox()
+                            .PlaceholderText("🔍 Buscar por nombre, código o código de barras...")
+                            .PlaceholderForeground(TextMuted)
+                            .Background(BackgroundTertiary)
+                            .Foreground(Brushes.White)
+                            .BorderBrush(Brushes.Transparent)
+                            .CornerRadius(8)
+                            .Padding(12, 8)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .Text(state, x => x.SearchQuery, BindingMode.TwoWay)
+                            .With(textBox =>
+                            {
+                                textBox.KeyDown += (_, e) =>
+                                {
+                                    if (e.Key != Key.Enter) return;
+                                    state.ExecuteSearch();
+                                    e.Handled = true;
+                                };
+                            }),
+                    
+                        new Button()
+                            .Content("🔍")
+                            .Background(AccentBlue)
+                            .Foreground(Brushes.White)
+                            .CornerRadius(8)
+                            .Padding(12, 8)
+                            .Margin(12, 0, 0, 0)
+                            .VerticalAlignment(VerticalAlignment.Center)
+                            .With(button => button.Click += (_, _) => state.ExecuteSearch())
+                            .Col(1)
+                    )
+            );
     }
-
+    
     private Control BuildResultContainer(SearchProductState state)
     {
         var emptyState = BuildEmptyState()
