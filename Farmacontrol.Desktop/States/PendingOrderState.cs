@@ -54,8 +54,6 @@ public partial class PendingOrdersState : ObservableObject
     public bool ShowEmptyPendingPurchases => !HasPendingPurchases && !IsReceivingOrder;
     public bool ShowPendingPurchasesList => HasPendingPurchases && !IsReceivingOrder;
 
-    public Window? ParentWindow { get; set; }
-
     public PendingOrdersState(AppDbContext db)
     {
         _db = db;
