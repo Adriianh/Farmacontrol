@@ -22,8 +22,12 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
     private static readonly SolidColorBrush WarningYellow = SolidColorBrush.Parse("#F59E0B");
     private static readonly SolidColorBrush BorderColor = SolidColorBrush.Parse("#374151");
 
-    protected override object Build(SaleState state) =>
-        new Grid()
+    private Product? _draggedProduct;
+
+    protected override object Build(SaleState state)
+    {
+        state.LoadCatalog();
+        return new Grid()
             .Children(
                 new Border()
                     .Background(BackgroundPrimary)
@@ -63,14 +67,16 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
                         new Grid().Rows("Auto, *")
                             .Children(
                                 BuildHeader().Row(0),
-                                new Grid().Cols("*, 360").Row(1).ColumnSpacing(16)
+                                new Grid().Cols("4*, 3.5*, 2.5*").Row(1).ColumnSpacing(16)
                                     .Children(
-                                        BuildLeftPanel(state).Col(0),
-                                        BuildRightPanel(state).Col(1)
+                                        BuildCatalogPanel(state).Col(0),
+                                        BuildCartPanel(state).Col(1),
+                                        BuildRightPanel(state).Col(2)
                                     )
                             )
                     )
             );
+    }
 
     private Control BuildHeader() =>
         new Grid().Cols("*, Auto").Margin(0, 0, 0, 20)
@@ -98,13 +104,162 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
                     )
             );
 
-    private Control BuildLeftPanel(SaleState state) =>
-        new Grid().Rows("Auto, Auto, *")
+    private Control BuildCatalogPanel(SaleState state)
+    {
+        var searchBox = new TextBox()
+            .PlaceholderText("🔍 Buscar producto en catálogo...")
+            .Background(BackgroundInput).Foreground(Brushes.White)
+            .BorderBrush(BorderColor).CornerRadius(8).Padding(14, 12)
+            .Text(state, x => x.CatalogSearchQuery, BindingMode.TwoWay);
+
+        var catalogGrid = new ItemsControl()
+            .ItemsSource(state, x => x.FilteredCatalogProducts)
+            .With(c => c.ItemsPanel =
+                new FuncTemplate<Panel?>(() => new WrapPanel { Orientation = Orientation.Horizontal }))
+            .ItemTemplate(new FuncDataTemplate<Product>((product, _) => BuildProductCard(product, state)));
+
+        return new Grid().Rows("Auto, *")
+            .Children(
+                new StackPanel().Spacing(8).Row(0).Margin(0, 0, 0, 12).Children(
+                    new TextBlock().Text("Catálogo de Productos").FontSize(16).FontWeight(FontWeight.Bold)
+                        .Foreground(Brushes.White),
+                    searchBox
+                ),
+                new ScrollViewer().Row(1).Content(catalogGrid)
+            );
+    }
+
+    private Control BuildProductCard(Product product, SaleState state)
+    {
+        var card = new Border()
+            .Background(BackgroundSecondary)
+            .CornerRadius(10)
+            .BorderBrush(BorderColor)
+            .BorderThickness(1)
+            .Margin(0, 0, 10, 10)
+            .Width(170)
+            .Padding(12)
+            .Cursor(new Cursor(StandardCursorType.Hand));
+
+        card.Tapped += (_, e) =>
+        {
+            e.Handled = true;
+            state.AddToCart(product);
+        };
+
+        var isLowStock = product.Stock <= product.MinimumStock;
+        var stockColor = isLowStock ? WarningYellow : AccentGreen;
+
+        var expDateText = "N/A";
+        var hasExp = false;
+        if (product.Batches.Any())
+        {
+            var earliest = product.Batches.OrderBy(b => b.ExpirationDate).FirstOrDefault(b => b.Quantity > 0);
+            if (earliest != null)
+            {
+                expDateText = earliest.ExpirationDate.ToString("MM/yy");
+                hasExp = true;
+            }
+        }
+
+        var expanderBtn = new Button()
+            .Content("ℹ️")
+            .Background(Brushes.Transparent).Foreground(TextMuted)
+            .Padding(4).CornerRadius(4)
+            .HorizontalAlignment(HorizontalAlignment.Right)
+            .Cursor(new Cursor(StandardCursorType.Hand));
+
+        var flyout = new Flyout
+        {
+            ShowMode = FlyoutShowMode.Standard, Placement = PlacementMode.RightEdgeAlignedTop,
+            Content = new Border().Background(BackgroundTertiary).CornerRadius(8).Padding(12).Width(220)
+                .Child(new StackPanel().Spacing(6).Children(
+                    new TextBlock().Text("Detalles:").FontWeight(FontWeight.Bold),
+                    new TextBlock().Text($"Categorías: {(string.Join(", ", product.Tags))}").FontSize(11)
+                        .TextWrapping(TextWrapping.Wrap),
+                    new TextBlock().Text($"Ingredientes: {(string.Join(", ", product.Ingredients))}").FontSize(11)
+                        .TextWrapping(TextWrapping.Wrap),
+                    new TextBlock().Text(product.GetDescription()).FontSize(11).TextWrapping(TextWrapping.Wrap)
+                ))
+        };
+
+        expanderBtn.Flyout(flyout);
+
+        expanderBtn.Tapped += (_, e) => e.Handled = true;
+
+        var content = new StackPanel().Spacing(4).Children(
+            new Grid().Cols("*, Auto").Children(
+                new TextBlock().Text(product.Code).FontSize(10).Foreground(TextMuted)
+                    .VerticalAlignment(VerticalAlignment.Center).Col(0),
+                expanderBtn.Col(1)
+            ),
+            new TextBlock().Text(product.Name).FontSize(13).FontWeight(FontWeight.SemiBold).Foreground(Brushes.White)
+                .TextWrapping(TextWrapping.Wrap).MaxHeight(36),
+            new TextBlock().Text($"Q{product.Price:F2}").FontSize(14).FontWeight(FontWeight.Bold)
+                .Foreground(AccentGreen).Margin(0, 4, 0, 0),
+            new Grid().Cols("*, Auto").Margin(0, 4, 0, 0).Children(
+                new TextBlock().Text($"Stock: {product.Stock}").FontSize(11).Foreground(stockColor)
+                    .FontWeight(FontWeight.SemiBold).Col(0).VerticalAlignment(VerticalAlignment.Center),
+                new TextBlock().Text(hasExp ? $"Vence: {expDateText}" : "").FontSize(10).Foreground(TextMuted).Col(1)
+                    .VerticalAlignment(VerticalAlignment.Center)
+            )
+        );
+
+        card.Child = content;
+
+        Point dragStartPoint = new Point();
+        bool isDragging = false;
+        PointerPressedEventArgs? dragStartEvent = null;
+        card.PointerPressed += (_, e) =>
+        {
+            dragStartPoint = e.GetPosition(card);
+            isDragging = false;
+            dragStartEvent = e;
+        };
+        card.PointerMoved += async (_, e) =>
+        {
+            if (e.GetCurrentPoint(card).Properties.IsLeftButtonPressed && dragStartEvent != null)
+            {
+                var pos = e.GetPosition(card);
+                if (!isDragging && (Math.Abs(pos.X - dragStartPoint.X) > 3 || Math.Abs(pos.Y - dragStartPoint.Y) > 3))
+                {
+                    isDragging = true;
+                    _draggedProduct = product;
+                    var data = new DataTransfer();
+                    await DragDrop.DoDragDropAsync(dragStartEvent, data, DragDropEffects.Copy);
+                    _draggedProduct = null;
+                    dragStartEvent = null;
+                }
+            }
+        };
+
+        card.PointerEntered += (_, _) => card.Background = BackgroundTertiary;
+        card.PointerExited += (_, _) => card.Background = BackgroundSecondary;
+
+        return card;
+    }
+
+    private Control BuildCartPanel(SaleState state)
+    {
+        var panel = new Grid().Rows("Auto, Auto, *")
             .Children(
                 BuildSearchBox(state).Row(0),
                 BuildFeedbackBanners(state).Row(1),
                 BuildCart(state).Row(2)
             );
+
+        DragDrop.SetAllowDrop(panel, true);
+        panel.AddHandler(DragDrop.DropEvent, (_, e) =>
+        {
+            if (_draggedProduct != null)
+            {
+                state.AddToCart(_draggedProduct);
+                e.Handled = true;
+            }
+        });
+
+        return panel;
+    }
 
     private Control BuildSearchBox(SaleState state)
     {
@@ -223,7 +378,7 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
                             .Padding(16, 10)
                             .Row(0)
                             .Child(
-                                new Grid().Cols("*, 80, 100, 40")
+                                new Grid().Cols("*, 70, 90, 50")
                                     .Children(
                                         new TextBlock().Text("Producto").FontSize(11).FontWeight(FontWeight.Bold)
                                             .Foreground(TextMuted).Col(0),
@@ -295,12 +450,13 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
             .BorderBrush(BorderColor).BorderThickness(new Thickness(0, 0, 0, 1))
             .Padding(16, 10)
             .Child(
-                new Grid().Cols("*, 80, 100, 40")
+                new Grid().Cols("*, 70, 90, 50")
                     .Children(
                         new StackPanel().Col(0).VerticalAlignment(VerticalAlignment.Center)
                             .Children(
                                 new TextBlock().Text(item.ProductName).FontSize(13)
-                                    .FontWeight(FontWeight.SemiBold).Foreground(Brushes.White),
+                                    .FontWeight(FontWeight.SemiBold).Foreground(Brushes.White)
+                                    .TextWrapping(TextWrapping.Wrap).MaxHeight(36),
                                 new TextBlock().Text(item.ProductCode).FontSize(10).Foreground(TextMuted)
                             ),
                         new TextBlock().Text($"Q{item.UnitPrice:F2}").FontSize(12).Foreground(TextMuted)
@@ -615,12 +771,12 @@ public class SaleView() : ViewBase<SaleState>(Program.ServiceProvider.GetRequire
             .HorizontalAlignment(HorizontalAlignment.Stretch)
             .HorizontalContentAlignment(HorizontalAlignment.Center)
             .Cursor(new Cursor(StandardCursorType.Hand))
-            .IsEnabled(state.IsNotProcessingEmptyCar);
+            .IsEnabled(state.CanConfirmSale);
 
         state.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(state.CartIsEmpty) or nameof(state.IsProcessing))
-                btn.IsEnabled = state.IsNotProcessingEmptyCar;
+            if (e.PropertyName is nameof(state.CanConfirmSale))
+                btn.IsEnabled = state.CanConfirmSale;
         };
 
         btn.Click += (_, _) => state.ConfirmSaleCommand.Execute(null);

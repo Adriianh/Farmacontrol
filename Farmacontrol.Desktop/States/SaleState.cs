@@ -12,6 +12,15 @@ namespace Farmacontrol.Desktop.States;
 
 public partial class SaleState(AppDbContext db) : ObservableObject
 {
+    private List<Product> _baseProducts = [];
+    [ObservableProperty] private ObservableCollection<Product> _filteredCatalogProducts = [];
+
+    public void LoadCatalog()
+    {
+        _baseProducts = db.Products.Include(p => p.Batches).Where(p => p.IsActive).ToList();
+        UpdateCatalogFilter();
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSearchResults))]
     [NotifyPropertyChangedFor(nameof(ShowSearchResults))]
@@ -33,15 +42,12 @@ public partial class SaleState(AppDbContext db) : ObservableObject
 
     public bool CartIsEmpty => CartItems.Count == 0;
     public int CartItemCount => CartItems.Sum(i => i.Quantity);
-    public bool IsProcessingEmptyCar => IsProcessing && CartIsEmpty;
     public bool IsNotProcessingEmptyCar => !IsProcessing && !CartIsEmpty;
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(DiscountAmount))] [NotifyPropertyChangedFor(nameof(Total))]
     private string _discountPercent = "0";
-
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(Total))]
     private string _taxAmount = "0";
-
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(ChangeAmount))]
     private string _amountTendered = string.Empty;
 
@@ -76,7 +82,9 @@ public partial class SaleState(AppDbContext db) : ObservableObject
 
     public bool HasChange => ChangeAmount > 0;
 
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsCashPayment))]
+    [ObservableProperty] 
+    [NotifyPropertyChangedFor(nameof(IsCashPayment))]
+    [NotifyPropertyChangedFor(nameof(CanConfirmSale))]
     private PaymentMethod _selectedPaymentMethod = PaymentMethod.Cash;
 
     public bool IsCashPayment => SelectedPaymentMethod == PaymentMethod.Cash;
@@ -120,14 +128,44 @@ public partial class SaleState(AppDbContext db) : ObservableObject
     public bool HasSuccess => !string.IsNullOrEmpty(SuccessMessage);
 
     [ObservableProperty] private bool _isProcessing;
-
     [ObservableProperty] private int _lastSaleCode;
+    
+    [ObservableProperty] private string _catalogSearchQuery = string.Empty;
+    [ObservableProperty] private string _saleSuccessMessage = string.Empty;
+
+    private decimal TenderedAmountDecimal => TryParse(AmountTendered, out var d) ? d : 0m;
+    public bool CanConfirmSale => !CartIsEmpty && (!IsCashPayment || TenderedAmountDecimal >= Total);
+
+    partial void OnCatalogSearchQueryChanged(string value)
+    {
+        UpdateCatalogFilter();
+    }
+
+    private void UpdateCatalogFilter()
+    {
+        if (string.IsNullOrWhiteSpace(CatalogSearchQuery))
+        {
+            FilteredCatalogProducts = new ObservableCollection<Product>(_baseProducts);
+            return;
+        }
+
+        var query = CatalogSearchQuery.ToLower().Trim();
+        var results = _baseProducts.Where(p => 
+            p.Name.ToLower().Contains(query) || 
+            p.Code.ToLower().Contains(query) || 
+            (p.Tags.Any(t => t.ToLower().Contains(query)))
+        ).ToList();
+
+        FilteredCatalogProducts = new ObservableCollection<Product>(results);
+    }
 
     partial void OnSearchQueryChanged(string value)
     {
+        SuccessMessage = string.Empty;
+        
         if (string.IsNullOrWhiteSpace(value))
         {
-            SearchResults = new ObservableCollection<Product>();
+            SearchResults = [];
             return;
         }
 
@@ -155,7 +193,7 @@ public partial class SaleState(AppDbContext db) : ObservableObject
     }
 
     [RelayCommand]
-    public void SelectSearchResult(Product product)
+    private void SelectSearchResult(Product product)
     {
         AddToCart(product);
         SearchQuery = string.Empty;
@@ -193,14 +231,14 @@ public partial class SaleState(AppDbContext db) : ObservableObject
     }
 
     [RelayCommand]
-    public void RemoveFromCart(CartItemState item)
+    private void RemoveFromCart(CartItemState item)
     {
         CartItems.Remove(item);
         RefreshTotals();
     }
 
     [RelayCommand]
-    public void IncrementItem(CartItemState item)
+    private void IncrementItem(CartItemState item)
     {
         var product = db.Products.Find(item.ProductCode);
         if (product == null) return;
@@ -216,7 +254,7 @@ public partial class SaleState(AppDbContext db) : ObservableObject
     }
 
     [RelayCommand]
-    public void DecrementItem(CartItemState item)
+    private void DecrementItem(CartItemState item)
     {
         if (item.Quantity <= 1)
         {
@@ -229,7 +267,7 @@ public partial class SaleState(AppDbContext db) : ObservableObject
     }
 
     [RelayCommand]
-    public void ClearCart()
+    private void ClearCart()
     {
         CartItems.Clear();
         DiscountPercent = "0";
@@ -249,22 +287,23 @@ public partial class SaleState(AppDbContext db) : ObservableObject
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(ChangeAmount));
         OnPropertyChanged(nameof(HasChange));
+        OnPropertyChanged(nameof(CanConfirmSale));
     }
 
     [RelayCommand]
-    public void ToggleExtraData()
+    private void ToggleExtraData()
     {
         ExtraDataExpanded = !ExtraDataExpanded;
     }
 
     [RelayCommand]
-    public void TogglePrescription()
+    private void TogglePrescription()
     {
         HasPrescriptionAttached = !HasPrescriptionAttached;
     }
 
     [RelayCommand]
-    public void ConfirmSale()
+    private void ConfirmSale()
     {
         ErrorMessage = string.Empty;
         SuccessMessage = string.Empty;
@@ -392,6 +431,7 @@ public partial class SaleState(AppDbContext db) : ObservableObject
     {
         OnPropertyChanged(nameof(ChangeAmount));
         OnPropertyChanged(nameof(HasChange));
+        OnPropertyChanged(nameof(CanConfirmSale));
     }
 }
 
