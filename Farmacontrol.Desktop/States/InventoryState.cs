@@ -12,15 +12,20 @@ public partial class InventoryState : ObservableObject
     private readonly InventoryService _inventoryService;
     private readonly AppDbContext _db;
     private List<Product> _baseProducts = [];
-    
-    public enum ProductFilterCondition { All, LowStock, Expiring, Expired }
+
+    public enum ProductFilterCondition
+    {
+        All,
+        LowStock,
+        Expiring,
+        Expired
+    }
 
     [ObservableProperty] private string _searchText = string.Empty;
 
     [ObservableProperty] private ObservableCollection<Product> _filteredProducts = [];
-    
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FilteredProducts))]
+
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(FilteredProducts))]
     private ProductFilterCondition _currentFilterCondition = ProductFilterCondition.All;
 
     [ObservableProperty]
@@ -81,7 +86,7 @@ public partial class InventoryState : ObservableObject
                 p.Ingredients.Any(i => i.ToLower().Contains(query))
             );
         }
-        
+
         result = CurrentFilterCondition switch
         {
             ProductFilterCondition.LowStock => result.Where(p => GetProductAlertStatus(p) == "LOWSTOCK"),
@@ -135,10 +140,17 @@ public partial class InventoryState : ObservableObject
 
     public void DeleteProduct(Product product)
     {
-        _inventoryService.RemoveProduct(product);
-        LoadProducts();
+        try
+        {
+            _inventoryService.RemoveProductByCode(product.Code);
+            LoadProducts();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error al eliminar: {ex.Message}");
+        }
     }
-
+    
     public void ShowBatchesModal(Product product)
     {
         SelectedProduct = product;
@@ -206,7 +218,7 @@ public partial class InventoryState : ObservableObject
     {
         return GetProductAlertStatus(product) != "NORMAL";
     }
-    
+
     public bool IsProductCodeAvailable(string code, string? excludeCode = null)
     {
         return !_db.Products.Any(p => p.Code == code && p.IsActive && p.Code != excludeCode);

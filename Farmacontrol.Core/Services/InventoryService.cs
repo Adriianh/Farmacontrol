@@ -10,14 +10,14 @@ namespace Farmacontrol.Core.Services
     {
         public IReadOnlyList<Product> GetProducts => db.Products.AsNoTracking().Include(p => p.Suppliers).Include(p => p.Batches).ToList().AsReadOnly();
 
-        public Product? GetProductForEdit(string code)
+        public Product? GetProductForEdit(string productCode)
         {
             return db.Products
-                .Include(p => p.Suppliers)
                 .Include(p => p.Batches)
-                .FirstOrDefault(p => p.Code == code);
+                .Include(p => p.Suppliers)
+                .FirstOrDefault(p => p.Code == productCode);
         }
-
+        
         public void AddProduct(Product product)
         {
             if (product.Suppliers.Count > 0)
@@ -39,14 +39,23 @@ namespace Farmacontrol.Core.Services
             audit.Log("Agregar Producto", $"Se agregó el producto '{product.Name}' (Código: {product.Code}) al inventario con stock inicial de {product.Stock}.");
         }
 
-        public void RemoveProduct(Product product)
+        public void RemoveProductByCode(string productCode)
         {
+            var product = db.Products
+                .FirstOrDefault(p => p.Code == productCode);
+
+            if (product == null) return;
+            
             product.IsActive = false;
-            db.Products.Update(product);
+            product.UpdatedAt = DateTime.Now;
             db.SaveChanges();
-            audit.Log("Eliminar Producto", $"Se eliminó (borrado lógico) el producto '{product.Name}' (Código: {product.Code}) del inventario.");
         }
 
+        public void RemoveProduct(Product product)
+        {
+            RemoveProductByCode(product.Code);
+        }
+        
         public void UpdateProduct(Product product)
         {
             product.UpdatedAt = DateTime.Now;

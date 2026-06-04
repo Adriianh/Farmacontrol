@@ -731,7 +731,7 @@ public partial class ProductState : ObservableObject
         OnPropertyChanged(nameof(ShowInactiveWarning));
     }
 
-    private void Reset()
+    public void Reset()
     {
         Name = Code = Price = Stock = MinimumStock = Barcode = Location = Laboratory = string.Empty;
         Subcategory = Ingredients = Tags = string.Empty;
