@@ -38,6 +38,7 @@ public partial class PendingOrdersState : ObservableObject
     public bool HasPendingPurchases => PendingPurchases.Count > 0;
 
     public string PendingPurchasesCount => PendingPurchases.Count.ToString();
+    public bool HasSuppliers => Suppliers.Count > 0;
     
 
     public PendingOrdersState(AppDbContext db)

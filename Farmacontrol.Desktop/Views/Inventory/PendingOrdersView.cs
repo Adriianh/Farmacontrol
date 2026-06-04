@@ -227,7 +227,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .Foreground(SolidColorBrush.Parse("#FCA5A5"))
             .FontSize(12)
             .TextWrapping(TextWrapping.Wrap)
-            .IsVisible(state, x => x.Suppliers.Count == 0);
+            .IsVisible(state, x => !x.HasSuppliers);
 
         var supplierCombo = new ComboBox()
             .HorizontalAlignment(HorizontalAlignment.Stretch)
@@ -237,7 +237,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .PlaceholderText("Seleccione Proveedor...")
             .ItemsSource(state, x => x.Suppliers)
             .SelectedItem(state, x => x.SelectedSupplier, BindingMode.TwoWay)
-            .IsEnabled(state, x => x.Suppliers.Count > 0)
+            .IsEnabled(state, x => x.HasSuppliers)
             .ItemTemplate(new FuncDataTemplate<Supplier>((s, _) =>
             {
                 var supplierName = s.Name;
@@ -255,7 +255,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
             .HorizontalContentAlignment(HorizontalAlignment.Center)
             .Padding(0, 12)
             .CornerRadius(6)
-            .IsEnabled(state, x => x.Suppliers.Count > 0);
+            .IsEnabled(state, x => x.HasSuppliers);
 
         generateOrderButton.Click += (_, _) => state.GeneratePurchaseOrder();
 
@@ -269,7 +269,7 @@ public sealed class PendingOrdersView(PendingOrdersState state) : ViewBase<Pendi
 
                         noSuppliersWarning.Row(1).Margin(0, 0, 0, 16),
                         new StackPanel().Spacing(6).Row(2).Margin(0, 0, 0, 16)
-                            .IsVisible(state, x => x.Suppliers.Count > 0)
+                            .IsVisible(state, x => x.HasSuppliers)
                             .Children(
                                 new TextBlock().Text("Destinatario (Proveedor)").FontSize(11).Foreground(TextMuted),
                                 supplierCombo
