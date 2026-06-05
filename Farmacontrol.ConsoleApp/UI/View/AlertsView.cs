@@ -17,7 +17,13 @@ namespace Farmacontrol.ConsoleApp.UI.View
             }
 
             historyService.VerifyAlert(inventoryService.GetProducts.ToList());
-            historyService.ShowTodayAlerts();
+            
+            var todayAlerts = historyService.GetHistory()
+                .Where(a => a.Date.Date == DateTime.Today)
+                .OrderByDescending(a => a.Date)
+                .ToList();
+
+            ConsoleHelper.PrintAlertsTable(todayAlerts);
 
             ConsoleHelper.Pause();
         }
@@ -26,7 +32,11 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             ConsoleHelper.ShowTitle("Historial de Alertas");
 
-            historyService.ShowHistory();
+            var allAlerts = historyService.GetHistory()
+                .OrderByDescending(a => a.Date)
+                .ToList();
+
+            ConsoleHelper.PrintAlertsTable(allAlerts);
 
             ConsoleHelper.Pause();
         }
