@@ -12,10 +12,10 @@ namespace Farmacontrol.Core.Model.UserEntity
         public override List<string> GetAllowedActions() =>
         [
             "1. Registrar venta",
-            "3. Buscar producto",
-            "4. Ver alertas",
-            "5. Ver el historial de alertas",
-            "7. Ver medicamentos vencidos",
+            "5. Buscar producto",
+            "6. Ver medicamentos vencidos",
+            "9. Ver alertas",
+            "10. Ver el historial de alertas",
             "0. Salir"
         ];
     }
