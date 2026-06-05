@@ -3,7 +3,6 @@ using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.ConsoleApp.UI.View;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Services;
-using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI
 {
@@ -19,8 +18,7 @@ namespace Farmacontrol.ConsoleApp.UI
         SuppliersView suppliersView,
         UsersView usersView,
         SalesService salesService,
-        HistoryService historyService,
-        InventoryService inventoryService)
+        HistoryService historyService)
     {
         private User? _actualUser;
 
@@ -49,24 +47,24 @@ namespace Farmacontrol.ConsoleApp.UI
 
             Dictionary<string, Action> actions = new()
             {
-                ["1"] = salesView.RegisterSale,
-                ["2"] = salesView.VoidSale,
-                ["3"] = reportsView.ShowReportsMenu,
-                ["4"] = inventoryView.ManageInventory,
-                ["5"] = productsView.SearchProduct,
-                ["6"] = productsView.ShowExpiredProducts,
-                ["7"] = suppliersView.ManageSuppliers,
-                ["8"] = suppliersView.GenerateAllSupplierOrders,
-                ["9"] = alertsView.ShowTodayAlerts,
-                ["10"] = alertsView.ShowHistory,
-                ["11"] = () => usersView.ManageUsers(user)
+                ["1"] = reportsView.ShowReportsMenu,
+                ["2"] = salesView.RegisterSale,
+                ["3"] = salesView.VoidSale,
+                ["4"] = reportsView.ShowReportsMenu,
+                ["5"] = inventoryView.ManageInventory,
+                ["6"] = productsView.SearchProduct,
+                ["7"] = suppliersView.GenerateAllSupplierOrders,
+                ["8"] = alertsView.ShowTodayAlerts,
+                ["9"] = alertsView.ShowHistory,
+                ["10"] = () => usersView.ManageUsers(user),
+                ["11"] = suppliersView.ManageSuppliers
             };
 
             while (running)
             {
                 Console.Clear();
                 ShowDashboard();
-                string option = mainMenuComponent.ReadOption(user);
+                var option = mainMenuComponent.ReadOption(user);
 
                 if (option == "0")
                 {
@@ -74,7 +72,7 @@ namespace Farmacontrol.ConsoleApp.UI
                     continue;
                 }
 
-                bool isAllowed = user.GetAllowedActions().Any(a => a.StartsWith(option + "."));
+                var isAllowed = user.GetAllowedActions().Any(a => a.StartsWith(option + "."));
                 if (!isAllowed)
                 {
                     Console.WriteLine("Opción no permitida para su rol.");
@@ -88,7 +86,7 @@ namespace Farmacontrol.ConsoleApp.UI
                     {
                         action();
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         logger.LogError($"Excepción no controlada al ejecutar la opción {option}", ex);
                         Console.WriteLine($"\n[ERROR] Ocurrió un error inesperado al procesar la solicitud: {ex.Message}");
@@ -108,9 +106,9 @@ namespace Farmacontrol.ConsoleApp.UI
             var today = DateTime.Today;
             var sales = salesService.GetAllSales().Where(s => s.Date.Date == today && !s.IsVoided).ToList();
             
-            int todaysSalesCount = sales.Count;
-            decimal todaysSalesTotal = sales.Sum(s => s.Total);
-            int activeAlertsCount = historyService.GetHistory().Count(a => a.Date.Date == today);
+            var todaysSalesCount = sales.Count;
+            var todaysSalesTotal = sales.Sum(s => s.Total);
+            var activeAlertsCount = historyService.GetHistory().Count(a => a.Date.Date == today);
 
             Console.WriteLine("=================================================");
             Console.WriteLine("                PANEL PRINCIPAL                  ");

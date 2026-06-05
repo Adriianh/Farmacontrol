@@ -1,6 +1,5 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Core.Model;
-using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.Component
 {
@@ -14,21 +13,21 @@ namespace Farmacontrol.ConsoleApp.UI.Component
             PrintIfAllowed(allowed, "1.");
             PrintIfAllowed(allowed, "2.");
             PrintIfAllowed(allowed, "3.");
+            PrintIfAllowed(allowed, "4.");
 
             Console.WriteLine("\n📦 Gestión de Inventario");
-            PrintIfAllowed(allowed, "4.");
             PrintIfAllowed(allowed, "5.");
             PrintIfAllowed(allowed, "6.");
             PrintIfAllowed(allowed, "7.");
-            PrintIfAllowed(allowed, "8.");
 
             Console.WriteLine("\n⚠️ Alertas y Avisos");
+            PrintIfAllowed(allowed, "8.");
             PrintIfAllowed(allowed, "9.");
-            PrintIfAllowed(allowed, "10.");
 
-            if (allowed.Any(a => a.StartsWith("11.")))
+            if (allowed.Any(a => a.StartsWith("10.")))
             {
                 Console.WriteLine("\n⚙️ Administración");
+                PrintIfAllowed(allowed, "10.");
                 PrintIfAllowed(allowed, "11.");
             }
 
