@@ -113,8 +113,7 @@ public static class ProductModal
                                                             x => x.IsFormEditable)),
                                                 BuildFormRow("Código Único *",
                                                     new TextBox()
-                                                        .Text(state, x => x.Code, BindingMode.TwoWay)
-                                                        .IsEnabled(false)),
+                                                        .Text(state, x => x.Code, BindingMode.TwoWay)),
                                                 new Grid().Cols("*, *")
                                                     .Children(
                                                         BuildFormRow("Precio (Q) *",
