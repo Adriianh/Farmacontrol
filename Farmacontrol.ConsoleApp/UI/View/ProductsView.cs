@@ -16,60 +16,38 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            string input = ConsoleHelper.ReadText("Nombre o código del producto (o 'fin' para cancelar): ");
+            var input = ConsoleHelper.ReadText("Nombre o código del producto (o 'fin' para cancelar): ");
             if (input.ToLower() == "fin") return;
 
             var products = inventoryService.SearchProducts(input);
 
             if (products.Count == 0)
             {
-                Console.WriteLine("Producto no encontrado.");
+                Console.WriteLine("\n[AVISO] Producto no encontrado.");
             }
             else
             {
-                Console.WriteLine($"Se encontraron {products.Count} coincidencias:\n");
-                foreach (var product in products)
+                Console.WriteLine($"\nSe encontraron {products.Count} coincidencias:\n");
+                ConsoleHelper.PrintProductsTable(products);
+
+                var infoCode = ConsoleHelper.ReadText(
+                    "\nIngrese el código de un producto para ver sus detalles (o Enter para continuar): ",
+                    allowEmpty: true);
+                if (!string.IsNullOrWhiteSpace(infoCode))
                 {
-                    product.ShowInformation();
-                    Console.WriteLine(new string('-', 20));
-                }
-            }
-
-            ConsoleHelper.Pause();
-        }
-
-        public void ShowExpiredProducts()
-        {
-            ConsoleHelper.ShowTitle("Productos Vencidos");
-
-            if (!inventoryService.GetProducts.Any())
-            {
-                Console.WriteLine("No hay productos en inventario.");
-                ConsoleHelper.Pause();
-                return;
-            }
-
-            var products = inventoryService.GetProducts;
-            bool foundExpired = false;
-            foreach (var product in products)
-            {
-                var expiredBatches = product.Batches.Where(b => b.Quantity > 0 && b.ExpirationDate < DateTime.Today).ToList();
-                foreach (var batch in expiredBatches)
-                {
-                    foundExpired = true;
-                    Console.WriteLine($"Lote {batch.LotCode} - {product.Name} - Venció el {batch.ExpirationDate:dd/MM/yyyy} - Cantidad: {batch.Quantity}");
-                    if (ConsoleHelper.Confirm("¿Desea darlo de baja?"))
+                    var prodInfo = inventoryService.SearchProduct(infoCode);
+                    if (prodInfo != null)
                     {
-                        inventoryService.DiscardBatch(product.Code, batch.LotCode, "Vencimiento");
-                        Console.WriteLine("Lote dado de baja correctamente.");
+                        Console.WriteLine();
+                        prodInfo.ShowInformation();
+                    }
+                    else
+                    {
+                        Console.WriteLine("\n[AVISO] Producto no encontrado en los resultados.");
                     }
                 }
             }
 
-            if (!foundExpired)
-            {
-                Console.WriteLine("No se encontraron lotes vencidos con stock disponible.");
-            }
             ConsoleHelper.Pause();
         }
     }

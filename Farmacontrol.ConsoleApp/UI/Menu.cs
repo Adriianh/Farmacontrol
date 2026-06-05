@@ -3,7 +3,6 @@ using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.ConsoleApp.UI.View;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Services;
-using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI
 {
@@ -17,35 +16,15 @@ namespace Farmacontrol.ConsoleApp.UI
         ReportsView reportsView,
         ProductsView productsView,
         SuppliersView suppliersView,
-        UsersView usersView)
+        UsersView usersView,
+        SalesService salesService,
+        HistoryService historyService)
     {
         private User? _actualUser;
 
         public void Start()
         {
-            if (!userService.IsMasterKeyConfigured)
-            {
-                ConsoleHelper.ShowTitle("Configuración Inicial");
-                Console.WriteLine("Por motivos de seguridad, detectamos que la clave maestra del sistema es defectuosa o no se ha configurado.");
-                Console.WriteLine("Por favor, ingrese una nueva clave maestra. Úsela para crear y borrar usuarios en el futuro.");
-                
-                string newKey;
-                while (true)
-                {
-                    Console.Write("\nNueva clave maestra: ");
-                    newKey = ConsoleHelper.ReadPassword();
-                    if (string.IsNullOrWhiteSpace(newKey) || newKey.Contains(" "))
-                    {
-                        Console.WriteLine("La clave no puede estar en blanco o contener espacios.");
-                        continue;
-                    }
-                    break;
-                }
 
-                userService.SetMasterKey(newKey);
-                Console.WriteLine("\n[Ok] Clave Maestra configurada exitosamente.");
-                ConsoleHelper.Pause();
-            }
 
             _actualUser = new LoginComponent(userService).Login();
 
@@ -56,7 +35,7 @@ namespace Farmacontrol.ConsoleApp.UI
                 return;
             }
 
-            userSession.CurrentUser = _actualUser;
+            userSession.SetUser(_actualUser);
             ShowMainMenu(_actualUser);
         }
 
@@ -68,22 +47,24 @@ namespace Farmacontrol.ConsoleApp.UI
 
             Dictionary<string, Action> actions = new()
             {
-                ["1"] = salesView.RegisterSale,
-                ["2"] = inventoryView.ManageInventory,
-                ["3"] = productsView.SearchProduct,
-                ["4"] = alertsView.ShowTodayAlerts,
-                ["5"] = alertsView.ShowHistory,
-                ["6"] = reportsView.ShowReportsMenu,
-                ["7"] = productsView.ShowExpiredProducts,
-                ["8"] = () => usersView.ManageUsers(user),
-                ["9"] = suppliersView.ManageSuppliers,
-                ["10"] = suppliersView.GenerateAllSupplierOrders,
-                ["11"] = salesView.VoidSale
+                ["1"] = reportsView.ShowReportsMenu,
+                ["2"] = salesView.RegisterSale,
+                ["3"] = salesView.VoidSale,
+                ["4"] = reportsView.ShowReportsMenu,
+                ["5"] = inventoryView.ManageInventory,
+                ["6"] = productsView.SearchProduct,
+                ["7"] = suppliersView.GenerateAllSupplierOrders,
+                ["8"] = alertsView.ShowTodayAlerts,
+                ["9"] = alertsView.ShowHistory,
+                ["10"] = () => usersView.ManageUsers(user),
+                ["11"] = suppliersView.ManageSuppliers
             };
 
             while (running)
             {
-                string option = mainMenuComponent.ReadOption(user);
+                Console.Clear();
+                ShowDashboard();
+                var option = mainMenuComponent.ReadOption(user);
 
                 if (option == "0")
                 {
@@ -91,7 +72,7 @@ namespace Farmacontrol.ConsoleApp.UI
                     continue;
                 }
 
-                bool isAllowed = user.GetAllowedActions().Any(a => a.StartsWith(option + "."));
+                var isAllowed = user.GetAllowedActions().Any(a => a.StartsWith(option + "."));
                 if (!isAllowed)
                 {
                     Console.WriteLine("Opción no permitida para su rol.");
@@ -105,7 +86,7 @@ namespace Farmacontrol.ConsoleApp.UI
                     {
                         action();
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         logger.LogError($"Excepción no controlada al ejecutar la opción {option}", ex);
                         Console.WriteLine($"\n[ERROR] Ocurrió un error inesperado al procesar la solicitud: {ex.Message}");
@@ -119,6 +100,23 @@ namespace Farmacontrol.ConsoleApp.UI
                     ConsoleHelper.Pause();
                 }
             }
+        }
+        private void ShowDashboard()
+        {
+            var today = DateTime.Today;
+            var sales = salesService.GetAllSales().Where(s => s.Date.Date == today && !s.IsVoided).ToList();
+            
+            var todaysSalesCount = sales.Count;
+            var todaysSalesTotal = sales.Sum(s => s.Total);
+            var activeAlertsCount = historyService.GetHistory().Count(a => a.Date.Date == today);
+
+            Console.WriteLine("=================================================");
+            Console.WriteLine("                PANEL PRINCIPAL                  ");
+            Console.WriteLine("=================================================");
+            Console.WriteLine($" 💰 Ventas de Hoy: {todaysSalesCount}             ");
+            Console.WriteLine($" 💵 Ingresos del Día: Q{todaysSalesTotal:F2}      ");
+            Console.WriteLine($" ⚠️ Alertas Activas: {activeAlertsCount}          ");
+            Console.WriteLine("=================================================\n");
         }
     }
 }

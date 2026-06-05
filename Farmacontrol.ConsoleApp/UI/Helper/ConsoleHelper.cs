@@ -1,6 +1,8 @@
+using Farmacontrol.Core.Model.ProductEntity;
+
 namespace Farmacontrol.ConsoleApp.UI.Helper
 {
-    public class ConsoleHelper
+    public static class ConsoleHelper
     {
         public static void Pause()
         {
@@ -76,7 +78,7 @@ namespace Farmacontrol.ConsoleApp.UI.Helper
         {
             while (true)
             {
-                string password = "";
+                var password = "";
                 ConsoleKeyInfo key;
 
                 do
@@ -147,20 +149,83 @@ namespace Farmacontrol.ConsoleApp.UI.Helper
             }
         }
 
-        public static DateTime ReadDateWithDefault(string message, DateTime currentValue, string format = "dd/MM/yyyy")
+        public static void PrintProductsTable(IEnumerable<Model.Product> products)
         {
-            while (true)
+            var productList = products.ToList();
+            if (productList.Count == 0)
             {
-                Console.Write($"{message} [{currentValue.ToString(format)}]: ");
-                var input = Console.ReadLine();
-                if (string.IsNullOrWhiteSpace(input)) return currentValue;
-                
-                if (DateTime.TryParseExact(input, format, null,
-                        System.Globalization.DateTimeStyles.None, out DateTime result))
-                    return result;
-                
-                Console.WriteLine($"Formato inválido. Use {format}.");
+                Console.WriteLine("No hay productos para mostrar.");
+                return;
             }
+
+            Console.WriteLine($"{"Nº",-3} | {"Código",-8} | {"Producto",-25} | {"Tipo",-12} | {"Stock",-6} | {"Mín.",-5} | Precio");
+            Console.WriteLine(new string('-', 85));
+
+            for (int i = 0; i < productList.Count; i++)
+            {
+                var p = productList[i];
+                var name = p.Name.Length > 23 ? p.Name.Substring(0, 23) + ".." : p.Name;
+
+                var type = p switch
+                {
+                    Medicine => "Medicamento",
+                    Cosmetic => "Cosmético",
+                    Supplement => "Suplemento",
+                    Supply => "Suministro",
+                    _ => "Genérico"
+                };
+
+                var stockStr = p.Stock <= p.MinimumStock ? $"[!] {p.Stock}" : p.Stock.ToString();
+                
+                Console.WriteLine($"{i + 1,-3} | {p.Code,-8} | {name,-25} | {type,-12} | {stockStr,-6} | {p.MinimumStock,-5} | Q{p.Price:F2}");
+            }
+            Console.WriteLine(new string('-', 85));
+        }
+
+        public static void PrintAlertsTable(IEnumerable<Farmacontrol.Core.Model.Alert> alerts)
+        {
+            var alertList = alerts.ToList();
+            if (alertList.Count == 0)
+            {
+                Console.WriteLine("No hay alertas para mostrar.");
+                return;
+            }
+
+            Console.WriteLine($"{"Nº",-3} | {"Fecha",-14} | {"Tipo",-25} | {"Código",-8} | Mensaje");
+            Console.WriteLine(new string('-', 100));
+
+            for (var i = 0; i < alertList.Count; i++)
+            {
+                var a = alertList[i];
+                var date = a.Date.ToString("dd/MM HH:mm");
+                var type = a.Type.Length > 25 ? a.Type.Substring(0, 25) : a.Type;
+                var msg = a.Description.Length > 40 ? a.Description.Substring(0, 40) + ".." : a.Description;
+                
+                Console.WriteLine($"{i + 1,-3} | {date,-14} | {type,-25} | {a.ProductCode,-8} | {msg}");
+            }
+            Console.WriteLine(new string('-', 100));
+        }
+
+        public static void PrintUsersTable(IEnumerable<Farmacontrol.Core.Model.User> users)
+        {
+            var userList = users.ToList();
+            if (userList.Count == 0)
+            {
+                Console.WriteLine("No hay usuarios para mostrar.");
+                return;
+            }
+
+            Console.WriteLine($"{"Nº",-3} | {"Username",-15} | {"Nombre Completo",-25} | Rol");
+            Console.WriteLine(new string('-', 60));
+
+            for (var i = 0; i < userList.Count; i++)
+            {
+                var u = userList[i];
+                string name = u.Name.Length > 25 ? u.Name.Substring(0, 25) : u.Name;
+                
+                Console.WriteLine($"{i + 1,-3} | {u.Username,-15} | {name,-25} | {u.Role}");
+            }
+            Console.WriteLine(new string('-', 60));
         }
     }
 }

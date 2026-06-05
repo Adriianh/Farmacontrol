@@ -60,19 +60,28 @@ namespace Farmacontrol.Core.Model
                 return;
             }
 
-            Console.WriteLine($"=== PEDIDO PARA {Name.ToUpper()} ===");
-            Console.WriteLine($"Teléfono: {PhoneNumber} | Correo: {Email}");
-            if (!string.IsNullOrEmpty(ContactName)) Console.WriteLine($"Contacto de ventas: {ContactName}");
-            if (!string.IsNullOrEmpty(Address)) Console.WriteLine($"Dirección de envío: {Address}");
-            Console.WriteLine($"Tiempo estimado de entrega: {LeadTimeDays} días");
-            Console.WriteLine("----------------------");
-            Console.WriteLine("Productos a ordenar:");
-            foreach (Product product in orderProducts)
+            Console.WriteLine("\n=======================================================");
+            Console.WriteLine($"                 PEDIDO DE REABASTECIMIENTO            ");
+            Console.WriteLine("=======================================================");
+            Console.WriteLine($" PROVEEDOR : {Name.ToUpper()} ({Code})");
+            Console.WriteLine($" TELÉFONO  : {PhoneNumber}");
+            Console.WriteLine($" CORREO    : {Email}");
+            if (!string.IsNullOrEmpty(ContactName)) Console.WriteLine($" CONTACTO  : {ContactName}");
+            if (!string.IsNullOrEmpty(Address))     Console.WriteLine($" ENVÍO A   : {Address}");
+            Console.WriteLine($" TIEMPO EST: {LeadTimeDays} días hábiles");
+            Console.WriteLine("=======================================================\n");
+
+            Console.WriteLine($"{"CÓDIGO",-8} | {"PRODUCTO",-25} | {"STOCK",-6} | {"MÍNIMO",-6} | {"A PEDIR"}");
+            Console.WriteLine(new string('-', 65));
+            foreach (Product p in orderProducts)
             {
-                Console.WriteLine(
-                    $"- {product.Name} (Código: {product.Code}) - Stock Actual: {product.Stock}, Stock Mínimo: {product.MinimumStock}"
-                );
+                string name = p.Name.Length > 23 ? p.Name.Substring(0, 23) + ".." : p.Name;
+                int toOrder = (p.MinimumStock * 2) - p.Stock; // Just an example formula for the table
+                if (toOrder <= 0) toOrder = p.MinimumStock; // Fallback
+                Console.WriteLine($"{p.Code,-8} | {name,-25} | {p.Stock,-6} | {p.MinimumStock,-6} | {toOrder} und.");
             }
+            Console.WriteLine(new string('-', 65));
+            Console.WriteLine(" * Fin del documento de pedido *\n");
         }
     }
 }
