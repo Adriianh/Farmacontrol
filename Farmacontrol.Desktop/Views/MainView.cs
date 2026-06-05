@@ -2,8 +2,12 @@ using System.Linq.Expressions;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls.Presenters;
+using Avalonia.Input;
 using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Farmacontrol.Core.Model.UserEntity;
+using Farmacontrol.Core.Services;
 using Farmacontrol.Desktop.States;
 using Farmacontrol.Desktop.Views.Administration;
 using Farmacontrol.Desktop.Views.Alerts;
@@ -13,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Farmacontrol.Desktop.Views;
 
-public partial class MainView() : ViewBase<MainView.State>(new State())
+public partial class MainView() : ViewBase<MainView.State>(Program.ServiceProvider.GetRequiredService<State>())
 {
     private static readonly SolidColorBrush BackgroundColor = SolidColorBrush.Parse("#F1F5F9");
     private static readonly SolidColorBrush SidebarColor = SolidColorBrush.Parse("#1E293B");
@@ -72,8 +76,14 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                 new ScrollViewer().Row(1)
                                     .Content(
                                         new StackPanel()
-                                            .Margin(0, 10, 0, 0)
+                                            .Spacing(8)
+                                            .Margin(12)
                                             .Children(
+                                                CreateMenuButton("🏠", "Inicio", () =>
+                                                {
+                                                    state.ExpandedCategory = "";
+                                                    state.CurrentContent = new DashboardView();
+                                                }),
                                                 CreateMenuGroup(state, x => x.SalesExpanded, x => x.SalesArrow,
                                                     "Sales", "📊 Ventas y Caja", [
                                                         CreateSubButton("🔍 Historial de Ventas",
@@ -87,7 +97,7 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                                     ]),
                                                 CreateMenuGroup(state, x => x.InventoryExpanded, x => x.InventoryArrow,
                                                     "Inventory", "📦 Gestión de Inventario", [
-                                                        CreateSubButton("📋 Ver/Editar Stock",
+                                                        CreateSubButton("📋 Ver Stock",
                                                             () => state.CurrentContent = new InventoryView()),
                                                         CreateSubButton("🔍 Buscar Producto",
                                                             () => state.CurrentContent = new SearchProductView()),
@@ -135,13 +145,33 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
                                             .FontWeight(FontWeight.Bold)
                                             .Foreground(HeaderTitleColor)
                                             .VerticalAlignment(VerticalAlignment.Center),
-                                        new TextBlock().Col(2)
-                                            .Text("🟢 DB: SQLite Conectado")
-                                            .FontSize(12)
-                                            .Foreground(Brushes.Green)
-                                            .FontWeight(FontWeight.Medium)
-                                            .VerticalAlignment(VerticalAlignment.Center)
-                                    )
+                                        new StackPanel().Col(2).Orientation(Orientation.Horizontal).Spacing(16).VerticalAlignment(VerticalAlignment.Center)
+                                            .Children(
+                                                new StackPanel().VerticalAlignment(VerticalAlignment.Center).HorizontalAlignment(HorizontalAlignment.Right)
+                                                    .Children(
+                                                        new TextBlock()
+                                                            .Text(state, s => s.ActiveUserDisplayName)
+                                                            .FontWeight(FontWeight.Bold)
+                                                            .Foreground(HeaderTitleColor)
+                                                            .HorizontalAlignment(HorizontalAlignment.Right),
+                                                        new TextBlock()
+                                                            .Text(state, s => s.ActiveUserRole)
+                                                            .FontSize(11)
+                                                            .Foreground(SubItemColor)
+                                                            .HorizontalAlignment(HorizontalAlignment.Right)
+                                                    ),
+                                                new Button()
+                                                    .Content("Cerrar Sesión")
+                                                    .Command(state.LogoutCommand)
+                                                    .Background(SolidColorBrush.Parse("#FEE2E2"))
+                                                    .Foreground(SolidColorBrush.Parse("#B91C1C"))
+                                                    .CornerRadius(6)
+                                                    .Padding(8, 4)
+                                                    .FontSize(12)
+                                                    .FontWeight(FontWeight.Bold)
+                                                    .Cursor(new Cursor(StandardCursorType.Hand))
+                                            )
+                                    ).Row(0)
                             ),
                         new Border().Row(1)
                             .Margin(left: 30, top: 0, right: 30, bottom: 20)
@@ -237,6 +267,41 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
             .Children(headerButton, animatedContainer);
     }
 
+    private Button CreateMenuButton(string icon, string text, Action action)
+    {
+        var button = new Button()
+            .Content(
+                new StackPanel()
+                    .Orientation(Orientation.Horizontal)
+                    .Spacing(8)
+                    .Children(
+                        new TextBlock().Text(icon).VerticalAlignment(VerticalAlignment.Center),
+                        new TextBlock().Text(text).FontWeight(FontWeight.SemiBold).VerticalAlignment(VerticalAlignment.Center)
+                    )
+            )
+            .Background(GroupButtonColor)
+            .Foreground(GroupTextColor)
+            .HorizontalAlignment(HorizontalAlignment.Stretch)
+            .HorizontalContentAlignment(HorizontalAlignment.Left)
+            .CornerRadius(6)
+            .Margin(0, 0, 0, 4)
+            .Padding(horizontal: 16, vertical: 12);
+
+        button.Styles.Add(
+            new Style(x => x.OfType<Button>().Class(":pointerover").Template().OfType<ContentPresenter>())
+            {
+                Setters =
+                {
+                    new Setter(ContentPresenter.ForegroundProperty, GroupTextColor),
+                    new Setter(ContentPresenter.BackgroundProperty, GroupButtonHover)
+                }
+            });
+
+        button.Click += (_, _) => action();
+
+        return button;
+    }
+
     private Button CreateSubButton(string text, Action action)
     {
         var button = new Button()
@@ -264,8 +329,18 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
         return button;
     }
 
-    public partial class State : ObservableObject
+    public partial class State(UserSession userSession) : ObservableObject
     {
+        public string ActiveUserDisplayName => userSession.CurrentUser?.Username ?? "Invitado";
+        public string ActiveUserRole => userSession.CurrentUser is Administrator ? "Administrador" : "Empleado";
+
+        [RelayCommand]
+        private void Logout()
+        {
+            userSession.ClearSession();
+            Program.ServiceProvider.GetRequiredService<RootState>().NavigateToLogin();
+        }
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SidebarWidth))]
         public partial bool SidebarExpanded { get; set; } = true;
@@ -277,7 +352,7 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
         [NotifyPropertyChangedFor(nameof(InventoryExpanded)), NotifyPropertyChangedFor(nameof(InventoryArrow))]
         [NotifyPropertyChangedFor(nameof(AlertsExpanded)), NotifyPropertyChangedFor(nameof(AlertsArrow))]
         [NotifyPropertyChangedFor(nameof(AdminExpanded)), NotifyPropertyChangedFor(nameof(AdminArrow))]
-        public partial string ExpandedCategory { get; set; } = "Inventory";
+        public partial string ExpandedCategory { get; set; } = "Sales";
 
         public bool SalesExpanded => ExpandedCategory == "Sales";
         public bool InventoryExpanded => ExpandedCategory == "Inventory";
@@ -291,7 +366,7 @@ public partial class MainView() : ViewBase<MainView.State>(new State())
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ScreenTitle))]
-        public partial object CurrentContent { get; set; } = new InventoryView();
+        public partial object CurrentContent { get; set; } = new DashboardView();
 
         public string ScreenTitle => CurrentContent switch
         {
