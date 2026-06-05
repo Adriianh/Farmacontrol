@@ -3,7 +3,6 @@ using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.UserEntity;
 using Farmacontrol.Core.Services;
 using Farmacontrol.Core.Util;
-using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
@@ -17,7 +16,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             Console.WriteLine("3. Listar usuarios");
             Console.WriteLine("4. Modificar usuario");
 
-            string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
+            var option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
             switch (option)
             {
@@ -34,7 +33,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return true;
 
             Console.Write("Ingrese la clave maestra (o 'fin' para cancelar): ");
-            string input = ConsoleHelper.ReadPassword();
+            var input = ConsoleHelper.ReadPassword();
             if (input.ToLower() == "fin") return false;
             if (userService.VerifyMasterKey(input))
                 return true;
@@ -51,7 +50,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (!VerifyMasterKey(currentUser))
                 return;
 
-            string name = ConsoleHelper.ReadText("Nombre completo (o 'fin' para cancelar): ");
+            var name = ConsoleHelper.ReadText("Nombre completo (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
             string username;
             while (true)
@@ -63,8 +62,10 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     Console.WriteLine("Ya existe un usuario con ese nombre de usuario.");
                     continue;
                 }
+
                 break;
             }
+
             string password;
             while (true)
             {
@@ -76,6 +77,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     Console.WriteLine("Contraseña inválida, ingrese una contraseña no vacía y sin espacios.");
                     continue;
                 }
+
                 break;
             }
 
@@ -109,25 +111,34 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (!VerifyMasterKey(currentUser))
                 return;
 
-            ListUsers(false);
-            string username = ConsoleHelper.ReadText("\nNombre de usuario a eliminar (o 'fin' para cancelar): ");
-            if (username.ToLower() == "fin") return;
+            var users = userService.GetAllUsers().ToList();
+            ConsoleHelper.PrintUsersTable(users);
 
-            if (username == currentUser.Username)
+            var input = ConsoleHelper.ReadText("\nIngrese el número del usuario a eliminar (o '0' para cancelar): ");
+            if (input == "0") return;
+
+            if (int.TryParse(input, out int index) && index > 0 && index <= users.Count)
             {
-                Console.WriteLine("No puede eliminar su propio usuario.");
-                ConsoleHelper.Pause();
-                return;
+                var username = users[index - 1].Username;
+
+                if (username == currentUser.Username)
+                {
+                    Console.WriteLine("\n[Error] No puede eliminar su propio usuario.");
+                    ConsoleHelper.Pause();
+                    return;
+                }
+
+                if (ConsoleHelper.Confirm($"\n¿Está seguro que desea eliminar a '{username}'?"))
+                {
+                    userService.RemoveUser(username);
+                    Console.WriteLine($"\n[Éxito] Usuario {username} eliminado.");
+                }
             }
-            if (userService.GetAllUsers().All(u => u.Username != username))
+            else
             {
-                Console.WriteLine("No existe un usuario con ese nombre de usuario.");
-                ConsoleHelper.Pause();
-                return;
+                Console.WriteLine("\n[Error] Selección inválida.");
             }
 
-            userService.RemoveUser(username);
-            Console.WriteLine($"Usuario {username} eliminado.");
             ConsoleHelper.Pause();
         }
 
@@ -138,30 +149,35 @@ namespace Farmacontrol.ConsoleApp.UI.View
             if (!VerifyMasterKey(currentUser))
                 return;
 
-            ListUsers(false);
-            string username = ConsoleHelper.ReadText("\nNombre de usuario a modificar (o 'fin' para cancelar): ");
-            if (username.ToLower() == "fin") return;
+            var users = userService.GetAllUsers().ToList();
+            ConsoleHelper.PrintUsersTable(users);
 
-            var userToEdit = userService.GetAllUsers().FirstOrDefault(u => u.Username == username);
-            if (userToEdit == null)
+            var input = ConsoleHelper.ReadText("\nIngrese el número del usuario a modificar (o '0' para cancelar): ");
+            if (input == "0") return;
+
+            if (int.TryParse(input, out int index) && index > 0 && index <= users.Count)
             {
-                Console.WriteLine("No existe un usuario con ese nombre de usuario.");
-                ConsoleHelper.Pause();
-                return;
+                var userToEdit = users[index - 1];
+
+                Console.WriteLine($"\nEditando a: {userToEdit.Username}");
+                userToEdit.Name = ConsoleHelper.ReadTextWithDefault("Nombre completo", userToEdit.Name);
+                Console.WriteLine("Nota: El nombre de usuario (username) no puede ser modificado.");
+
+                var newPassword = ConsoleHelper.ReadText("Nueva contraseña (deje en blanco para mantener la actual): ",
+                    allowEmpty: true);
+                if (!string.IsNullOrWhiteSpace(newPassword))
+                {
+                    userToEdit.Password = Hash.Hashing(newPassword);
+                }
+
+                userService.UpdateUser(userToEdit);
+                Console.WriteLine($"\n[Éxito] Usuario {userToEdit.Username} modificado.");
+            }
+            else
+            {
+                Console.WriteLine("\n[Error] Selección inválida.");
             }
 
-            userToEdit.Name = ConsoleHelper.ReadTextWithDefault("Nombre completo", userToEdit.Name);
-            Console.WriteLine("Nota: El nombre de usuario (username) no puede ser modificado.");
-
-            string newPassword = ConsoleHelper.ReadText("Nueva contraseña (deje en blanco para mantener la actual): ", allowEmpty: true);
-            if (!string.IsNullOrWhiteSpace(newPassword))
-            {
-                // To update password properly we'd need to hash it. Since it's done in the constructor, we might need a method or direct hash.
-                userToEdit.Password = Hash.Hashing(newPassword);
-            }
-
-            userService.UpdateUser(userToEdit);
-            Console.WriteLine($"Usuario {username} modificado.");
             ConsoleHelper.Pause();
         }
 
@@ -169,11 +185,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             ConsoleHelper.ShowTitle("Usuarios Registrados");
             var users = userService.GetAllUsers();
-            if (!users.Any())
-                Console.WriteLine("No hay usuarios registrados.");
-            else
-                foreach (User u in users)
-                    Console.WriteLine($"{u.Username} — {u.Name} ({u.Role})");
+            ConsoleHelper.PrintUsersTable(users);
             if (pause) ConsoleHelper.Pause();
         }
     }
