@@ -1,11 +1,9 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Core.Model;
-using Farmacontrol.Core.Model.ProductEntity;
-using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.Component.Sales
 {
-    public class CheckoutComponent
+    public static class CheckoutComponent
     {
         public static bool ProcessCheckout(Sale sale, decimal discountPercent, bool applyTax)
         {
@@ -18,42 +16,37 @@ namespace Farmacontrol.ConsoleApp.UI.Component.Sales
                 return false;
             }
 
-            // Datos Extra de la Venta
-            string clientName = ConsoleHelper.ReadText("Nombre del Cliente (Enter para omitir): ", allowEmpty: true);
+            var clientName = ConsoleHelper.ReadText("Nombre del Cliente (Enter para omitir): ", allowEmpty: true);
             sale.ClientName = string.IsNullOrWhiteSpace(clientName) ? "Cliente General" : clientName;
 
-            // Recalcular Totales
-            decimal subtotal = sale.Details.Sum(d => d.Subtotal);
-            decimal discountAmt = subtotal * (discountPercent / 100);
+            var subtotal = sale.Details.Sum(d => d.Subtotal);
+            var discountAmt = subtotal * (discountPercent / 100);
             sale.DiscountPercentage = discountPercent;
-            
+
             if (applyTax)
             {
-                sale.TaxAmount = (subtotal - discountAmt) * 0.12m; // Asumiendo 12% IVA
+                sale.TaxAmount = (subtotal - discountAmt) * 0.12m;
             }
 
             sale.RecalculateTotal();
 
-            // Método de Pago
             sale.PaymentMethod = GetPaymentMethodInteractive();
 
-            // Si es Efectivo, pedir monto recibido
-            if (sale.PaymentMethod == PaymentMethod.Cash)
+            if (sale.PaymentMethod != PaymentMethod.Cash) return true;
+            while (true)
             {
-                while (true)
+                var amountTendered = ConsoleHelper.ReadDecimal($"Monto Recibido (Q): ");
+                if (amountTendered >= sale.Total)
                 {
-                    decimal amountTendered = ConsoleHelper.ReadDecimal($"Monto Recibido (Q): ");
-                    if (amountTendered >= sale.Total)
-                    {
-                        decimal change = amountTendered - sale.Total;
-                        Console.WriteLine($"\n[INFO] Vuelto a entregar: Q{change:F2}");
-                        break;
-                    }
-                    Console.WriteLine($"El monto debe ser al menos Q{sale.Total:F2}");
+                    var change = amountTendered - sale.Total;
+                    Console.WriteLine($"\n[INFO] Vuelto a entregar: Q{change:F2}");
+                    break;
                 }
+
+                Console.WriteLine($"El monto debe ser al menos Q{sale.Total:F2}");
             }
 
-            return true; // Continuar con el guardado
+            return true;
         }
 
         private static PaymentMethod GetPaymentMethodInteractive()

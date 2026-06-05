@@ -1,3 +1,5 @@
+using System.Globalization;
+using Farmacontrol.ConsoleApp.UI.Component.Sales;
 using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Core.Exception;
 using Farmacontrol.Core.Model;
@@ -20,7 +22,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             bool running = true;
             while (running)
             {
-                Farmacontrol.ConsoleApp.UI.Component.Sales.CartPrinterComponent.PrintCart(sale, discountPercent, applyTax);
+                CartPrinterComponent.PrintCart(sale, discountPercent, applyTax);
                 
                 Console.WriteLine("Opciones:");
                 Console.WriteLine("1. 🔍 Buscar y añadir producto");
@@ -47,7 +49,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                         sale.Details.Clear();
                         break;
                     case "5":
-                        if (Farmacontrol.ConsoleApp.UI.Component.Sales.CheckoutComponent.ProcessCheckout(sale, discountPercent, applyTax))
+                        if (CheckoutComponent.ProcessCheckout(sale, discountPercent, applyTax))
                         {
                             try
                             {
@@ -57,7 +59,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                                 ConsoleHelper.Pause();
                                 running = false;
                             }
-                            catch (System.Exception ex)
+                            catch (Exception ex)
                             {
                                 Console.WriteLine($"\n[Error] No se pudo guardar la venta: {ex.Message}");
                                 ConsoleHelper.Pause();
@@ -85,7 +87,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            Farmacontrol.Model.Product? product = null;
+            Product? product;
 
             if (matches.Count == 1)
             {
@@ -95,7 +97,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             {
                 var topMatches = matches.Take(10).ToList();
                 Console.WriteLine("\nResultados de búsqueda:");
-                Console.WriteLine($"{"Nº",-3} | {"Código",-8} | {"Producto",-25} | {"Stock",-5} | {"Precio"}");
+                Console.WriteLine($"{"Nº",-3} | {"Código",-8} | {"Producto",-25} | {"Stock",-5} | Precio");
                 Console.WriteLine(new string('-', 60));
                 for (int i = 0; i < topMatches.Count; i++)
                 {
@@ -114,10 +116,8 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 }
             }
 
-            if (product == null) return;
-
-            int alreadyInCart = sale.Details.Where(d => d.ProductCode == product.Code).Sum(d => d.Quantity);
-            int availableStock = product.Stock - alreadyInCart;
+            var alreadyInCart = sale.Details.Where(d => d.ProductCode == product.Code).Sum(d => d.Quantity);
+            var availableStock = product.Stock - alreadyInCart;
 
             if (availableStock <= 0)
             {
@@ -129,7 +129,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             product.ShowInformation();
             Console.WriteLine($"Stock máximo disponible para agregar: {availableStock}");
 
-            int quantity = ConsoleHelper.ReadInt("Cantidad a añadir al carrito: ");
+            var quantity = ConsoleHelper.ReadInt("Cantidad a añadir al carrito: ");
             if (quantity <= 0) return;
 
             if (quantity > availableStock)
@@ -139,7 +139,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            if (product is Farmacontrol.Core.Model.ProductEntity.Medicine med && med.IsControlled)
+            if (product is Medicine { IsControlled: true } med)
             {
                 if (string.IsNullOrEmpty(sale.DoctorLicense))
                 {
@@ -152,14 +152,14 @@ namespace Farmacontrol.ConsoleApp.UI.View
                         return;
                     }
 
-                    string presDocName = ConsoleHelper.ReadText("Nombre del médico: ", allowEmpty: true);
-                    string presPatient = ConsoleHelper.ReadText("Nombre del paciente: ", allowEmpty: true);
-                    string presDateInput = ConsoleHelper.ReadText("Fecha de emisión (dd/MM/yyyy): ", allowEmpty: true);
-                    if (!DateTime.TryParseExact(presDateInput, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime presDate))
+                    var presDocName = ConsoleHelper.ReadText("Nombre del médico: ", allowEmpty: true);
+                    var presPatient = ConsoleHelper.ReadText("Nombre del paciente: ", allowEmpty: true);
+                    var presDateInput = ConsoleHelper.ReadText("Fecha de emisión (dd/MM/yyyy): ", allowEmpty: true);
+                    if (!DateTime.TryParseExact(presDateInput, "dd/MM/yyyy", null, DateTimeStyles.None, out DateTime presDate))
                     {
                         presDate = DateTime.Now;
                     }
-                    string presFolio = ConsoleHelper.ReadText("Referencias / Folio: ", allowEmpty: true);
+                    var presFolio = ConsoleHelper.ReadText("Referencias / Folio: ", allowEmpty: true);
 
                     sale.DoctorLicense = license;
                     sale.Prescription = new Prescription(sale.Code, license, presDocName, (string.IsNullOrEmpty(presPatient) ? sale.ClientName : presPatient), presDate, presFolio);
@@ -189,19 +189,19 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 .ToList();
 
             Console.WriteLine("Últimas ventas registradas:");
-            Console.WriteLine($"{"Nº",-3} | {"ID",-5} | {"Fecha",-14} | {"Cliente",-20} | {"Total"}");
+            Console.WriteLine($"{"Nº",-3} | {"ID",-5} | {"Fecha",-14} | {"Cliente",-20} | Total");
             Console.WriteLine(new string('-', 60));
             
-            for (int i = 0; i < recentSales.Count; i++)
+            for (var i = 0; i < recentSales.Count; i++)
             {
                 var s = recentSales[i];
-                string client = s.ClientName.Length > 18 ? s.ClientName.Substring(0, 18) + ".." : s.ClientName;
+                string? client = s.ClientName is { Length: > 18 } ? string.Concat(s.ClientName.AsSpan(0, 18), "..") : s.ClientName;
                 Console.WriteLine($"{i + 1,-3} | {s.Code,-5} | {s.Date:dd/MM HH:mm} | {client,-20} | Q{s.Total:F2}");
             }
             Console.WriteLine(new string('-', 60));
             
-            int saleCode = -1;
-            string input = ConsoleHelper.ReadText("\nIngrese el número de la lista (1-15), o 'B' para buscar por ID exacto (0 para cancelar): ");
+            int saleCode;
+            var input = ConsoleHelper.ReadText("\nIngrese el número de la lista (1-15), o 'B' para buscar por ID exacto (0 para cancelar): ");
             
             if (input == "0") return;
             
@@ -209,7 +209,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
             {
                 saleCode = ConsoleHelper.ReadInt("Ingrese el código exacto de la venta a anular: ");
             }
-            else if (int.TryParse(input, out int index) && index > 0 && index <= recentSales.Count)
+            else if (int.TryParse(input, out var index) && index > 0 && index <= recentSales.Count)
             {
                 saleCode = recentSales[index - 1].Code;
             }
@@ -277,36 +277,12 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 salesService.VoidSale(saleCode, reason, details);
                 Console.WriteLine($"\n[Éxito] Venta #{saleCode} anulada correctamente.");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"\n[Error] Error al intentar anular: {ex.Message}");
             }
 
             ConsoleHelper.Pause();
-        }
-
-        private PaymentMethod GetPaymentMethodInteractive()
-        {
-            Console.WriteLine("\nSeleccione el método de pago:");
-            Console.WriteLine("1. Efectivo");
-            Console.WriteLine("2. Tarjeta de Crédito");
-            Console.WriteLine("3. Tarjeta de Débito");
-            Console.WriteLine("4. Transferencia Bancaria");
-
-            while (true)
-            {
-                string opt = ConsoleHelper.ReadText("Opción (1-4): ");
-                switch (opt)
-                {
-                    case "1": return PaymentMethod.Cash;
-                    case "2": return PaymentMethod.CreditCard;
-                    case "3": return PaymentMethod.DebitCard;
-                    case "4": return PaymentMethod.Transfer;
-                    default:
-                        Console.WriteLine("Opción no válida.");
-                        break;
-                }
-            }
         }
     }
 }
