@@ -17,35 +17,16 @@ namespace Farmacontrol.ConsoleApp.UI
         ReportsView reportsView,
         ProductsView productsView,
         SuppliersView suppliersView,
-        UsersView usersView)
+        UsersView usersView,
+        SalesService salesService,
+        HistoryService historyService,
+        InventoryService inventoryService)
     {
         private User? _actualUser;
 
         public void Start()
         {
-            if (!userService.IsMasterKeyConfigured)
-            {
-                ConsoleHelper.ShowTitle("Configuración Inicial");
-                Console.WriteLine("Por motivos de seguridad, detectamos que la clave maestra del sistema es defectuosa o no se ha configurado.");
-                Console.WriteLine("Por favor, ingrese una nueva clave maestra. Úsela para crear y borrar usuarios en el futuro.");
-                
-                string newKey;
-                while (true)
-                {
-                    Console.Write("\nNueva clave maestra: ");
-                    newKey = ConsoleHelper.ReadPassword();
-                    if (string.IsNullOrWhiteSpace(newKey) || newKey.Contains(" "))
-                    {
-                        Console.WriteLine("La clave no puede estar en blanco o contener espacios.");
-                        continue;
-                    }
-                    break;
-                }
 
-                userService.SetMasterKey(newKey);
-                Console.WriteLine("\n[Ok] Clave Maestra configurada exitosamente.");
-                ConsoleHelper.Pause();
-            }
 
             _actualUser = new LoginComponent(userService).Login();
 
@@ -56,7 +37,7 @@ namespace Farmacontrol.ConsoleApp.UI
                 return;
             }
 
-            userSession.CurrentUser = _actualUser;
+            userSession.SetUser(_actualUser);
             ShowMainMenu(_actualUser);
         }
 
@@ -69,20 +50,22 @@ namespace Farmacontrol.ConsoleApp.UI
             Dictionary<string, Action> actions = new()
             {
                 ["1"] = salesView.RegisterSale,
-                ["2"] = inventoryView.ManageInventory,
-                ["3"] = productsView.SearchProduct,
-                ["4"] = alertsView.ShowTodayAlerts,
-                ["5"] = alertsView.ShowHistory,
-                ["6"] = reportsView.ShowReportsMenu,
-                ["7"] = productsView.ShowExpiredProducts,
-                ["8"] = () => usersView.ManageUsers(user),
-                ["9"] = suppliersView.ManageSuppliers,
-                ["10"] = suppliersView.GenerateAllSupplierOrders,
-                ["11"] = salesView.VoidSale
+                ["2"] = salesView.VoidSale,
+                ["3"] = reportsView.ShowReportsMenu,
+                ["4"] = inventoryView.ManageInventory,
+                ["5"] = productsView.SearchProduct,
+                ["6"] = productsView.ShowExpiredProducts,
+                ["7"] = suppliersView.ManageSuppliers,
+                ["8"] = suppliersView.GenerateAllSupplierOrders,
+                ["9"] = alertsView.ShowTodayAlerts,
+                ["10"] = alertsView.ShowHistory,
+                ["11"] = () => usersView.ManageUsers(user)
             };
 
             while (running)
             {
+                Console.Clear();
+                ShowDashboard();
                 string option = mainMenuComponent.ReadOption(user);
 
                 if (option == "0")
@@ -119,6 +102,23 @@ namespace Farmacontrol.ConsoleApp.UI
                     ConsoleHelper.Pause();
                 }
             }
+        }
+        private void ShowDashboard()
+        {
+            var today = DateTime.Today;
+            var sales = salesService.GetAllSales().Where(s => s.Date.Date == today && !s.IsVoided).ToList();
+            
+            int todaysSalesCount = sales.Count;
+            decimal todaysSalesTotal = sales.Sum(s => s.Total);
+            int activeAlertsCount = historyService.GetHistory().Count(a => a.Date.Date == today);
+
+            Console.WriteLine("=================================================");
+            Console.WriteLine("                PANEL PRINCIPAL                  ");
+            Console.WriteLine("=================================================");
+            Console.WriteLine($" 💰 Ventas de Hoy: {todaysSalesCount}             ");
+            Console.WriteLine($" 💵 Ingresos del Día: Q{todaysSalesTotal:F2}      ");
+            Console.WriteLine($" ⚠️ Alertas Activas: {activeAlertsCount}          ");
+            Console.WriteLine("=================================================\n");
         }
     }
 }
