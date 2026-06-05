@@ -199,9 +199,24 @@ namespace Farmacontrol.ConsoleApp.UI.View
             ConsoleHelper.ShowTitle("Anular Venta");
             int saleCode = ConsoleHelper.ReadInt("Ingrese el código de la venta a anular: ");
 
+            Console.WriteLine("Opciones de anulación:");
+            Console.WriteLine("1. Devuelto al inventario");
+            Console.WriteLine("2. Dado de baja");
+            Console.WriteLine("3. Otro motivo");
+            string option = ConsoleHelper.ReadText("Seleccione una opción (1-3): ");
+            
+            string reason = option switch
+            {
+                "1" => "Devuelto al inventario",
+                "2" => "Dado de baja",
+                _ => "Otro motivo"
+            };
+
+            string details = ConsoleHelper.ReadText("Ingrese los detalles o justificación de la anulación: ", allowEmpty: true);
+
             try
             {
-                salesService.VoidSale(saleCode);
+                salesService.VoidSale(saleCode, reason, details);
                 Console.WriteLine($"Venta #{saleCode} anulada exitosamente (si existía).");
             }
             catch (System.Exception ex)
