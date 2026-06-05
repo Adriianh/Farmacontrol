@@ -11,18 +11,18 @@ namespace Farmacontrol.Core.Model.UserEntity
         
         public override List<string> GetAllowedActions() =>
         [
-            "1. Registrar venta",
-            "2. Anular Venta",
-            "3. Ver reporte de ventas",
-            "4. Gestionar inventario",
-            "5. Buscar producto",
-            "6. Ver medicamentos vencidos",
-            "7. Gestionar proveedores",
-            "8. Generar pedidos pendientes",
-            "9. Ver alertas",
-            "10. Ver el historial de alertas",
-            "11. Gestionar usuarios",
-            "0. Salir"
+            "1. 🔍 Historial de Ventas",
+            "2. 💵 Registrar Venta",
+            "3. ❌ Anular Venta",
+            "4. 📈 Reporte de Ventas",
+            "5. 📋 Ver Stock",
+            "6. 🔍 Buscar Producto",
+            "7. 📝 Pedidos Pendientes",
+            "8. 🚨 Alertas Activas",
+            "9. 📜 Historial de Alertas",
+            "10. 👥 Gestionar Usuarios",
+            "11. 🚚 Proveedores",
+            "0. 🚪 Salir"
         ];
     }
 }
