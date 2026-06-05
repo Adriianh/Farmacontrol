@@ -2,7 +2,6 @@ using Farmacontrol.ConsoleApp.UI.Helper;
 using Farmacontrol.Core.Model;
 using Farmacontrol.Core.Model.ProductEntity;
 using Farmacontrol.Core.Services;
-using Farmacontrol.Model;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
@@ -11,17 +10,17 @@ namespace Farmacontrol.ConsoleApp.UI.View
         public void ManageInventory()
         {
             ConsoleHelper.ShowTitle("Gestionar Inventario");
-            Console.WriteLine("1. Agregar medicamento");
-            Console.WriteLine("2. Agregar producto de belleza");
-            Console.WriteLine("3. Agregar suplemento");
-            Console.WriteLine("4. Agregar suministro");
-            Console.WriteLine("5. Mostrar todo el inventario");
-            Console.WriteLine("6. Asociar proveedor a producto existente");
-            Console.WriteLine("7. Registrar ingreso (Compras)");
-            Console.WriteLine("8. Modificar producto");
-            Console.WriteLine("9. Eliminar producto");
+            Console.WriteLine("1. 💊 Agregar medicamento");
+            Console.WriteLine("2. 💄 Agregar producto de belleza");
+            Console.WriteLine("3. 🔋 Agregar suplemento");
+            Console.WriteLine("4. 🩹 Agregar suministro");
+            Console.WriteLine("5. 📋 Mostrar todo el inventario");
+            Console.WriteLine("6. 🔗 Asociar proveedor a producto existente");
+            Console.WriteLine("7. 📥 Registrar ingreso (Compras)");
+            Console.WriteLine("8. ✏️ Modificar producto");
+            Console.WriteLine("9. 🗑️ Eliminar producto");
 
-            string option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
+            var option = ConsoleHelper.ReadText("\nSeleccione una opción (o 'fin' para cancelar): ");
             if (option.ToLower() == "fin") return;
             switch (option)
             {
@@ -31,10 +30,35 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 case "4": AddSupply(); break;
                 case "5":
                     if (!inventoryService.GetProducts.Any())
+                    {
                         Console.WriteLine("No hay productos en inventario.");
+                        ConsoleHelper.Pause();
+                    }
                     else
-                        inventoryService.ListProducts();
-                    ConsoleHelper.Pause();
+                    {
+                        Console.WriteLine("\nMostrando todo el inventario:");
+                        ConsoleHelper.PrintProductsTable(inventoryService.GetProducts);
+
+                        var infoCode = ConsoleHelper.ReadText(
+                            "\nIngrese el código de un producto para ver sus detalles (o Enter para continuar): ",
+                            allowEmpty: true);
+                        if (!string.IsNullOrWhiteSpace(infoCode))
+                        {
+                            var prodInfo = inventoryService.SearchProduct(infoCode);
+                            if (prodInfo != null)
+                            {
+                                Console.WriteLine();
+                                prodInfo.ShowInformation();
+                            }
+                            else
+                            {
+                                Console.WriteLine("\n[AVISO] Producto no encontrado.");
+                            }
+
+                            ConsoleHelper.Pause();
+                        }
+                    }
+
                     break;
                 case "6": AssociateSupplierToProduct(); break;
                 case "7": RegisterPurchase(); break;
@@ -46,10 +70,10 @@ namespace Farmacontrol.ConsoleApp.UI.View
         private void RegisterPurchase()
         {
             ConsoleHelper.ShowTitle("Registrar Ingreso (Compras)");
-            
-            string supplierCode = ConsoleHelper.ReadText("Código del proveedor (o 'fin' para cancelar): ");
+
+            var supplierCode = ConsoleHelper.ReadText("Código del proveedor (o 'fin' para cancelar): ");
             if (supplierCode.ToLower() == "fin") return;
-            
+
             var supplier = supplierService.SearchSupplier(supplierCode);
             if (supplier == null)
             {
@@ -58,26 +82,26 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            string invoice = ConsoleHelper.ReadText("Número de Factura: ");
+            var invoice = ConsoleHelper.ReadText("Número de Factura: ");
             var purchase = new Purchase(supplierCode, invoice);
-            
-            bool adding = true;
-            while(adding)
+
+            var adding = true;
+            while (adding)
             {
                 ConsoleHelper.ShowTitle($"Compra de {supplier.Name} - {invoice}");
-                string productCode = ConsoleHelper.ReadText("Código de producto ingresado (o 'fin' para terminar, 'nuevo' para crear uno): ");
-                
-                if (productCode.ToLower() == "fin")
-                {
-                    adding = false;
-                    continue;
-                }
+                var productCode =
+                    ConsoleHelper.ReadText(
+                        "Código de producto ingresado (o 'fin' para terminar, 'nuevo' para crear uno): ");
 
-                if (productCode.ToLower() == "nuevo")
+                switch (productCode.ToLower())
                 {
-                    Console.WriteLine("Por favor regístrelo usando el menú principal de inventario (1-4).");
-                    ConsoleHelper.Pause();
-                    continue;
+                    case "fin":
+                        adding = false;
+                        continue;
+                    case "nuevo":
+                        Console.WriteLine("Por favor regístrelo usando el menú principal de inventario (1-4).");
+                        ConsoleHelper.Pause();
+                        continue;
                 }
 
                 var product = inventoryService.SearchProduct(productCode);
@@ -87,10 +111,10 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     continue;
                 }
 
-                string lotCode = ConsoleHelper.ReadText("Código de Lote: ");
-                int quantity = ReadPositiveQuantity("Cantidad ingresada: ");
-                decimal unitCost = ReadPositiveDecimal("Costo Unitario: Q");
-                DateTime expDate = ReadValidExpirationDate("Fecha de expiración (dd/MM/yyyy): ");
+                var lotCode = ConsoleHelper.ReadText("Código de Lote: ");
+                var quantity = ReadPositiveQuantity("Cantidad ingresada: ");
+                var unitCost = ReadPositiveDecimal("Costo Unitario: Q");
+                var expDate = ReadValidExpirationDate("Fecha de expiración (dd/MM/yyyy): ");
 
                 purchase.AddDetail(product, lotCode, quantity, unitCost, expDate);
                 Console.WriteLine("Producto agregado al ingreso!");
@@ -101,6 +125,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 inventoryService.RegisterPurchase(purchase);
                 Console.WriteLine($"\nIngreso registrado exitosamente. Total: Q{purchase.TotalCost:F2}");
             }
+
             ConsoleHelper.Pause();
         }
 
@@ -109,9 +134,9 @@ namespace Farmacontrol.ConsoleApp.UI.View
             ConsoleHelper.ShowTitle("Agregar Medicamento");
             var suppliers = GetSuppliersInteractive();
 
-            string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
+            var name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
-            string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
+            var code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
             if (inventoryService.SearchProduct(code) != null)
             {
@@ -120,7 +145,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            var initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
             DateTime? expirationDate = null;
             string? lotCode = null;
             if (initialStock > 0)
@@ -144,12 +169,12 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 Concentration = ReadOptionalField("Concentración (ej. 500 mg)"),
                 Presentation = ReadOptionalField("Presentación (ej. Caja con 20 tabletas)"),
                 RequiresPrescription = ConsoleHelper.Confirm("¿Requiere receta médica?"),
-                IsControlled = ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica y registro)?"),
-                Suppliers = suppliers
+                IsControlled =
+                    ConsoleHelper.Confirm("¿Es un medicamento controlado (requiere cédula médica y registro)?"),
+                Suppliers = suppliers,
+                Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): "),
+                Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ")
             };
-            
-            medicine.Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): ");
-            medicine.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 medicine.AddBatch(lotCode, initialStock, expirationDate.Value);
@@ -164,9 +189,9 @@ namespace Farmacontrol.ConsoleApp.UI.View
             ConsoleHelper.ShowTitle("Agregar Producto de Belleza");
             var suppliers = GetSuppliersInteractive();
 
-            string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
+            var name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
-            string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
+            var code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
             if (inventoryService.SearchProduct(code) != null)
             {
@@ -175,7 +200,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            var initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
             DateTime? expirationDate = null;
             string? lotCode = null;
             if (initialStock > 0)
@@ -199,11 +224,10 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 Type = ConsoleHelper.ReadText("Tipo (shampoo, crema, etc.): "),
                 Presentation = ReadOptionalField("Presentación (ej. Frasco 250 ml)"),
                 Hypoallergenic = ConsoleHelper.Confirm("¿Es hipoalergénico?"),
-                Suppliers = suppliers
+                Suppliers = suppliers,
+                Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): "),
+                Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ")
             };
-            
-            cosmetic.Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): ");
-            cosmetic.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 cosmetic.AddBatch(lotCode, initialStock, expirationDate.Value);
@@ -218,9 +242,9 @@ namespace Farmacontrol.ConsoleApp.UI.View
             ConsoleHelper.ShowTitle("Agregar Suplemento");
             var suppliers = GetSuppliersInteractive();
 
-            string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
+            var name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
-            string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
+            var code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
             if (inventoryService.SearchProduct(code) != null)
             {
@@ -229,7 +253,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            var initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
             DateTime? expirationDate = null;
             string? lotCode = null;
             if (initialStock > 0)
@@ -254,11 +278,10 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 Format = GetSupplementFormat(),
                 Concentration = ReadOptionalField("Concentración (ej. 1000 UI)"),
                 RecommendedDosage = ReadOptionalField("Dosis recomendada (ej. 1 cápsula al día)"),
-                Suppliers = suppliers
+                Suppliers = suppliers,
+                Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): "),
+                Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ")
             };
-            
-            supplement.Ingredients = ReadList("Ingredientes (separados por coma, enter para omitir): ");
-            supplement.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 supplement.AddBatch(lotCode, initialStock, expirationDate.Value);
@@ -272,7 +295,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             Console.WriteLine("Seleccione el formato:");
             var values = Enum.GetValues(typeof(SupplementFormat));
-            int i = 1;
+            var i = 1;
             foreach (var value in values)
             {
                 Console.WriteLine($"{i}. {value}");
@@ -293,9 +316,9 @@ namespace Farmacontrol.ConsoleApp.UI.View
             ConsoleHelper.ShowTitle("Agregar Suministro");
             var suppliers = GetSuppliersInteractive();
 
-            string name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
+            var name = ReadCommonProductField("Nombre (o 'fin' para cancelar): ");
             if (name.ToLower() == "fin") return;
-            string code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
+            var code = ReadCommonProductField("Código (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
             if (inventoryService.SearchProduct(code) != null)
             {
@@ -304,7 +327,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            int initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
+            var initialStock = ReadPositiveOrZeroInt("Stock inicial (ingrese 0 si no hay inventario): ");
             DateTime? expirationDate = null;
             string? lotCode = null;
             if (initialStock > 0)
@@ -329,10 +352,9 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 Size = ReadOptionalField("Tamaño"),
                 Material = ReadOptionalField("Material"),
                 IsSterile = ConsoleHelper.Confirm("¿Es estéril (libre de bacterias)?"),
-                Suppliers = suppliers
+                Suppliers = suppliers,
+                Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ")
             };
-            
-            supply.Tags = ReadList("Etiquetas (separadas por coma, enter para omitir): ");
 
             if (initialStock > 0 && lotCode != null && expirationDate.HasValue)
                 supply.AddBatch(lotCode, initialStock, expirationDate.Value);
@@ -347,7 +369,9 @@ namespace Farmacontrol.ConsoleApp.UI.View
             var selectedSuppliers = new List<Supplier>();
             while (true)
             {
-                string supplierCode = ConsoleHelper.ReadText("Código de proveedor (o presione Enter/escriba 'fin' para terminar): ", allowEmpty: true);
+                var supplierCode =
+                    ConsoleHelper.ReadText("Código de proveedor (o presione Enter/escriba 'fin' para terminar): ",
+                        allowEmpty: true);
                 if (string.IsNullOrWhiteSpace(supplierCode) || supplierCode.ToLower() == "fin")
                 {
                     break;
@@ -371,13 +395,14 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     }
                 }
             }
+
             return selectedSuppliers;
         }
 
         private void AssociateSupplierToProduct()
         {
             ConsoleHelper.ShowTitle("Asociar Proveedor a Producto");
-            string productCode = ConsoleHelper.ReadText("Código del producto: ");
+            var productCode = ConsoleHelper.ReadText("Código del producto: ");
             var product = inventoryService.SearchProduct(productCode);
             if (product == null)
             {
@@ -386,7 +411,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            string supplierCode = ConsoleHelper.ReadText("Código del proveedor a asociar: ");
+            var supplierCode = ConsoleHelper.ReadText("Código del proveedor a asociar: ");
             var supplier = supplierService.SearchSupplier(supplierCode);
             if (supplier == null)
             {
@@ -395,7 +420,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            bool success = inventoryService.AssociateSupplier(productCode, supplierCode);
+            var success = inventoryService.AssociateSupplier(productCode, supplierCode);
             Console.WriteLine(success
                 ? $"[Éxito] Proveedor '{supplier.Name}' asociado correctamente al producto '{product.Name}'."
                 : "El proveedor ya estaba asociado a este producto o ocurrió un error.");
@@ -412,7 +437,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            string code = ConsoleHelper.ReadText("Código del producto a eliminar (o 'fin' para cancelar): ");
+            var code = ConsoleHelper.ReadText("Código del producto a eliminar (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
 
             var product = inventoryService.SearchProduct(code);
@@ -441,7 +466,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                 return;
             }
 
-            string code = ConsoleHelper.ReadText("Código del producto a modificar (o 'fin' para cancelar): ");
+            var code = ConsoleHelper.ReadText("Código del producto a modificar (o 'fin' para cancelar): ");
             if (code.ToLower() == "fin") return;
 
             var product = inventoryService.SearchProduct(code);
@@ -463,31 +488,37 @@ namespace Farmacontrol.ConsoleApp.UI.View
             product.Ingredients = UpdateList("Ingredientes", product.Ingredients);
             product.Tags = UpdateList("Etiquetas", product.Tags);
 
-            if (product is Medicine medicine)
+            switch (product)
             {
-                medicine.ActivePrinciple = ConsoleHelper.ReadTextWithDefault("Principio activo", medicine.ActivePrinciple);
-                medicine.Concentration = ConsoleHelper.ReadTextWithDefault("Concentración", medicine.Concentration ?? "");
-                medicine.Presentation = ConsoleHelper.ReadTextWithDefault("Presentación", medicine.Presentation ?? "");
-            }
-            else if (product is Cosmetic cosmetic)
-            {
-                cosmetic.Brand = ConsoleHelper.ReadTextWithDefault("Marca", cosmetic.Brand);
-                cosmetic.Type = ConsoleHelper.ReadTextWithDefault("Tipo", cosmetic.Type);
-                cosmetic.Presentation = ConsoleHelper.ReadTextWithDefault("Presentación", cosmetic.Presentation ?? "");
-            }
-            else if (product is Supplement supplement)
-            {
-                supplement.ActivePrinciple = ConsoleHelper.ReadTextWithDefault("Principio activo", supplement.ActivePrinciple);
-                supplement.Type = ConsoleHelper.ReadTextWithDefault("Tipo", supplement.Type);
-                supplement.Concentration = ConsoleHelper.ReadTextWithDefault("Concentración", supplement.Concentration ?? "");
-                supplement.RecommendedDosage = ConsoleHelper.ReadTextWithDefault("Dosis recomendada", supplement.RecommendedDosage ?? "");
-            }
-            else if (product is Supply supply)
-            {
-                supply.Brand = ConsoleHelper.ReadTextWithDefault("Marca", supply.Brand);
-                supply.Type = ConsoleHelper.ReadTextWithDefault("Tipo", supply.Type);
-                supply.Size = ConsoleHelper.ReadTextWithDefault("Tamaño", supply.Size ?? "");
-                supply.Material = ConsoleHelper.ReadTextWithDefault("Material", supply.Material ?? "");
+                case Medicine medicine:
+                    medicine.ActivePrinciple =
+                        ConsoleHelper.ReadTextWithDefault("Principio activo", medicine.ActivePrinciple);
+                    medicine.Concentration =
+                        ConsoleHelper.ReadTextWithDefault("Concentración", medicine.Concentration ?? "");
+                    medicine.Presentation =
+                        ConsoleHelper.ReadTextWithDefault("Presentación", medicine.Presentation ?? "");
+                    break;
+                case Cosmetic cosmetic:
+                    cosmetic.Brand = ConsoleHelper.ReadTextWithDefault("Marca", cosmetic.Brand);
+                    cosmetic.Type = ConsoleHelper.ReadTextWithDefault("Tipo", cosmetic.Type);
+                    cosmetic.Presentation =
+                        ConsoleHelper.ReadTextWithDefault("Presentación", cosmetic.Presentation ?? "");
+                    break;
+                case Supplement supplement:
+                    supplement.ActivePrinciple =
+                        ConsoleHelper.ReadTextWithDefault("Principio activo", supplement.ActivePrinciple);
+                    supplement.Type = ConsoleHelper.ReadTextWithDefault("Tipo", supplement.Type);
+                    supplement.Concentration =
+                        ConsoleHelper.ReadTextWithDefault("Concentración", supplement.Concentration ?? "");
+                    supplement.RecommendedDosage =
+                        ConsoleHelper.ReadTextWithDefault("Dosis recomendada", supplement.RecommendedDosage ?? "");
+                    break;
+                case Supply supply:
+                    supply.Brand = ConsoleHelper.ReadTextWithDefault("Marca", supply.Brand);
+                    supply.Type = ConsoleHelper.ReadTextWithDefault("Tipo", supply.Type);
+                    supply.Size = ConsoleHelper.ReadTextWithDefault("Tamaño", supply.Size ?? "");
+                    supply.Material = ConsoleHelper.ReadTextWithDefault("Material", supply.Material ?? "");
+                    break;
             }
 
             inventoryService.UpdateProduct(product);
@@ -497,30 +528,32 @@ namespace Farmacontrol.ConsoleApp.UI.View
 
         private string? ReadOptionalField(string fieldName)
         {
-            string value = ConsoleHelper.ReadText($"{fieldName} (opcional, enter para omitir): ", allowEmpty: true);
+            var value = ConsoleHelper.ReadText($"{fieldName} (opcional, enter para omitir): ", allowEmpty: true);
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
         private List<string> ReadList(string prompt)
         {
-            string input = ConsoleHelper.ReadText(prompt, allowEmpty: true);
-            if (string.IsNullOrWhiteSpace(input)) return new List<string>();
-            return input.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+            var input = ConsoleHelper.ReadText(prompt, allowEmpty: true);
+            return string.IsNullOrWhiteSpace(input)
+                ? []
+                : input.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
         }
 
         private List<string> UpdateList(string prompt, List<string> currentList)
         {
-            string currentStr = string.Join(", ", currentList);
-            string input = ConsoleHelper.ReadTextWithDefault($"{prompt} (separados por coma)", currentStr);
-            if (string.IsNullOrWhiteSpace(input)) return new List<string>();
-            return input.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+            var currentStr = string.Join(", ", currentList);
+            var input = ConsoleHelper.ReadTextWithDefault($"{prompt} (separados por coma)", currentStr);
+            return string.IsNullOrWhiteSpace(input)
+                ? []
+                : input.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
         }
 
         private int ReadPositiveOrZeroInt(string prompt)
         {
             while (true)
             {
-                int value = ConsoleHelper.ReadInt(prompt);
+                var value = ConsoleHelper.ReadInt(prompt);
                 if (value >= 0)
                     return value;
 
@@ -532,7 +565,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             while (true)
             {
-                int value = ConsoleHelper.ReadInt(prompt);
+                var value = ConsoleHelper.ReadInt(prompt);
                 if (value > 0)
                     return value;
 
@@ -544,7 +577,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             while (true)
             {
-                decimal value = ConsoleHelper.ReadDecimal(prompt);
+                var value = ConsoleHelper.ReadDecimal(prompt);
                 if (value > 0)
                     return value;
 
@@ -556,7 +589,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             while (true)
             {
-                DateTime date = ConsoleHelper.ReadDate(prompt);
+                var date = ConsoleHelper.ReadDate(prompt);
                 if (date > DateTime.Today)
                     return date;
 
