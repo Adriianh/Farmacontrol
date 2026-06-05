@@ -1,4 +1,6 @@
-namespace Farmacontrol.Model.UserEntity
+using Farmacontrol.Model;
+
+namespace Farmacontrol.Core.Model.UserEntity
 {
     public class Administrator : User
     {

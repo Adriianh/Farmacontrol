@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Farmacontrol.Model;
 
-namespace Farmacontrol.Model
+namespace Farmacontrol.Core.Model
 {
     public class Supplier
     {

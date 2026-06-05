@@ -1,23 +1,23 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
-using Farmacontrol.Services;
+using Farmacontrol.Core.Services;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
-    public class AlertsView(HistoryManager historyManager, Inventory inventory)
+    public class AlertsView(HistoryService historyService, InventoryService inventoryService)
     {
         public void ShowTodayAlerts()
         {
             ConsoleHelper.ShowTitle("Alertas de Hoy");
 
-            if (!inventory.GetProducts.Any())
+            if (!inventoryService.GetProducts.Any())
             {
                 Console.WriteLine("No hay productos en inventario.");
                 ConsoleHelper.Pause();
                 return;
             }
 
-            historyManager.VerifyAlert(inventory.GetProducts.ToList());
-            historyManager.ShowTodayAlerts();
+            historyService.VerifyAlert(inventoryService.GetProducts.ToList());
+            historyService.ShowTodayAlerts();
 
             ConsoleHelper.Pause();
         }
@@ -26,7 +26,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
         {
             ConsoleHelper.ShowTitle("Historial de Alertas");
 
-            historyManager.ShowHistory();
+            historyService.ShowHistory();
 
             ConsoleHelper.Pause();
         }

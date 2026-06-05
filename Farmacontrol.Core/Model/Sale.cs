@@ -1,4 +1,6 @@
-namespace Farmacontrol.Model
+using Farmacontrol.Model;
+
+namespace Farmacontrol.Core.Model
 {
     public class Sale
     {
@@ -13,6 +15,8 @@ namespace Farmacontrol.Model
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
 
         public bool IsVoided { get; set; }
+        public string? VoidReason { get; set; }
+        public string? VoidDetails { get; set; }
         public decimal DiscountPercentage { get; set; }
         public decimal TaxAmount { get; set; }
 
@@ -55,10 +59,12 @@ namespace Farmacontrol.Model
             return subtotal - discount + TaxAmount;
         }
 
-        public void VoidSale()
+        public void VoidSale(string reason, string details)
         {
             if (IsVoided) return;
             IsVoided = true;
+            VoidReason = reason;
+            VoidDetails = details;
             Status = "Anulada";
             Total = 0;
         }

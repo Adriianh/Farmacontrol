@@ -1,6 +1,4 @@
-using System;
-
-namespace Farmacontrol.Model
+namespace Farmacontrol.Core.Model
 {
     public class AuditLog
     {

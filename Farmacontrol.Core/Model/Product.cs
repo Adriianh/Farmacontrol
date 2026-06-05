@@ -1,4 +1,5 @@
-using Farmacontrol.Exception;
+using Farmacontrol.Core.Exception;
+using Farmacontrol.Core.Model;
 
 namespace Farmacontrol.Model
 {

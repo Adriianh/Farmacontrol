@@ -1,7 +1,8 @@
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Model;
-using Farmacontrol.Repository;
 
-namespace Farmacontrol.Services
+namespace Farmacontrol.Core.Services
 {
     public class AuditService(AppDbContext db, UserSession userSession)
     {

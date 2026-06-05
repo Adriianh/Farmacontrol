@@ -1,4 +1,4 @@
-namespace Farmacontrol.Util
+namespace Farmacontrol.Core.Util
 {
     public static class ReportExporter
     {

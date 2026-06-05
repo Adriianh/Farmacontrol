@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Reflection;
 
-namespace Farmacontrol.Util
+namespace Farmacontrol.Core.Util
 {
     public static class EnumExtension
     {

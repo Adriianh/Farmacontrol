@@ -1,16 +1,17 @@
 using Farmacontrol.ConsoleApp.UI.Helper;
-using Farmacontrol.Exception;
+using Farmacontrol.Core.Exception;
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Model.ProductEntity;
+using Farmacontrol.Core.Services;
 using Farmacontrol.Model;
-using Farmacontrol.Model.ProductEntity;
-using Farmacontrol.Services;
 
 namespace Farmacontrol.ConsoleApp.UI.View
 {
-    public class SalesView(Inventory inventory, SalesManager salesManager)
+    public class SalesView(InventoryService inventoryService, SalesService salesService)
     {
         public void RegisterSale()
         {
-            if (!inventory.GetProducts.Any())
+            if (!inventoryService.GetProducts.Any())
             {
                 ConsoleHelper.ShowTitle("Registrar Venta");
                 Console.WriteLine("No hay productos en inventario para vender.");
@@ -25,7 +26,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
 
             PaymentMethod paymentMethod = GetPaymentMethodInteractive();
 
-            int salesCounter = salesManager.GetSalesCount() + 1;
+            int salesCounter = salesService.GetSalesCount() + 1;
             var sale = new Sale(salesCounter)
             {
                 ClientName = clientName,
@@ -59,7 +60,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
                     continue;
                 }
 
-                var product = inventory.SearchProduct(input);
+                var product = inventoryService.SearchProduct(input);
 
                 if (product == null)
                 {
@@ -187,7 +188,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
 
             sale.RecalculateTotal();
 
-            salesManager.RegisterSale(sale);
+            salesService.RegisterSale(sale);
             ConsoleHelper.ShowTitle("Resumen de Venta");
             sale.ShowResume();
             ConsoleHelper.Pause();
@@ -200,7 +201,7 @@ namespace Farmacontrol.ConsoleApp.UI.View
 
             try
             {
-                salesManager.VoidSale(saleCode);
+                salesService.VoidSale(saleCode);
                 Console.WriteLine($"Venta #{saleCode} anulada exitosamente (si existía).");
             }
             catch (System.Exception ex)

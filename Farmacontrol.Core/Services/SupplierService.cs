@@ -1,15 +1,16 @@
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Model;
-using Farmacontrol.Repository;
 using Microsoft.EntityFrameworkCore;
 
-namespace Farmacontrol.Services
+namespace Farmacontrol.Core.Services
 {
-    public class SupplierManager
+    public class SupplierService
     {
         private readonly AppDbContext _db;
         private readonly AuditService _audit;
 
-        public SupplierManager(AppDbContext db, AuditService audit)
+        public SupplierService(AppDbContext db, AuditService audit)
         {
             _db = db;
             _audit = audit;

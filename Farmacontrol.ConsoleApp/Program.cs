@@ -1,8 +1,8 @@
 using Farmacontrol.ConsoleApp.UI;
 using Farmacontrol.ConsoleApp.UI.View;
-using Farmacontrol.DependencyInjection;
-using Farmacontrol.Repository;
-using Farmacontrol.Services;
+using Farmacontrol.Core.DependencyInjection;
+using Farmacontrol.Core.Repository;
+using Farmacontrol.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,7 +20,7 @@ namespace Farmacontrol.ConsoleApp
             var services = new ServiceCollection();
 
             services.AddSingleton<IConfiguration>(configuration);
-            services.AddFarmacontrolCore(configuration);
+            services.AddFarmacontrolCore();
 
             services.AddTransient<InventoryView>();
             services.AddTransient<SalesView>();

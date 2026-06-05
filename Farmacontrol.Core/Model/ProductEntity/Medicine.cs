@@ -1,6 +1,7 @@
-using Farmacontrol.Interface;
+using Farmacontrol.Core.Interface;
+using Farmacontrol.Model;
 
-namespace Farmacontrol.Model.ProductEntity
+namespace Farmacontrol.Core.Model.ProductEntity
 {
     public class Medicine : Product, IAlertable, IExpirable
     {

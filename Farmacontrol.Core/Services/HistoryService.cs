@@ -1,15 +1,16 @@
-using Farmacontrol.Interface;
+using Farmacontrol.Core.Interface;
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Repository;
 using Farmacontrol.Model;
-using Farmacontrol.Repository;
 using Microsoft.EntityFrameworkCore;
 
-namespace Farmacontrol.Services
+namespace Farmacontrol.Core.Services
 {
-    public class HistoryManager
+    public class HistoryService
     {
         private readonly AppDbContext _db;
 
-        public HistoryManager(AppDbContext db)
+        public HistoryService(AppDbContext db)
         {
             _db = db;
         }

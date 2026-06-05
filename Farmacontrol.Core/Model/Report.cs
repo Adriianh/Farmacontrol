@@ -1,6 +1,7 @@
 using System.Text;
+using Farmacontrol.Model;
 
-namespace Farmacontrol.Model
+namespace Farmacontrol.Core.Model
 {
     public class Report(List<Sale>? sales)
     {

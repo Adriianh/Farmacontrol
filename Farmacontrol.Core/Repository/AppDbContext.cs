@@ -1,9 +1,10 @@
+using Farmacontrol.Core.Model;
+using Farmacontrol.Core.Model.ProductEntity;
+using Farmacontrol.Core.Model.UserEntity;
 using Farmacontrol.Model;
-using Farmacontrol.Model.ProductEntity;
-using Farmacontrol.Model.UserEntity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Farmacontrol.Repository
+namespace Farmacontrol.Core.Repository
 {
     public class AppDbContext : DbContext
     {
@@ -18,6 +19,7 @@ namespace Farmacontrol.Repository
         public DbSet<Batch> Batches { get; set; }
         public DbSet<Purchase> Purchases { get; set; }
         public DbSet<PurchaseDetail> PurchaseDetails { get; set; }
+        public DbSet<ReceivedBatch> ReceivedBatches { get; set; }
         public DbSet<Prescription> Prescriptions { get; set; }
         public DbSet<InventoryMovement> InventoryMovements { get; set; }
 
@@ -31,11 +33,16 @@ namespace Farmacontrol.Repository
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
-            {
-                var dbPath = Path.Combine(AppContext.BaseDirectory, "farmacontrol.db");
-                optionsBuilder.UseSqlite($"Data Source={dbPath}");
-            }
+            if (optionsBuilder.IsConfigured) return;
+
+            var appDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Farmacontrol");
+
+            Directory.CreateDirectory(appDataPath);
+
+            var dbPath = Path.Combine(appDataPath, "farmacontrol.db");
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -44,7 +51,6 @@ namespace Farmacontrol.Repository
             {
                 entity.HasKey(e => e.Code);
                 entity.Ignore("ExpirationDate");
-                entity.HasQueryFilter(e => e.IsActive);
 
                 entity.HasDiscriminator<string>("Discriminator")
                     .HasValue<Cosmetic>("Cosmetico")
@@ -58,7 +64,6 @@ namespace Farmacontrol.Repository
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Username);
-                entity.HasQueryFilter(e => e.IsActive);
 
                 entity.HasDiscriminator<string>("Discriminator")
                     .HasValue<Administrator>("Administrador")
@@ -105,6 +110,24 @@ namespace Farmacontrol.Repository
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<ReceivedBatch>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.LotCode)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                entity.Property(r => r.Quantity)
+                    .IsRequired();
+                entity.Property(r => r.ExpirationDate)
+                    .IsRequired();
+                entity.HasOne(r => r.PurchaseDetail)
+                    .WithMany(p => p.ReceivedBatches)
+                    .HasForeignKey(r => r.PurchaseDetailId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => r.LotCode);
+                entity.HasIndex(r => r.ExpirationDate);
+            });
+
             modelBuilder.Entity<Prescription>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -116,7 +139,6 @@ namespace Farmacontrol.Repository
             {
                 entity.HasKey(e => e.Code);
                 entity.HasIndex(e => e.Name);
-                entity.HasQueryFilter(e => e.IsActive);
             });
 
             modelBuilder.Entity<Product>()

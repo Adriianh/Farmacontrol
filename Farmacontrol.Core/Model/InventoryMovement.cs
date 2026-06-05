@@ -1,4 +1,6 @@
-namespace Farmacontrol.Model
+using Farmacontrol.Model;
+
+namespace Farmacontrol.Core.Model
 {
     public class InventoryMovement
     {
